@@ -1,0 +1,71 @@
+# Sample ConfigMap for injecting File Simulator settings into your services
+# Apply this to your application namespace
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: file-simulator-config
+  # Change to your application namespace
+  namespace: default
+data:
+  # FTP Configuration
+  FILE_FTP_HOST: "file-sim-file-simulator-ftp.file-simulator.svc.cluster.local"
+  FILE_FTP_PORT: "21"
+  FILE_FTP_USERNAME: "ftpuser"
+  
+  # SFTP Configuration  
+  FILE_SFTP_HOST: "file-sim-file-simulator-sftp.file-simulator.svc.cluster.local"
+  FILE_SFTP_PORT: "22"
+  FILE_SFTP_USERNAME: "sftpuser"
+  
+  # S3/MinIO Configuration
+  FILE_S3_ENDPOINT: "http://file-sim-file-simulator-s3.file-simulator.svc.cluster.local:9000"
+  FILE_S3_ACCESS_KEY: "minioadmin"
+  FILE_S3_BUCKET_INPUT: "input"
+  FILE_S3_BUCKET_OUTPUT: "output"
+  
+  # HTTP Configuration
+  FILE_HTTP_URL: "http://file-sim-file-simulator-http.file-simulator.svc.cluster.local"
+  FILE_HTTP_USERNAME: "httpuser"
+  
+  # SMB Configuration
+  FILE_SMB_HOST: "file-sim-file-simulator-smb.file-simulator.svc.cluster.local"
+  FILE_SMB_SHARE: "simulator"
+  FILE_SMB_USERNAME: "smbuser"
+
+---
+# Secret for passwords (base64 encoded)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: file-simulator-secrets
+  namespace: default
+type: Opaque
+data:
+  # ftppass123
+  FILE_FTP_PASSWORD: ZnRwcGFzczEyMw==
+  # sftppass123  
+  FILE_SFTP_PASSWORD: c2Z0cHBhc3MxMjM=
+  # minioadmin123
+  FILE_S3_SECRET_KEY: bWluaW9hZG1pbjEyMw==
+  # httppass123
+  FILE_HTTP_PASSWORD: aHR0cHBhc3MxMjM=
+  # smbpass123
+  FILE_SMB_PASSWORD: c21icGFzczEyMw==
+
+---
+# Example: Using in a Deployment
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: my-service
+# spec:
+#   template:
+#     spec:
+#       containers:
+#         - name: my-container
+#           envFrom:
+#             - configMapRef:
+#                 name: file-simulator-config
+#             - secretRef:
+#                 name: file-simulator-secrets

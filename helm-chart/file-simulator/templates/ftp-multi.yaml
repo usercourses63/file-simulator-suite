@@ -1,0 +1,89 @@
+{{- /*
+  Multi-Instance FTP Servers Template
+  Supports deploying multiple FTP server instances with different configurations
+  Use values-multi-instance.yaml for this template
+*/ -}}
+
+{{- if .Values.ftpServers }}
+{{- range $index, $ftp := .Values.ftpServers }}
+{{- if $ftp.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "file-simulator.fullname" $ }}-{{ $ftp.name }}
+  namespace: {{ include "file-simulator.namespace" $ }}
+  labels:
+    {{- include "file-simulator.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $ftp.name }}
+    simulator.protocol: ftp
+    simulator.instance: "{{ $index }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "file-simulator.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ $ftp.name }}
+  template:
+    metadata:
+      labels:
+        {{- include "file-simulator.selectorLabels" $ | nindent 8 }}
+        app.kubernetes.io/component: {{ $ftp.name }}
+    spec:
+      containers:
+        - name: vsftpd
+          image: "{{ $ftp.image.repository }}:{{ $ftp.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: ftp
+              containerPort: 21
+              protocol: TCP
+          env:
+            - name: FTP_USER
+              value: {{ $ftp.auth.username }}
+            - name: FTP_PASS
+              value: {{ $ftp.auth.password }}
+            - name: PASV_ADDRESS
+              value: "127.0.0.1"
+            - name: LOG_STDOUT
+              value: "YES"
+          volumeMounts:
+            - name: data
+              mountPath: /home/vsftpd
+              subPath: {{ trimPrefix "/" $ftp.dataPath }}
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "file-simulator.fullname" $ }}-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "file-simulator.fullname" $ }}-{{ $ftp.name }}
+  namespace: {{ include "file-simulator.namespace" $ }}
+  labels:
+    {{- include "file-simulator.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $ftp.name }}
+spec:
+  type: NodePort
+  ports:
+    - port: 21
+      targetPort: ftp
+      protocol: TCP
+      name: ftp
+      nodePort: {{ $ftp.service.nodePort }}
+  selector:
+    {{- include "file-simulator.selectorLabels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $ftp.name }}
+{{- end }}
+{{- end }}
+{{- end }}

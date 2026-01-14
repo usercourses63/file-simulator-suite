@@ -1,0 +1,125 @@
+# Example: Deploying a .NET microservice that uses File Simulator Suite
+# This shows how to configure environment variables for multi-instance access
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-service-file-config
+  namespace: my-app
+data:
+  # ============================================
+  # Single Instance Mode (Simple)
+  # ============================================
+  # These point to the default single-instance services
+  FILE_FTP_HOST: "file-sim-file-simulator-ftp.file-simulator.svc.cluster.local"
+  FILE_FTP_PORT: "21"
+  FILE_SFTP_HOST: "file-sim-file-simulator-sftp.file-simulator.svc.cluster.local"
+  FILE_SFTP_PORT: "22"
+  FILE_S3_ENDPOINT: "http://file-sim-file-simulator-s3.file-simulator.svc.cluster.local:9000"
+  FILE_HTTP_URL: "http://file-sim-file-simulator-http.file-simulator.svc.cluster.local"
+  
+  # ============================================
+  # Multi-Instance Mode (Advanced)
+  # ============================================
+  # Primary FTP Server (simulates production FTP at ftp.company.com)
+  FILE_FTP_PRIMARY_HOST: "file-sim-file-simulator-ftp-primary.file-simulator.svc.cluster.local"
+  FILE_FTP_PRIMARY_PORT: "21"
+  FILE_FTP_PRIMARY_USERNAME: "ftpuser1"
+  
+  # Secondary FTP Server (simulates backup FTP at ftp-backup.company.com)
+  FILE_FTP_SECONDARY_HOST: "file-sim-file-simulator-ftp-secondary.file-simulator.svc.cluster.local"
+  FILE_FTP_SECONDARY_PORT: "21"
+  FILE_FTP_SECONDARY_USERNAME: "ftpuser2"
+  
+  # Primary S3 (simulates main S3 bucket)
+  FILE_S3_PRIMARY_ENDPOINT: "http://file-sim-file-simulator-s3-primary.file-simulator.svc.cluster.local:9000"
+  FILE_S3_PRIMARY_BUCKET_INPUT: "input"
+  FILE_S3_PRIMARY_BUCKET_OUTPUT: "output"
+  
+  # Archive S3 (simulates archive/cold storage)
+  FILE_S3_ARCHIVE_ENDPOINT: "http://file-sim-file-simulator-s3-archive.file-simulator.svc.cluster.local:9000"
+  FILE_S3_ARCHIVE_BUCKET: "archive"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-service-file-secrets
+  namespace: my-app
+type: Opaque
+stringData:
+  # Single instance passwords
+  FILE_FTP_PASSWORD: "ftppass123"
+  FILE_SFTP_PASSWORD: "sftppass123"
+  FILE_S3_ACCESS_KEY: "minioadmin"
+  FILE_S3_SECRET_KEY: "minioadmin123"
+  
+  # Multi-instance passwords
+  FILE_FTP_PRIMARY_PASSWORD: "ftppass123"
+  FILE_FTP_SECONDARY_PASSWORD: "ftppass456"
+  FILE_S3_PRIMARY_ACCESS_KEY: "minio-primary"
+  FILE_S3_PRIMARY_SECRET_KEY: "minio-primary-secret"
+  FILE_S3_ARCHIVE_ACCESS_KEY: "minio-archive"
+  FILE_S3_ARCHIVE_SECRET_KEY: "minio-archive-secret"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-file-processor
+  namespace: my-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: my-file-processor
+  template:
+    metadata:
+      labels:
+        app: my-file-processor
+    spec:
+      containers:
+        - name: processor
+          image: my-registry/my-file-processor:latest
+          ports:
+            - containerPort: 8080
+          
+          # Load all config from ConfigMap and Secret
+          envFrom:
+            - configMapRef:
+                name: my-service-file-config
+            - secretRef:
+                name: my-service-file-secrets
+          
+          # Health checks that verify file server connectivity
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          
+          # Mount for temporary file processing
+          volumeMounts:
+            - name: temp-storage
+              mountPath: /tmp/file-processing
+      
+      volumes:
+        - name: temp-storage
+          emptyDir:
+            sizeLimit: 1Gi

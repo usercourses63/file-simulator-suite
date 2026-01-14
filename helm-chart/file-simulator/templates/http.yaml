@@ -1,0 +1,239 @@
+{{- if .Values.http.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-http-config
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: http
+data:
+  nginx.conf: |
+    user nginx;
+    worker_processes auto;
+    error_log /var/log/nginx/error.log warn;
+    pid /var/run/nginx.pid;
+
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+
+        log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                        '$status $body_bytes_sent "$http_referer" '
+                        '"$http_user_agent" "$http_x_forwarded_for"';
+
+        access_log /var/log/nginx/access.log main;
+        sendfile on;
+        keepalive_timeout 65;
+
+        server {
+            listen 80;
+            server_name _;
+
+            # Root file serving with directory listing
+            location / {
+                root /data;
+                {{- if .Values.http.autoindex }}
+                autoindex on;
+                autoindex_exact_size off;
+                autoindex_localtime on;
+                autoindex_format html;
+                {{- end }}
+            }
+
+            # Download endpoint
+            location /download/ {
+                alias /data/;
+                {{- if .Values.http.autoindex }}
+                autoindex on;
+                {{- end }}
+            }
+
+            # Health check endpoint
+            location /health {
+                access_log off;
+                return 200 "OK\n";
+                add_header Content-Type text/plain;
+            }
+
+            # API-like JSON listing
+            location /api/files {
+                alias /data/;
+                autoindex on;
+                autoindex_format json;
+            }
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-http
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: http
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "file-simulator.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: http
+  template:
+    metadata:
+      labels:
+        {{- include "file-simulator.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: http
+    spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "file-simulator.serviceAccountName" . }}
+      {{- end }}
+      containers:
+        - name: nginx
+          image: "{{ .Values.http.image.repository }}:{{ .Values.http.image.tag }}"
+          imagePullPolicy: {{ .Values.http.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.http.resources | nindent 12 }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "file-simulator.fullname" . }}-pvc
+        - name: config
+          configMap:
+            name: {{ include "file-simulator.fullname" . }}-http-config
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-http
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: http
+spec:
+  type: {{ .Values.http.service.type }}
+  ports:
+    - port: {{ .Values.http.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+      {{- if eq .Values.http.service.type "NodePort" }}
+      nodePort: {{ .Values.http.service.nodePort }}
+      {{- end }}
+  selector:
+    {{- include "file-simulator.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: http
+{{- if .Values.http.webdav.enabled }}
+---
+# Dedicated WebDAV Deployment for file upload/management
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-webdav
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: webdav
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "file-simulator.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: webdav
+  template:
+    metadata:
+      labels:
+        {{- include "file-simulator.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: webdav
+    spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "file-simulator.serviceAccountName" . }}
+      {{- end }}
+      containers:
+        - name: webdav
+          image: "{{ .Values.http.webdavImage.repository }}:{{ .Values.http.webdavImage.tag }}"
+          imagePullPolicy: {{ .Values.http.webdavImage.pullPolicy }}
+          ports:
+            - name: webdav
+              containerPort: 80
+              protocol: TCP
+          env:
+            - name: USERNAME
+              value: "{{ .Values.http.webdav.auth.username }}"
+            - name: PASSWORD
+              value: "{{ .Values.http.webdav.auth.password }}"
+            - name: UID
+              value: "0"
+            - name: GID
+              value: "0"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "25m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "file-simulator.fullname" . }}-pvc
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-webdav
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: webdav
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: webdav
+      protocol: TCP
+      name: webdav
+      nodePort: 30089
+  selector:
+    {{- include "file-simulator.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: webdav
+{{- end }}
+{{- end }}

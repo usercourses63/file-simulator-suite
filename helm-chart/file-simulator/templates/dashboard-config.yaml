@@ -1,0 +1,124 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-dashboard
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+data:
+  services.json: |
+    {
+      "name": "File Simulator Suite",
+      "version": "{{ .Chart.Version }}",
+      "namespace": "{{ include "file-simulator.namespace" . }}",
+      "services": [
+        {{- if .Values.management.enabled }}
+        {
+          "name": "Management UI",
+          "type": "management",
+          "enabled": true,
+          "endpoints": {
+            "internal": "http://{{ include "file-simulator.fullname" . }}-management:{{ .Values.management.service.port }}",
+            "nodePort": {{ .Values.management.service.nodePort }}
+          },
+          "credentials": {
+            "username": "{{ .Values.management.auth.username }}",
+            "password": "{{ .Values.management.auth.password }}"
+          }
+        },
+        {{- end }}
+        {{- if .Values.ftp.enabled }}
+        {
+          "name": "FTP Server",
+          "type": "ftp",
+          "enabled": true,
+          "endpoints": {
+            "internal": "ftp://{{ include "file-simulator.fullname" . }}-ftp:{{ .Values.ftp.service.port }}",
+            "nodePort": {{ .Values.ftp.service.nodePort }}
+          },
+          "credentials": {
+            "username": "{{ .Values.ftp.auth.username }}",
+            "password": "{{ .Values.ftp.auth.password }}"
+          }
+        },
+        {{- end }}
+        {{- if .Values.sftp.enabled }}
+        {
+          "name": "SFTP Server",
+          "type": "sftp",
+          "enabled": true,
+          "endpoints": {
+            "internal": "sftp://{{ include "file-simulator.fullname" . }}-sftp:{{ .Values.sftp.service.port }}",
+            "nodePort": {{ .Values.sftp.service.nodePort }}
+          },
+          "credentials": {
+            "username": "{{ (index .Values.sftp.users 0).username }}",
+            "password": "{{ (index .Values.sftp.users 0).password }}"
+          }
+        },
+        {{- end }}
+        {{- if .Values.http.enabled }}
+        {
+          "name": "HTTP File Server",
+          "type": "http",
+          "enabled": true,
+          "endpoints": {
+            "internal": "http://{{ include "file-simulator.fullname" . }}-http:{{ .Values.http.service.port }}",
+            "nodePort": {{ .Values.http.service.nodePort }},
+            "webdav": "/webdav/"
+          },
+          "credentials": {
+            "username": "{{ .Values.http.webdav.auth.username }}",
+            "password": "{{ .Values.http.webdav.auth.password }}"
+          }
+        },
+        {{- end }}
+        {{- if .Values.s3.enabled }}
+        {
+          "name": "S3 (MinIO)",
+          "type": "s3",
+          "enabled": true,
+          "endpoints": {
+            "api": "http://{{ include "file-simulator.fullname" . }}-s3:{{ .Values.s3.service.api.port }}",
+            "console": "http://{{ include "file-simulator.fullname" . }}-s3:{{ .Values.s3.service.console.port }}",
+            "apiNodePort": {{ .Values.s3.service.api.nodePort }},
+            "consoleNodePort": {{ .Values.s3.service.console.nodePort }}
+          },
+          "credentials": {
+            "accessKey": "{{ .Values.s3.auth.rootUser }}",
+            "secretKey": "{{ .Values.s3.auth.rootPassword }}"
+          },
+          "buckets": {{ .Values.s3.defaultBuckets | toJson }}
+        },
+        {{- end }}
+        {{- if .Values.smb.enabled }}
+        {
+          "name": "SMB/CIFS Server",
+          "type": "smb",
+          "enabled": true,
+          "endpoints": {
+            "internal": "smb://{{ include "file-simulator.fullname" . }}-smb",
+            "nodePort": {{ .Values.smb.service.nodePort }}
+          },
+          "credentials": {
+            "username": "{{ (index .Values.smb.users 0).username }}",
+            "password": "{{ (index .Values.smb.users 0).password }}"
+          },
+          "shares": {{ .Values.smb.shares | toJson }}
+        },
+        {{- end }}
+        {{- if .Values.nas.enabled }}
+        {
+          "name": "NAS (NFS)",
+          "type": "nfs",
+          "enabled": true,
+          "endpoints": {
+            "internal": "{{ include "file-simulator.fullname" . }}-nas:{{ .Values.nas.service.port }}",
+            "nodePort": {{ .Values.nas.service.nodePort }}
+          },
+          "exports": {{ .Values.nas.exports | toJson }}
+        }
+        {{- end }}
+      ]
+    }

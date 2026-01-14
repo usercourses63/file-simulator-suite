@@ -1,0 +1,103 @@
+{{- if .Values.smb.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-smb
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: smb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "file-simulator.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: smb
+  template:
+    metadata:
+      labels:
+        {{- include "file-simulator.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: smb
+    spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "file-simulator.serviceAccountName" . }}
+      {{- end }}
+      containers:
+        - name: samba
+          image: dperson/samba:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: smb
+              containerPort: 445
+              protocol: TCP
+            - name: netbios
+              containerPort: 139
+              protocol: TCP
+          # dperson/samba uses args for configuration
+          args:
+            # Add users
+            {{- range .Values.smb.users }}
+            - "-u"
+            - "{{ .username }};{{ .password }}"
+            {{- end }}
+            # Add shares
+            {{- range .Values.smb.shares }}
+            - "-s"
+            - "{{ .name }};{{ .path }};{{ if .browseable }}yes{{ else }}no{{ end }};{{ if .readonly }}yes{{ else }}no{{ end }};{{ if .guest }}yes{{ else }}no{{ end }}"
+            {{- end }}
+            # Global config: enable NTLMv1 for SMBLibrary compatibility
+            - "-g"
+            - "ntlm auth = yes"
+            - "-g"
+            - "server min protocol = SMB2"
+            - "-g"
+            - "lanman auth = yes"
+            - "-g"
+            - "raw NTLMv2 auth = yes"
+            - "-g"
+            - "log level = 3 auth:10"
+            # Don't reconfigure if already running
+            - "-n"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          securityContext:
+            privileged: true
+          resources:
+            {{- toYaml .Values.smb.resources | nindent 12 }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "file-simulator.fullname" . }}-pvc
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-smb
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: smb
+spec:
+  type: {{ .Values.smb.service.type }}
+  ports:
+    - port: {{ .Values.smb.service.port }}
+      targetPort: smb
+      protocol: TCP
+      name: smb
+      {{- if eq .Values.smb.service.type "NodePort" }}
+      nodePort: {{ .Values.smb.service.nodePort }}
+      {{- end }}
+    - port: 139
+      targetPort: netbios
+      protocol: TCP
+      name: netbios
+  selector:
+    {{- include "file-simulator.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: smb
+{{- end }}

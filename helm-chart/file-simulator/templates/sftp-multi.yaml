@@ -1,0 +1,85 @@
+{{- /*
+  Multi-Instance SFTP Servers Template
+  Supports deploying multiple SFTP server instances with different configurations
+*/ -}}
+
+{{- if .Values.sftpServers }}
+{{- range $index, $sftp := .Values.sftpServers }}
+{{- if $sftp.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "file-simulator.fullname" $ }}-{{ $sftp.name }}
+  namespace: {{ include "file-simulator.namespace" $ }}
+  labels:
+    {{- include "file-simulator.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $sftp.name }}
+    simulator.protocol: sftp
+    simulator.instance: "{{ $index }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "file-simulator.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ $sftp.name }}
+  template:
+    metadata:
+      labels:
+        {{- include "file-simulator.selectorLabels" $ | nindent 8 }}
+        app.kubernetes.io/component: {{ $sftp.name }}
+    spec:
+      containers:
+        - name: sftp
+          image: "{{ $sftp.image.repository }}:{{ $sftp.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: sftp
+              containerPort: 22
+              protocol: TCP
+          args:
+            {{- range $sftp.users }}
+            - "{{ .username }}:{{ .password }}:{{ .uid }}:{{ .gid }}"
+            {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /home/{{ (index $sftp.users 0).username }}/data
+              subPath: {{ trimPrefix "/" $sftp.dataPath }}
+          securityContext:
+            capabilities:
+              add:
+                - SYS_CHROOT
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "file-simulator.fullname" $ }}-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "file-simulator.fullname" $ }}-{{ $sftp.name }}
+  namespace: {{ include "file-simulator.namespace" $ }}
+  labels:
+    {{- include "file-simulator.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $sftp.name }}
+spec:
+  type: NodePort
+  ports:
+    - port: 22
+      targetPort: sftp
+      protocol: TCP
+      name: sftp
+      nodePort: {{ $sftp.service.nodePort }}
+  selector:
+    {{- include "file-simulator.selectorLabels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $sftp.name }}
+{{- end }}
+{{- end }}
+{{- end }}

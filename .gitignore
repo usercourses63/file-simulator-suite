@@ -1,0 +1,46 @@
+# Build outputs
+bin/
+obj/
+out/
+
+# IDE
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# NuGet
+packages/
+*.nupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Test results
+TestResults/
+*.trx
+
+# Temp files
+*.tmp
+*.temp
+*.log
+tmpclaude-*
+nul
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Playwright
+.playwright-mcp/
+
+# Local config overrides
+appsettings.local.json
+appsettings.Development.json
+
+# Secrets (never commit)
+*.pfx
+*.key
+secrets.json

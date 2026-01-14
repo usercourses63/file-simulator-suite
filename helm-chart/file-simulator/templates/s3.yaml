@@ -1,0 +1,147 @@
+{{- if .Values.s3.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-s3
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: s3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "file-simulator.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: s3
+  template:
+    metadata:
+      labels:
+        {{- include "file-simulator.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: s3
+    spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "file-simulator.serviceAccountName" . }}
+      {{- end }}
+      containers:
+        - name: minio
+          image: "{{ .Values.s3.image.repository }}:{{ .Values.s3.image.tag }}"
+          imagePullPolicy: {{ .Values.s3.image.pullPolicy }}
+          args:
+            - server
+            - /minio-data
+            - --console-address
+            - ":9001"
+          ports:
+            - name: api
+              containerPort: 9000
+              protocol: TCP
+            - name: console
+              containerPort: 9001
+              protocol: TCP
+          env:
+            - name: MINIO_ROOT_USER
+              value: {{ .Values.s3.auth.rootUser }}
+            - name: MINIO_ROOT_PASSWORD
+              value: {{ .Values.s3.auth.rootPassword }}
+          volumeMounts:
+            - name: minio-data
+              mountPath: /minio-data
+            - name: shared-data
+              mountPath: /shared
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: api
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: api
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.s3.resources | nindent 12 }}
+      volumes:
+        - name: minio-data
+          emptyDir: {}
+        - name: shared-data
+          persistentVolumeClaim:
+            claimName: {{ include "file-simulator.fullname" . }}-pvc
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-s3
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: s3
+spec:
+  type: {{ .Values.s3.service.api.type }}
+  ports:
+    - port: {{ .Values.s3.service.api.port }}
+      targetPort: api
+      protocol: TCP
+      name: api
+      {{- if eq .Values.s3.service.api.type "NodePort" }}
+      nodePort: {{ .Values.s3.service.api.nodePort }}
+      {{- end }}
+    - port: {{ .Values.s3.service.console.port }}
+      targetPort: console
+      protocol: TCP
+      name: console
+      {{- if eq .Values.s3.service.console.type "NodePort" }}
+      nodePort: {{ .Values.s3.service.console.nodePort }}
+      {{- end }}
+  selector:
+    {{- include "file-simulator.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: s3
+---
+# Job to create default buckets
+{{- if .Values.s3.defaultBuckets }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-s3-init
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: s3-init
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: mc
+          image: minio/mc:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              # Wait for MinIO to be ready
+              sleep 10
+              
+              # Configure mc alias
+              mc alias set myminio http://{{ include "file-simulator.fullname" . }}-s3:9000 {{ .Values.s3.auth.rootUser }} {{ .Values.s3.auth.rootPassword }}
+              
+              # Create buckets
+              {{- range .Values.s3.defaultBuckets }}
+              mc mb --ignore-existing myminio/{{ .name }}
+              {{- if eq .policy "public" }}
+              mc anonymous set download myminio/{{ .name }}
+              {{- end }}
+              {{- end }}
+              
+              echo "Buckets created successfully"
+{{- end }}
+{{- end }}

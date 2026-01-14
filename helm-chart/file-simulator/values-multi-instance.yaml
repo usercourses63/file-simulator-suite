@@ -1,0 +1,155 @@
+# File Simulator Suite - Multi-Instance Values
+# This configuration supports multiple instances of the same protocol
+# Use case: Simulating 2 FTP servers at different "addresses" in production
+
+global:
+  storage:
+    hostPath: /mnt/simulator-data
+    size: 10Gi
+    storageClass: ""
+
+namespace:
+  create: true
+  name: file-simulator
+
+# ============================================
+# Multiple FTP Servers
+# ============================================
+# Each FTP instance gets its own service name and NodePort
+ftpServers:
+  - name: ftp-primary
+    enabled: true
+    image:
+      repository: fauria/vsftpd
+      tag: latest
+    service:
+      nodePort: 30021
+    auth:
+      username: ftpuser1
+      password: ftppass123
+    # Subdirectory within shared storage
+    dataPath: /ftp-primary
+    
+  - name: ftp-secondary
+    enabled: true
+    image:
+      repository: fauria/vsftpd
+      tag: latest
+    service:
+      nodePort: 30022
+    auth:
+      username: ftpuser2
+      password: ftppass456
+    dataPath: /ftp-secondary
+
+# ============================================
+# Multiple SFTP Servers
+# ============================================
+sftpServers:
+  - name: sftp-primary
+    enabled: true
+    image:
+      repository: atmoz/sftp
+      tag: alpine
+    service:
+      nodePort: 30122
+    users:
+      - username: sftpuser1
+        password: sftppass123
+        uid: 1000
+        gid: 1000
+    dataPath: /sftp-primary
+    
+  - name: sftp-backup
+    enabled: true
+    image:
+      repository: atmoz/sftp
+      tag: alpine
+    service:
+      nodePort: 30123
+    users:
+      - username: sftpuser2
+        password: sftppass456
+        uid: 1001
+        gid: 1001
+    dataPath: /sftp-backup
+
+# ============================================
+# Multiple S3/MinIO Instances
+# ============================================
+s3Servers:
+  - name: s3-primary
+    enabled: true
+    image:
+      repository: minio/minio
+      tag: latest
+    service:
+      apiNodePort: 30900
+      consoleNodePort: 30901
+    auth:
+      rootUser: minio-primary
+      rootPassword: minio-primary-secret
+    dataPath: /s3-primary
+    defaultBuckets:
+      - name: input
+        policy: public
+      - name: output
+        policy: public
+
+  - name: s3-archive
+    enabled: true
+    image:
+      repository: minio/minio
+      tag: latest
+    service:
+      apiNodePort: 30910
+      consoleNodePort: 30911
+    auth:
+      rootUser: minio-archive
+      rootPassword: minio-archive-secret
+    dataPath: /s3-archive
+    defaultBuckets:
+      - name: archive
+        policy: none
+      - name: cold-storage
+        policy: none
+
+# ============================================
+# Multiple HTTP Servers
+# ============================================
+httpServers:
+  - name: http-public
+    enabled: true
+    service:
+      nodePort: 30080
+    webdav:
+      enabled: true
+      auth:
+        username: httpuser1
+        password: httppass123
+    dataPath: /http-public
+    
+  - name: http-internal
+    enabled: true
+    service:
+      nodePort: 30081
+    webdav:
+      enabled: true
+      auth:
+        username: httpuser2
+        password: httppass456
+    dataPath: /http-internal
+
+# ============================================
+# Management UI (Single Instance)
+# ============================================
+management:
+  enabled: true
+  image:
+    repository: filebrowser/filebrowser
+    tag: v2.27.0
+  service:
+    nodePort: 30000
+  auth:
+    username: admin
+    password: admin123

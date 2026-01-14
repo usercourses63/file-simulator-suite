@@ -1,0 +1,140 @@
+{{- if .Values.nas.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-nas
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: nas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "file-simulator.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: nas
+  template:
+    metadata:
+      labels:
+        {{- include "file-simulator.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: nas
+    spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "file-simulator.serviceAccountName" . }}
+      {{- end }}
+      containers:
+        - name: nfs-server
+          image: "{{ .Values.nas.image.repository }}:{{ .Values.nas.image.tag }}"
+          imagePullPolicy: {{ .Values.nas.image.pullPolicy }}
+          ports:
+            - name: nfs
+              containerPort: 2049
+              protocol: TCP
+            - name: nfs-udp
+              containerPort: 2049
+              protocol: UDP
+            - name: mountd
+              containerPort: 32765
+              protocol: TCP
+            - name: mountd-udp
+              containerPort: 32765
+              protocol: UDP
+            - name: statd
+              containerPort: 32766
+              protocol: TCP
+            - name: statd-udp
+              containerPort: 32766
+              protocol: UDP
+            - name: lockd
+              containerPort: 32767
+              protocol: TCP
+            - name: lockd-udp
+              containerPort: 32767
+              protocol: UDP
+            - name: rpcbind
+              containerPort: 111
+              protocol: TCP
+            - name: rpcbind-udp
+              containerPort: 111
+              protocol: UDP
+          env:
+            # Export /data with rw,sync,no_subtree_check,no_root_squash for all clients
+            - name: NFS_EXPORT_0
+              value: "/data *(rw,sync,no_subtree_check,no_root_squash,fsid=0)"
+            # Disable NFSv3 to simplify - only use NFSv4
+            - name: NFS_DISABLE_VERSION_3
+              value: "false"
+            # Log level
+            - name: NFS_LOG_LEVEL
+              value: "DEBUG"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - SYS_ADMIN
+                - DAC_READ_SEARCH
+          livenessProbe:
+            tcpSocket:
+              port: nfs
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: nfs
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.nas.resources | nindent 12 }}
+      volumes:
+        # Note: erichough/nfs-server requires filesystem with proper NFS support
+        # In minikube with 9p mount, we use emptyDir (no shared data with other protocols)
+        # In OCP/production with proper storage, change to PVC
+        - name: data
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-nas
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: nas
+spec:
+  type: {{ .Values.nas.service.type }}
+  ports:
+    - port: {{ .Values.nas.service.port }}
+      targetPort: nfs
+      protocol: TCP
+      name: nfs
+      {{- if eq .Values.nas.service.type "NodePort" }}
+      nodePort: {{ .Values.nas.service.nodePort }}
+      {{- end }}
+    - port: 32765
+      targetPort: mountd
+      protocol: TCP
+      name: mountd
+    - port: 32766
+      targetPort: statd
+      protocol: TCP
+      name: statd
+    - port: 32767
+      targetPort: lockd
+      protocol: TCP
+      name: lockd
+    - port: 111
+      targetPort: rpcbind
+      protocol: TCP
+      name: rpcbind
+  selector:
+    {{- include "file-simulator.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: nas
+{{- end }}

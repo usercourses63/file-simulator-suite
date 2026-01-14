@@ -1,0 +1,103 @@
+{{- if .Values.ftp.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-ftp
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ftp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "file-simulator.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ftp
+  template:
+    metadata:
+      labels:
+        {{- include "file-simulator.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: ftp
+    spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "file-simulator.serviceAccountName" . }}
+      {{- end }}
+      containers:
+        - name: vsftpd
+          image: "{{ .Values.ftp.image.repository }}:{{ .Values.ftp.image.tag }}"
+          imagePullPolicy: {{ .Values.ftp.image.pullPolicy }}
+          ports:
+            - name: ftp
+              containerPort: 21
+              protocol: TCP
+            {{- $pasvNodeStart := int (.Values.ftp.service.passivePorts.nodePortStart | default .Values.ftp.service.passivePorts.start) }}
+            {{- $pasvCount := sub (int .Values.ftp.service.passivePorts.end) (int .Values.ftp.service.passivePorts.start) }}
+            {{- range $idx := until (int (add1 $pasvCount)) }}
+            - name: passive-{{ add $pasvNodeStart $idx }}
+              containerPort: {{ add $pasvNodeStart $idx }}
+              protocol: TCP
+            {{- end }}
+          env:
+            - name: FTP_USER
+              value: {{ .Values.ftp.auth.username }}
+            - name: FTP_PASS
+              value: {{ .Values.ftp.auth.password }}
+            - name: PASV_MIN_PORT
+              value: "{{ .Values.ftp.service.passivePorts.nodePortStart | default .Values.ftp.service.passivePorts.start }}"
+            - name: PASV_MAX_PORT
+              value: "{{ add (int (.Values.ftp.service.passivePorts.nodePortStart | default .Values.ftp.service.passivePorts.start)) (sub (int .Values.ftp.service.passivePorts.end) (int .Values.ftp.service.passivePorts.start)) }}"
+            - name: PASV_ADDRESS
+              value: {{ .Values.ftp.passiveAddress | default "127.0.0.1" | quote }}
+            - name: LOG_STDOUT
+              value: "YES"
+          volumeMounts:
+            - name: data
+              mountPath: /home/vsftpd
+          securityContext:
+            privileged: true
+          resources:
+            {{- toYaml .Values.ftp.resources | nindent 12 }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "file-simulator.fullname" . }}-pvc
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-ftp
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ftp
+spec:
+  type: {{ .Values.ftp.service.type }}
+  ports:
+    - port: {{ .Values.ftp.service.port }}
+      targetPort: ftp
+      protocol: TCP
+      name: ftp
+      {{- if eq .Values.ftp.service.type "NodePort" }}
+      nodePort: {{ .Values.ftp.service.nodePort }}
+      {{- end }}
+    {{- $pasvNodeStart := int (.Values.ftp.service.passivePorts.nodePortStart | default .Values.ftp.service.passivePorts.start) }}
+    {{- $pasvCount := sub (int .Values.ftp.service.passivePorts.end) (int .Values.ftp.service.passivePorts.start) }}
+    {{- range $idx := until (int (add1 $pasvCount)) }}
+    {{- $port := add $pasvNodeStart $idx }}
+    - port: {{ $port }}
+      targetPort: {{ $port }}
+      protocol: TCP
+      name: passive-{{ $port }}
+      {{- if $.Values.ftp.service.passivePorts.nodePortStart }}
+      nodePort: {{ $port }}
+      {{- end }}
+    {{- end }}
+  selector:
+    {{- include "file-simulator.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: ftp
+{{- end }}

@@ -1,0 +1,123 @@
+=====================================================
+  File Simulator Suite - Successfully Deployed!
+=====================================================
+
+Namespace: {{ include "file-simulator.namespace" . }}
+
+Get the Minikube IP:
+  export MINIKUBE_IP=$(minikube ip)
+
+=== ENABLED SERVICES ===
+
+{{- if .Values.management.enabled }}
+
+📁 MANAGEMENT UI (FileBrowser)
+   URL: http://$MINIKUBE_IP:{{ .Values.management.service.nodePort }}
+   Username: {{ .Values.management.auth.username }}
+   Password: {{ .Values.management.auth.password }}
+{{- end }}
+
+{{- if .Values.ftp.enabled }}
+
+📤 FTP SERVER
+   Host: $MINIKUBE_IP
+   Port: {{ .Values.ftp.service.nodePort }}
+   Username: {{ .Values.ftp.auth.username }}
+   Password: {{ .Values.ftp.auth.password }}
+   
+   Windows Command:
+   ftp $MINIKUBE_IP {{ .Values.ftp.service.nodePort }}
+{{- end }}
+
+{{- if .Values.sftp.enabled }}
+
+🔐 SFTP SERVER
+   Host: $MINIKUBE_IP
+   Port: {{ .Values.sftp.service.nodePort }}
+   Username: {{ (index .Values.sftp.users 0).username }}
+   Password: {{ (index .Values.sftp.users 0).password }}
+   
+   Windows Command (using PuTTY):
+   psftp -P {{ .Values.sftp.service.nodePort }} {{ (index .Values.sftp.users 0).username }}@$MINIKUBE_IP
+{{- end }}
+
+{{- if .Values.http.enabled }}
+
+🌐 HTTP FILE SERVER
+   Browse: http://$MINIKUBE_IP:{{ .Values.http.service.nodePort }}
+   Download: http://$MINIKUBE_IP:{{ .Values.http.service.nodePort }}/download/
+   {{- if .Values.http.webdav.enabled }}
+   WebDAV: http://$MINIKUBE_IP:{{ .Values.http.service.nodePort }}/webdav/
+   Username: {{ .Values.http.webdav.auth.username }}
+   Password: {{ .Values.http.webdav.auth.password }}
+   {{- end }}
+{{- end }}
+
+{{- if .Values.s3.enabled }}
+
+☁️  S3 (MinIO)
+   API: http://$MINIKUBE_IP:{{ .Values.s3.service.api.nodePort }}
+   Console: http://$MINIKUBE_IP:{{ .Values.s3.service.console.nodePort }}
+   Access Key: {{ .Values.s3.auth.rootUser }}
+   Secret Key: {{ .Values.s3.auth.rootPassword }}
+   
+   AWS CLI Config:
+   aws configure set aws_access_key_id {{ .Values.s3.auth.rootUser }}
+   aws configure set aws_secret_access_key {{ .Values.s3.auth.rootPassword }}
+   aws --endpoint-url http://$MINIKUBE_IP:{{ .Values.s3.service.api.nodePort }} s3 ls
+{{- end }}
+
+{{- if .Values.smb.enabled }}
+
+💻 SMB/CIFS SERVER
+   Windows Path: \\$MINIKUBE_IP\{{ (index .Values.smb.shares 0).name }}
+   Username: {{ (index .Values.smb.users 0).username }}
+   Password: {{ (index .Values.smb.users 0).password }}
+   
+   Map Network Drive (Windows):
+   net use Z: \\$MINIKUBE_IP\{{ (index .Values.smb.shares 0).name }} /user:{{ (index .Values.smb.users 0).username }} {{ (index .Values.smb.users 0).password }}
+{{- end }}
+
+{{- if .Values.nas.enabled }}
+
+🗄️  NAS (NFS)
+   Server: $MINIKUBE_IP
+   Port: {{ .Values.nas.service.nodePort }}
+   Export: /data
+   
+   Mount (Linux):
+   sudo mount -t nfs $MINIKUBE_IP:/data /mnt/nfs
+{{- end }}
+
+=== INTERNAL SERVICE URLs (for pods) ===
+Use these URLs in your services running inside the cluster:
+
+{{- if .Values.ftp.enabled }}
+FTP:  ftp://{{ include "file-simulator.fullname" . }}-ftp.{{ include "file-simulator.namespace" . }}.svc.cluster.local:{{ .Values.ftp.service.port }}
+{{- end }}
+{{- if .Values.sftp.enabled }}
+SFTP: sftp://{{ include "file-simulator.fullname" . }}-sftp.{{ include "file-simulator.namespace" . }}.svc.cluster.local:{{ .Values.sftp.service.port }}
+{{- end }}
+{{- if .Values.http.enabled }}
+HTTP: http://{{ include "file-simulator.fullname" . }}-http.{{ include "file-simulator.namespace" . }}.svc.cluster.local:{{ .Values.http.service.port }}
+{{- end }}
+{{- if .Values.s3.enabled }}
+S3:   http://{{ include "file-simulator.fullname" . }}-s3.{{ include "file-simulator.namespace" . }}.svc.cluster.local:{{ .Values.s3.service.api.port }}
+{{- end }}
+{{- if .Values.smb.enabled }}
+SMB:  smb://{{ include "file-simulator.fullname" . }}-smb.{{ include "file-simulator.namespace" . }}.svc.cluster.local:{{ .Values.smb.service.port }}
+{{- end }}
+{{- if .Values.nas.enabled }}
+NFS:  {{ include "file-simulator.fullname" . }}-nas.{{ include "file-simulator.namespace" . }}.svc.cluster.local:{{ .Values.nas.service.port }}
+{{- end }}
+
+=== WINDOWS INTEGRATION ===
+Files placed in C:\simulator-data will be accessible via all protocols.
+
+Structure:
+  C:\simulator-data\
+  ├── input\      <- Place test input files here
+  ├── output\     <- Services write output here
+  └── temp\       <- Temporary processing
+
+=====================================================

@@ -1,0 +1,17 @@
+apiVersion: v2
+name: file-simulator
+description: A comprehensive file access simulator suite for development and testing
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - file-simulator
+  - ftp
+  - sftp
+  - nas
+  - http
+  - s3
+  - testing
+maintainers:
+  - name: DevOps Team
+home: https://github.com/your-org/file-simulator

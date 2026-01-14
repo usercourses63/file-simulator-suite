@@ -1,0 +1,46 @@
+---
+# Persistent Volume - Host Path (for Minikube)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-pv
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: storage
+spec:
+  capacity:
+    storage: {{ .Values.global.storage.size }}
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  {{- if .Values.global.storage.storageClass }}
+  storageClassName: {{ .Values.global.storage.storageClass }}
+  {{- else }}
+  storageClassName: ""
+  {{- end }}
+  hostPath:
+    path: {{ .Values.global.storage.hostPath }}
+    type: DirectoryOrCreate
+---
+# Persistent Volume Claim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-pvc
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: storage
+spec:
+  accessModes:
+    - ReadWriteMany
+  {{- if .Values.global.storage.storageClass }}
+  storageClassName: {{ .Values.global.storage.storageClass }}
+  {{- else }}
+  storageClassName: ""
+  {{- end }}
+  volumeName: {{ include "file-simulator.fullname" . }}-pv
+  resources:
+    requests:
+      storage: {{ .Values.global.storage.size }}

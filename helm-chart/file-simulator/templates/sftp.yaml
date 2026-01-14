@@ -1,0 +1,77 @@
+{{- if .Values.sftp.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-sftp
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: sftp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "file-simulator.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: sftp
+  template:
+    metadata:
+      labels:
+        {{- include "file-simulator.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: sftp
+    spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "file-simulator.serviceAccountName" . }}
+      {{- end }}
+      containers:
+        - name: sftp
+          image: "{{ .Values.sftp.image.repository }}:{{ .Values.sftp.image.tag }}"
+          imagePullPolicy: {{ .Values.sftp.image.pullPolicy }}
+          ports:
+            - name: sftp
+              containerPort: 22
+              protocol: TCP
+          args:
+            {{- range .Values.sftp.users }}
+            - "{{ .username }}:{{ .password }}:{{ .uid }}:{{ .gid }}"
+            {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /home/{{ (index .Values.sftp.users 0).username }}/data
+          securityContext:
+            capabilities:
+              add:
+                - SYS_CHROOT
+          resources:
+            {{- toYaml .Values.sftp.resources | nindent 12 }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "file-simulator.fullname" . }}-pvc
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-sftp
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: sftp
+spec:
+  type: {{ .Values.sftp.service.type }}
+  ports:
+    - port: {{ .Values.sftp.service.port }}
+      targetPort: sftp
+      protocol: TCP
+      name: sftp
+      {{- if eq .Values.sftp.service.type "NodePort" }}
+      nodePort: {{ .Values.sftp.service.nodePort }}
+      {{- end }}
+  selector:
+    {{- include "file-simulator.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: sftp
+{{- end }}
