@@ -1,0 +1,110 @@
+# ConfigMap with File Simulator Service Endpoints
+#
+# IMPORTANT: Update SIMULATOR_HOST to match your file-simulator cluster's node IP
+# Get it with: minikube ip --profile file-simulator
+#
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: file-simulator-config
+  namespace: my-app
+  labels:
+    app.kubernetes.io/name: file-simulator-config
+    app.kubernetes.io/part-of: file-simulator-example
+data:
+  # File Simulator Node IP (UPDATE THIS!)
+  SIMULATOR_HOST: "172.23.17.71"
+
+  # FTP Configuration
+  FILE_FTP_HOST: "172.23.17.71"
+  FILE_FTP_PORT: "30021"
+  FILE_FTP_USERNAME: "ftpuser"
+  FILE_FTP_PASSWORD: "ftppass123"
+  FILE_FTP_BASE_PATH: "/output"
+
+  # SFTP Configuration
+  FILE_SFTP_HOST: "172.23.17.71"
+  FILE_SFTP_PORT: "30022"
+  FILE_SFTP_USERNAME: "sftpuser"
+  FILE_SFTP_PASSWORD: "sftppass123"
+  FILE_SFTP_BASE_PATH: "/data/output"
+
+  # HTTP/WebDAV Configuration
+  FILE_HTTP_BASE_URL: "http://172.23.17.71:30088"
+  FILE_HTTP_BASE_PATH: "/output"
+  FILE_WEBDAV_BASE_URL: "http://172.23.17.71:30089"
+  FILE_WEBDAV_BASE_PATH: "/output"
+
+  # S3/MinIO Configuration
+  FILE_S3_ENDPOINT: "http://172.23.17.71:30900"
+  FILE_S3_ACCESS_KEY: "minioadmin"
+  FILE_S3_SECRET_KEY: "minioadmin123"
+  FILE_S3_BUCKET: "simulator"
+  FILE_S3_USE_PATH_STYLE: "true"
+
+  # SMB Configuration (LoadBalancer IP with standard port 445)
+  FILE_SMB_HOST: "10.101.173.233"
+  FILE_SMB_PORT: "445"
+  FILE_SMB_SHARE: "simulator"
+  FILE_SMB_USERNAME: "smbuser"
+  FILE_SMB_PASSWORD: "smbpass123"
+  FILE_SMB_DOMAIN: "WORKGROUP"
+  FILE_SMB_BASE_PATH: "output"
+
+  # NFS Configuration (for PV mount options)
+  FILE_NFS_SERVER: "172.23.17.71"
+  FILE_NFS_PORT: "32149"
+  FILE_NFS_PATH: "/"
+  FILE_NFS_MOUNT_PATH: "/mnt/nfs"
+  FILE_NFS_BASE_PATH: "output"
+
+  # appsettings.json for .NET apps (inline JSON)
+  appsettings.json: |
+    {
+      "FileSimulator": {
+        "Ftp": {
+          "Host": "172.23.17.71",
+          "Port": 30021,
+          "Username": "ftpuser",
+          "Password": "ftppass123",
+          "BasePath": "/output"
+        },
+        "Sftp": {
+          "Host": "172.23.17.71",
+          "Port": 30022,
+          "Username": "sftpuser",
+          "Password": "sftppass123",
+          "BasePath": "/data/output"
+        },
+        "Http": {
+          "BaseUrl": "http://172.23.17.71:30088",
+          "BasePath": "/output"
+        },
+        "WebDav": {
+          "BaseUrl": "http://172.23.17.71:30089",
+          "BasePath": "/output"
+        },
+        "S3": {
+          "ServiceUrl": "http://172.23.17.71:30900",
+          "AccessKey": "minioadmin",
+          "SecretKey": "minioadmin123",
+          "BucketName": "simulator",
+          "UsePathStyle": true
+        },
+        "Smb": {
+          "Host": "10.101.173.233",
+          "Port": 445,
+          "ShareName": "simulator",
+          "Username": "smbuser",
+          "Password": "smbpass123",
+          "Domain": "WORKGROUP",
+          "BasePath": "output"
+        },
+        "Nfs": {
+          "Host": "172.23.17.71",
+          "Port": 32149,
+          "MountPath": "/mnt/nfs",
+          "BasePath": "output"
+        }
+      }
+    }

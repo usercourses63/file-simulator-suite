@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: my-app
+
+resources:
+  - 01-namespace.yaml
+  - 02-configmap.yaml
+  - 03-nfs-storage.yaml
+  - 04-test-console-deployment.yaml
+  # Uncomment when ready to deploy your app:
+  # - 05-example-app-deployment.yaml
+
+# Common labels for all resources
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  environment: development

@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-pv-from-simulator
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 172.23.17.71
+    path: /
+  mountOptions:
+    - nfsvers=4
+    - port=32149
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nfs-pvc-from-simulator
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""
+  resources:
+    requests:
+      storage: 1Gi
+  volumeName: nfs-pv-from-simulator
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nfs-test-client
+  namespace: default
+spec:
+  containers:
+    - name: test
+      image: busybox:latest
+      command: ["sleep", "3600"]
+      volumeMounts:
+        - name: nfs-volume
+          mountPath: /mnt/nfs
+  volumes:
+    - name: nfs-volume
+      persistentVolumeClaim:
+        claimName: nfs-pvc-from-simulator

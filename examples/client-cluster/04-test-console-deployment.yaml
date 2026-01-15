@@ -1,0 +1,72 @@
+# Test Console Deployment
+#
+# Deploys the file-simulator test console to verify connectivity
+# to all protocols from your application cluster.
+#
+# This demonstrates how to:
+# 1. Mount the NFS share from file-simulator
+# 2. Configure environment variables for all protocols
+# 3. Mount appsettings.json from ConfigMap
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: file-test-console
+  namespace: my-app
+  labels:
+    app.kubernetes.io/name: file-test-console
+    app.kubernetes.io/part-of: file-simulator-example
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: file-test-console
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: file-test-console
+    spec:
+      containers:
+        - name: test-console
+          image: file-simulator-test:latest
+          imagePullPolicy: Never  # Use local image (built in minikube)
+
+          # Override entrypoint to keep pod running
+          command: ["sleep", "infinity"]
+
+          # Environment variables from ConfigMap
+          envFrom:
+            - configMapRef:
+                name: file-simulator-config
+
+          # Mount NFS share
+          volumeMounts:
+            - name: nfs-data
+              mountPath: /mnt/nfs
+
+            # Mount appsettings.json for .NET config
+            - name: config
+              mountPath: /app/appsettings.json
+              subPath: appsettings.json
+
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+
+      volumes:
+        # NFS volume from file-simulator
+        - name: nfs-data
+          persistentVolumeClaim:
+            claimName: file-simulator-nfs-pvc
+
+        # ConfigMap with appsettings.json
+        - name: config
+          configMap:
+            name: file-simulator-config
+            items:
+              - key: appsettings.json
+                path: appsettings.json

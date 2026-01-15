@@ -1,0 +1,53 @@
+# NFS PersistentVolume and PersistentVolumeClaim
+#
+# This configures access to the file-simulator's NFS server
+# from your application cluster.
+#
+# IMPORTANT: Update the NFS server IP to match your file-simulator cluster
+#
+# Key points:
+# - Uses NFSv4 (only needs single port)
+# - port=32149 specifies the NodePort (not the default 2049)
+# - path=/ because the NFS export uses fsid=0 (pseudo-root)
+# - ReadWriteMany allows multiple pods to mount simultaneously
+#
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: file-simulator-nfs-pv
+  labels:
+    app.kubernetes.io/name: file-simulator-nfs
+    app.kubernetes.io/part-of: file-simulator-example
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: file-simulator-nfs
+  nfs:
+    server: 172.23.17.71    # UPDATE: file-simulator cluster node IP
+    path: /                  # NFSv4 pseudo-root (fsid=0 in exports)
+  mountOptions:
+    - nfsvers=4              # Use NFSv4 (single port)
+    - port=32149             # NFS NodePort from file-simulator
+    - nolock                 # Avoid lockd dependency
+    - soft                   # Soft mount for better error handling
+    - timeo=30               # 3 second timeout
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: file-simulator-nfs-pvc
+  namespace: my-app
+  labels:
+    app.kubernetes.io/name: file-simulator-nfs
+    app.kubernetes.io/part-of: file-simulator-example
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: file-simulator-nfs
+  resources:
+    requests:
+      storage: 10Gi
+  volumeName: file-simulator-nfs-pv

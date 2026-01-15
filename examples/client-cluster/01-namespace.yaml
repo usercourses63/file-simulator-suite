@@ -1,0 +1,9 @@
+# Namespace for your application
+# This is where your app will run, separate from the file-simulator cluster
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: my-app
+  labels:
+    app.kubernetes.io/name: my-app
+    app.kubernetes.io/part-of: file-simulator-example

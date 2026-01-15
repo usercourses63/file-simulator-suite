@@ -1,0 +1,135 @@
+# Example Application Deployment Template
+#
+# This shows how your REAL application should be configured
+# to access file-simulator services.
+#
+# Replace 'your-app-image:tag' with your actual container image.
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-application
+  namespace: my-app
+  labels:
+    app.kubernetes.io/name: my-application
+    app.kubernetes.io/part-of: file-simulator-example
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: my-application
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: my-application
+    spec:
+      containers:
+        - name: app
+          image: your-app-image:tag  # REPLACE with your image
+
+          # Option 1: Use environment variables
+          envFrom:
+            - configMapRef:
+                name: file-simulator-config
+
+          # Option 2: Use individual env vars (more explicit)
+          # env:
+          #   - name: FTP_HOST
+          #     valueFrom:
+          #       configMapKeyRef:
+          #         name: file-simulator-config
+          #         key: FILE_FTP_HOST
+          #   - name: FTP_PORT
+          #     valueFrom:
+          #       configMapKeyRef:
+          #         name: file-simulator-config
+          #         key: FILE_FTP_PORT
+
+          volumeMounts:
+            # NFS mount for direct file access
+            - name: nfs-data
+              mountPath: /mnt/nfs
+
+            # .NET apps: mount appsettings.json
+            - name: config
+              mountPath: /app/appsettings.Production.json
+              subPath: appsettings.json
+
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+
+      volumes:
+        - name: nfs-data
+          persistentVolumeClaim:
+            claimName: file-simulator-nfs-pvc
+
+        - name: config
+          configMap:
+            name: file-simulator-config
+            items:
+              - key: appsettings.json
+                path: appsettings.json
+---
+# Example: Job that runs file processing
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: file-processor-job
+  namespace: my-app
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: processor
+          image: your-app-image:tag  # REPLACE with your image
+          command: ["./process-files", "--input", "/mnt/nfs/input", "--output", "/mnt/nfs/output"]
+
+          envFrom:
+            - configMapRef:
+                name: file-simulator-config
+
+          volumeMounts:
+            - name: nfs-data
+              mountPath: /mnt/nfs
+
+      volumes:
+        - name: nfs-data
+          persistentVolumeClaim:
+            claimName: file-simulator-nfs-pvc
+---
+# Example: CronJob for scheduled file polling
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: file-poller
+  namespace: my-app
+spec:
+  schedule: "*/5 * * * *"  # Every 5 minutes
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: poller
+              image: your-app-image:tag  # REPLACE with your image
+              command: ["./poll-files"]
+
+              envFrom:
+                - configMapRef:
+                    name: file-simulator-config
+
+              volumeMounts:
+                - name: nfs-data
+                  mountPath: /mnt/nfs
+
+          volumes:
+            - name: nfs-data
+              persistentVolumeClaim:
+                claimName: file-simulator-nfs-pvc

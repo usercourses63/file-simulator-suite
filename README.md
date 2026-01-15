@@ -980,6 +980,55 @@ spec:
                 name: file-simulator-secrets
 ```
 
+### NFS PersistentVolume for Cross-Cluster Access
+
+To mount the file-simulator's NFS share in your application cluster:
+
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: file-simulator-nfs-pv
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  storageClassName: file-simulator-nfs
+  nfs:
+    server: 172.23.17.71    # File-simulator node IP
+    path: /                  # NFSv4 root (fsid=0)
+  mountOptions:
+    - nfsvers=4              # Use NFSv4 (single port)
+    - port=32149             # NFS NodePort
+    - nolock                 # Avoid lockd dependency
+    - soft                   # Better error handling
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: file-simulator-nfs-pvc
+  namespace: your-namespace
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: file-simulator-nfs
+  resources:
+    requests:
+      storage: 10Gi
+  volumeName: file-simulator-nfs-pv
+```
+
+**Important:** The NFS path is `/` (not `/data`) because the export uses `fsid=0`, making `/data` the NFSv4 pseudo-root.
+
+### Complete Examples
+
+See [`examples/client-cluster/`](examples/client-cluster/) for complete, tested Kubernetes manifests including:
+- ConfigMap with all protocol endpoints
+- NFS PV/PVC configuration
+- Example deployment templates
+- Test console deployment
+
 ### Network Considerations
 
 For cross-cluster communication:

@@ -1,9 +1,13 @@
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using Amazon.S3;
 using Amazon.S3.Model;
 using FluentFTP;
 using Microsoft.Extensions.Configuration;
 using Renci.SshNet;
+using SMBLibrary;
+using SMBLibrary.Client;
 using Spectre.Console;
 
 namespace FileSimulator.TestConsole;
@@ -24,8 +28,15 @@ public static class CrossProtocolTest
         AnsiConsole.MarkupLine("[yellow]FILE-BASED PROTOCOLS (shared filesystem)[/]");
         AnsiConsole.WriteLine();
 
-        // Test 1: Upload via FTP, read via SFTP and HTTP
-        AnsiConsole.MarkupLine("[cyan]Test 1: FTP → SFTP/HTTP[/]");
+        // Check NFS availability once
+        var nfsAvailable = IsNfsAvailable(config);
+        if (!nfsAvailable)
+        {
+            AnsiConsole.WriteLine();
+        }
+
+        // Test 1: Upload via FTP, read via SFTP, HTTP, SMB, NFS
+        AnsiConsole.MarkupLine($"[cyan]Test 1: FTP → SFTP/HTTP/SMB{(nfsAvailable ? "/NFS" : "")}[/]");
         var ftpContent = $"Cross-protocol test from FTP at {DateTime.UtcNow:O}";
         var ftpFileName = $"cross-test-ftp-{testId}.txt";
 
@@ -50,6 +61,21 @@ public static class CrossProtocolTest
             results.Add(("FTP", "HTTP", httpMatch, httpMatch ? "Content matches" : $"Content mismatch"));
             AnsiConsole.MarkupLine($"  {(httpMatch ? "[green]✓[/]" : "[red]✗[/]")} Read via HTTP: {(httpMatch ? "matches" : "MISMATCH")}");
 
+            // Read via SMB
+            var smbContent = await ReadViaSmbAsync(config, ftpFileName);
+            var smbMatch = smbContent == ftpContent;
+            results.Add(("FTP", "SMB", smbMatch, smbMatch ? "Content matches" : $"Content mismatch"));
+            AnsiConsole.MarkupLine($"  {(smbMatch ? "[green]✓[/]" : "[red]✗[/]")} Read via SMB: {(smbMatch ? "matches" : "MISMATCH")}");
+
+            // Read via NFS (if available)
+            if (nfsAvailable)
+            {
+                var nfsContent = await ReadViaNfsAsync(config, ftpFileName);
+                var nfsMatch = nfsContent == ftpContent;
+                results.Add(("FTP", "NFS", nfsMatch, nfsMatch ? "Content matches" : $"Content mismatch"));
+                AnsiConsole.MarkupLine($"  {(nfsMatch ? "[green]✓[/]" : "[red]✗[/]")} Read via NFS: {(nfsMatch ? "matches" : "MISMATCH")}");
+            }
+
             // Cleanup
             await DeleteViaFtpAsync(config, ftpFileName);
             AnsiConsole.MarkupLine($"  [grey]Cleaned up {ftpFileName}[/]");
@@ -62,8 +88,8 @@ public static class CrossProtocolTest
 
         AnsiConsole.WriteLine();
 
-        // Test 2: Upload via SFTP, read via FTP and HTTP
-        AnsiConsole.MarkupLine("[cyan]Test 2: SFTP → FTP/HTTP[/]");
+        // Test 2: Upload via SFTP, read via FTP, HTTP, SMB, NFS
+        AnsiConsole.MarkupLine($"[cyan]Test 2: SFTP → FTP/HTTP/SMB{(nfsAvailable ? "/NFS" : "")}[/]");
         var sftpUploadContent = $"Cross-protocol test from SFTP at {DateTime.UtcNow:O}";
         var sftpFileName = $"cross-test-sftp-{testId}.txt";
 
@@ -88,6 +114,21 @@ public static class CrossProtocolTest
             results.Add(("SFTP", "HTTP", httpMatch, httpMatch ? "Content matches" : $"Content mismatch"));
             AnsiConsole.MarkupLine($"  {(httpMatch ? "[green]✓[/]" : "[red]✗[/]")} Read via HTTP: {(httpMatch ? "matches" : "MISMATCH")}");
 
+            // Read via SMB
+            var smbReadContent = await ReadViaSmbAsync(config, sftpFileName);
+            var smbMatch = smbReadContent == sftpUploadContent;
+            results.Add(("SFTP", "SMB", smbMatch, smbMatch ? "Content matches" : $"Content mismatch"));
+            AnsiConsole.MarkupLine($"  {(smbMatch ? "[green]✓[/]" : "[red]✗[/]")} Read via SMB: {(smbMatch ? "matches" : "MISMATCH")}");
+
+            // Read via NFS (if available)
+            if (nfsAvailable)
+            {
+                var nfsReadContent = await ReadViaNfsAsync(config, sftpFileName);
+                var nfsMatch = nfsReadContent == sftpUploadContent;
+                results.Add(("SFTP", "NFS", nfsMatch, nfsMatch ? "Content matches" : $"Content mismatch"));
+                AnsiConsole.MarkupLine($"  {(nfsMatch ? "[green]✓[/]" : "[red]✗[/]")} Read via NFS: {(nfsMatch ? "matches" : "MISMATCH")}");
+            }
+
             // Cleanup
             await DeleteViaSftpAsync(config, sftpFileName);
             AnsiConsole.MarkupLine($"  [grey]Cleaned up {sftpFileName}[/]");
@@ -100,6 +141,117 @@ public static class CrossProtocolTest
 
         AnsiConsole.WriteLine();
 
+        // Test 3: Upload via SMB, read via FTP, SFTP, HTTP, NFS
+        AnsiConsole.MarkupLine($"[cyan]Test 3: SMB → FTP/SFTP/HTTP{(nfsAvailable ? "/NFS" : "")}[/]");
+        var smbUploadContent = $"Cross-protocol test from SMB at {DateTime.UtcNow:O}";
+        var smbFileName = $"cross-test-smb-{testId}.txt";
+
+        try
+        {
+            // Upload via SMB
+            await UploadViaSmbAsync(config, smbUploadContent, smbFileName);
+            AnsiConsole.MarkupLine($"  [green]✓[/] Uploaded via SMB: {smbFileName}");
+
+            // Wait for sync
+            await Task.Delay(500);
+
+            // Read via FTP
+            var ftpReadContent2 = await ReadViaFtpAsync(config, smbFileName);
+            var ftpMatch2 = ftpReadContent2 == smbUploadContent;
+            results.Add(("SMB", "FTP", ftpMatch2, ftpMatch2 ? "Content matches" : $"Content mismatch"));
+            AnsiConsole.MarkupLine($"  {(ftpMatch2 ? "[green]✓[/]" : "[red]✗[/]")} Read via FTP: {(ftpMatch2 ? "matches" : "MISMATCH")}");
+
+            // Read via SFTP
+            var sftpReadContent2 = await ReadViaSftpAsync(config, smbFileName);
+            var sftpMatch2 = sftpReadContent2 == smbUploadContent;
+            results.Add(("SMB", "SFTP", sftpMatch2, sftpMatch2 ? "Content matches" : $"Content mismatch"));
+            AnsiConsole.MarkupLine($"  {(sftpMatch2 ? "[green]✓[/]" : "[red]✗[/]")} Read via SFTP: {(sftpMatch2 ? "matches" : "MISMATCH")}");
+
+            // Read via HTTP
+            var httpReadContent2 = await ReadViaHttpAsync(config, smbFileName);
+            var httpMatch2 = httpReadContent2 == smbUploadContent;
+            results.Add(("SMB", "HTTP", httpMatch2, httpMatch2 ? "Content matches" : $"Content mismatch"));
+            AnsiConsole.MarkupLine($"  {(httpMatch2 ? "[green]✓[/]" : "[red]✗[/]")} Read via HTTP: {(httpMatch2 ? "matches" : "MISMATCH")}");
+
+            // Read via NFS (if available)
+            if (nfsAvailable)
+            {
+                var nfsReadContent2 = await ReadViaNfsAsync(config, smbFileName);
+                var nfsMatch2 = nfsReadContent2 == smbUploadContent;
+                results.Add(("SMB", "NFS", nfsMatch2, nfsMatch2 ? "Content matches" : $"Content mismatch"));
+                AnsiConsole.MarkupLine($"  {(nfsMatch2 ? "[green]✓[/]" : "[red]✗[/]")} Read via NFS: {(nfsMatch2 ? "matches" : "MISMATCH")}");
+            }
+
+            // Cleanup
+            await DeleteViaSmbAsync(config, smbFileName);
+            AnsiConsole.MarkupLine($"  [grey]Cleaned up {smbFileName}[/]");
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"  [red]✗[/] Error: {ex.Message}");
+            results.Add(("SMB", "ALL", false, ex.Message));
+        }
+
+        AnsiConsole.WriteLine();
+
+        // Test 4: Upload via NFS, read via FTP, SFTP, HTTP, SMB (only if NFS available)
+        if (nfsAvailable)
+        {
+            AnsiConsole.MarkupLine("[cyan]Test 4: NFS → FTP/SFTP/HTTP/SMB[/]");
+            var nfsUploadContent = $"Cross-protocol test from NFS at {DateTime.UtcNow:O}";
+            var nfsFileName = $"cross-test-nfs-{testId}.txt";
+
+            try
+            {
+                // Upload via NFS
+                await UploadViaNfsAsync(config, nfsUploadContent, nfsFileName);
+                AnsiConsole.MarkupLine($"  [green]✓[/] Uploaded via NFS: {nfsFileName}");
+
+                // Wait for sync
+                await Task.Delay(500);
+
+                // Read via FTP
+                var ftpReadContent3 = await ReadViaFtpAsync(config, nfsFileName);
+                var ftpMatch3 = ftpReadContent3 == nfsUploadContent;
+                results.Add(("NFS", "FTP", ftpMatch3, ftpMatch3 ? "Content matches" : $"Content mismatch"));
+                AnsiConsole.MarkupLine($"  {(ftpMatch3 ? "[green]✓[/]" : "[red]✗[/]")} Read via FTP: {(ftpMatch3 ? "matches" : "MISMATCH")}");
+
+                // Read via SFTP
+                var sftpReadContent3 = await ReadViaSftpAsync(config, nfsFileName);
+                var sftpMatch3 = sftpReadContent3 == nfsUploadContent;
+                results.Add(("NFS", "SFTP", sftpMatch3, sftpMatch3 ? "Content matches" : $"Content mismatch"));
+                AnsiConsole.MarkupLine($"  {(sftpMatch3 ? "[green]✓[/]" : "[red]✗[/]")} Read via SFTP: {(sftpMatch3 ? "matches" : "MISMATCH")}");
+
+                // Read via HTTP
+                var httpReadContent3 = await ReadViaHttpAsync(config, nfsFileName);
+                var httpMatch3 = httpReadContent3 == nfsUploadContent;
+                results.Add(("NFS", "HTTP", httpMatch3, httpMatch3 ? "Content matches" : $"Content mismatch"));
+                AnsiConsole.MarkupLine($"  {(httpMatch3 ? "[green]✓[/]" : "[red]✗[/]")} Read via HTTP: {(httpMatch3 ? "matches" : "MISMATCH")}");
+
+                // Read via SMB
+                var smbReadContent3 = await ReadViaSmbAsync(config, nfsFileName);
+                var smbMatch3 = smbReadContent3 == nfsUploadContent;
+                results.Add(("NFS", "SMB", smbMatch3, smbMatch3 ? "Content matches" : $"Content mismatch"));
+                AnsiConsole.MarkupLine($"  {(smbMatch3 ? "[green]✓[/]" : "[red]✗[/]")} Read via SMB: {(smbMatch3 ? "matches" : "MISMATCH")}");
+
+                // Cleanup
+                await DeleteViaNfsAsync(config, nfsFileName);
+                AnsiConsole.MarkupLine($"  [grey]Cleaned up {nfsFileName}[/]");
+            }
+            catch (Exception ex)
+            {
+                AnsiConsole.MarkupLine($"  [red]✗[/] Error: {ex.Message}");
+                results.Add(("NFS", "ALL", false, ex.Message));
+            }
+
+            AnsiConsole.WriteLine();
+        }
+        else
+        {
+            AnsiConsole.MarkupLine("[grey]Test 4: NFS → ... (skipped - NFS not mounted)[/]");
+            AnsiConsole.WriteLine();
+        }
+
         // =====================================================
         // S3 OBJECT STORAGE (separate from file-based protocols)
         // =====================================================
@@ -108,8 +260,8 @@ public static class CrossProtocolTest
         AnsiConsole.MarkupLine("[grey]incompatible with file-based protocols. This is by design.[/]");
         AnsiConsole.WriteLine();
 
-        // Test 3: S3 standalone test
-        AnsiConsole.MarkupLine("[cyan]Test 3: S3 round-trip[/]");
+        // Test 5: S3 standalone test
+        AnsiConsole.MarkupLine("[cyan]Test 5: S3 round-trip[/]");
         var s3Content = $"S3 test at {DateTime.UtcNow:O}";
         var s3FileName = $"s3-test-{testId}.txt";
 
@@ -318,6 +470,252 @@ public static class CrossProtocolTest
         var response = await client.GetAsync($"{baseUrl}{basePath}/{fileName}");
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStringAsync();
+    }
+
+    #endregion
+
+    #region SMB Operations
+
+    private static (SMB2Client client, ISMBFileStore fileStore) ConnectSmb(IConfiguration config)
+    {
+        var host = config["FileSimulator:Smb:Host"] ?? "localhost";
+        var port = int.Parse(config["FileSimulator:Smb:Port"] ?? "445");
+        var shareName = config["FileSimulator:Smb:ShareName"] ?? "simulator";
+        var username = config["FileSimulator:Smb:Username"] ?? "smbuser";
+        var password = config["FileSimulator:Smb:Password"] ?? "smbpass123";
+
+        IPAddress targetAddress;
+        if (host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
+        {
+            targetAddress = IPAddress.Loopback;
+        }
+        else if (!IPAddress.TryParse(host, out targetAddress!))
+        {
+            var addresses = Dns.GetHostAddresses(host);
+            targetAddress = addresses.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork)
+                ?? throw new Exception($"Could not resolve host: {host}");
+        }
+
+        var client = new SMB2Client();
+        var connected = client.Connect(targetAddress, SMBTransportType.DirectTCPTransport, port);
+        if (!connected)
+            throw new Exception($"Failed to connect to SMB server {host}:{port}");
+
+        var status = client.Login(string.Empty, username, password, SMBLibrary.Client.AuthenticationMethod.NTLMv2);
+        if (status != NTStatus.STATUS_SUCCESS)
+        {
+            client.Disconnect();
+            throw new Exception($"SMB login failed: {status}");
+        }
+
+        var fileStore = client.TreeConnect(shareName, out status);
+        if (status != NTStatus.STATUS_SUCCESS)
+        {
+            client.Disconnect();
+            throw new Exception($"Failed to connect to share: {status}");
+        }
+
+        return (client, fileStore);
+    }
+
+    private static async Task UploadViaSmbAsync(IConfiguration config, string content, string fileName)
+    {
+        var basePath = config["FileSimulator:Smb:BasePath"] ?? "output";
+
+        await Task.Run(() =>
+        {
+            var (client, fileStore) = ConnectSmb(config);
+            try
+            {
+                var remotePath = $"{basePath}\\{fileName}";
+                var status = fileStore.CreateFile(
+                    out var fileHandle,
+                    out _,
+                    remotePath,
+                    AccessMask.GENERIC_WRITE | AccessMask.GENERIC_READ,
+                    SMBLibrary.FileAttributes.Normal,
+                    ShareAccess.None,
+                    CreateDisposition.FILE_OVERWRITE_IF,
+                    CreateOptions.FILE_NON_DIRECTORY_FILE,
+                    null);
+
+                if (status != NTStatus.STATUS_SUCCESS)
+                    throw new Exception($"SMB create file failed: {status}");
+
+                var bytes = Encoding.UTF8.GetBytes(content);
+                fileStore.WriteFile(out _, fileHandle, 0, bytes);
+                fileStore.CloseFile(fileHandle);
+            }
+            finally
+            {
+                fileStore.Disconnect();
+                client.Disconnect();
+            }
+        });
+    }
+
+    private static async Task<string?> ReadViaSmbAsync(IConfiguration config, string fileName)
+    {
+        var basePath = config["FileSimulator:Smb:BasePath"] ?? "output";
+
+        return await Task.Run(() =>
+        {
+            var (client, fileStore) = ConnectSmb(config);
+            try
+            {
+                var remotePath = $"{basePath}\\{fileName}";
+                var status = fileStore.CreateFile(
+                    out var fileHandle,
+                    out _,
+                    remotePath,
+                    AccessMask.GENERIC_READ,
+                    SMBLibrary.FileAttributes.Normal,
+                    ShareAccess.Read,
+                    CreateDisposition.FILE_OPEN,
+                    CreateOptions.FILE_NON_DIRECTORY_FILE,
+                    null);
+
+                if (status != NTStatus.STATUS_SUCCESS)
+                    throw new Exception($"SMB open file failed: {status}");
+
+                fileStore.ReadFile(out var data, fileHandle, 0, 65536);
+                fileStore.CloseFile(fileHandle);
+                return Encoding.UTF8.GetString(data);
+            }
+            finally
+            {
+                fileStore.Disconnect();
+                client.Disconnect();
+            }
+        });
+    }
+
+    private static async Task DeleteViaSmbAsync(IConfiguration config, string fileName)
+    {
+        var basePath = config["FileSimulator:Smb:BasePath"] ?? "output";
+
+        await Task.Run(() =>
+        {
+            var (client, fileStore) = ConnectSmb(config);
+            try
+            {
+                var remotePath = $"{basePath}\\{fileName}";
+                var status = fileStore.CreateFile(
+                    out var fileHandle,
+                    out _,
+                    remotePath,
+                    AccessMask.DELETE,
+                    SMBLibrary.FileAttributes.Normal,
+                    ShareAccess.Delete,
+                    CreateDisposition.FILE_OPEN,
+                    CreateOptions.FILE_NON_DIRECTORY_FILE | CreateOptions.FILE_DELETE_ON_CLOSE,
+                    null);
+
+                if (status != NTStatus.STATUS_SUCCESS)
+                    throw new Exception($"SMB delete file failed: {status}");
+
+                fileStore.CloseFile(fileHandle);
+            }
+            finally
+            {
+                fileStore.Disconnect();
+                client.Disconnect();
+            }
+        });
+    }
+
+    #endregion
+
+    #region NFS Operations
+
+    private static bool _nfsAvailabilityChecked;
+    private static bool _nfsAvailable;
+
+    private static bool IsNfsAvailable(IConfiguration config)
+    {
+        if (_nfsAvailabilityChecked)
+            return _nfsAvailable;
+
+        var mountPath = config["FileSimulator:Nfs:MountPath"] ?? "/mnt/nfs";
+        var basePath = config["FileSimulator:Nfs:BasePath"] ?? "output";
+        var fullPath = Path.Combine(mountPath, basePath);
+        var host = config["FileSimulator:Nfs:Host"] ?? "localhost";
+
+        // On Windows, Unix-style paths like /mnt/nfs get converted to C:\mnt\nfs
+        // which is not a real NFS mount. Only consider NFS available if:
+        // 1. We're on Linux/Mac with a real mount, OR
+        // 2. On Windows, the path is a UNC path (\\server\share) or starts with a drive letter
+        //    that represents a mapped network drive
+        var isUnixStylePath = mountPath.StartsWith("/") && !mountPath.StartsWith("//");
+        var isWindows = OperatingSystem.IsWindows();
+
+        if (isWindows && isUnixStylePath)
+        {
+            // Unix-style paths on Windows are not real NFS mounts
+            _nfsAvailable = false;
+            AnsiConsole.MarkupLine($"  [yellow]NFS: Unix-style path '{mountPath}' not valid on Windows[/]");
+            AnsiConsole.MarkupLine($"  [grey]To enable NFS testing on Windows:[/]");
+            AnsiConsole.MarkupLine($"  [grey]  1. Mount NFS share: mount -o anon \\\\{host}\\data Z:[/]");
+            AnsiConsole.MarkupLine($"  [grey]  2. Update appsettings.json: \"MountPath\": \"Z:\\\\\"[/]");
+        }
+        else
+        {
+            // Check if the directory exists (for real mounts or Windows UNC/drive paths)
+            _nfsAvailable = Directory.Exists(fullPath);
+
+            if (!_nfsAvailable)
+            {
+                AnsiConsole.MarkupLine($"  [yellow]NFS mount not available at '{mountPath}'[/]");
+                AnsiConsole.MarkupLine($"  [grey]To enable NFS testing, mount the NFS share:[/]");
+                AnsiConsole.MarkupLine($"  [grey]  Linux/WSL: sudo mount -t nfs {host}:/data {mountPath}[/]");
+            }
+        }
+
+        _nfsAvailabilityChecked = true;
+        return _nfsAvailable;
+    }
+
+    private static string GetNfsFilePath(IConfiguration config, string fileName)
+    {
+        var mountPath = config["FileSimulator:Nfs:MountPath"] ?? "/mnt/nfs";
+        var basePath = config["FileSimulator:Nfs:BasePath"] ?? "output";
+        return Path.Combine(mountPath, basePath, fileName);
+    }
+
+    private static async Task UploadViaNfsAsync(IConfiguration config, string content, string fileName)
+    {
+        if (!IsNfsAvailable(config))
+            throw new InvalidOperationException("NFS mount not available");
+
+        var filePath = GetNfsFilePath(config, fileName);
+        var directory = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+        await File.WriteAllTextAsync(filePath, content);
+    }
+
+    private static async Task<string?> ReadViaNfsAsync(IConfiguration config, string fileName)
+    {
+        if (!IsNfsAvailable(config))
+            throw new InvalidOperationException("NFS mount not available");
+
+        var filePath = GetNfsFilePath(config, fileName);
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException($"NFS file not found: {filePath}");
+        return await File.ReadAllTextAsync(filePath);
+    }
+
+    private static Task DeleteViaNfsAsync(IConfiguration config, string fileName)
+    {
+        if (!IsNfsAvailable(config))
+            return Task.CompletedTask;
+
+        var filePath = GetNfsFilePath(config, fileName);
+        if (File.Exists(filePath))
+            File.Delete(filePath);
+        return Task.CompletedTask;
     }
 
     #endregion
