@@ -61,6 +61,9 @@ public class Program
 
                 ctx.Status("Testing SMB...");
                 results.Add(await TestSmbAsync(config, testContent, testFileName));
+
+                ctx.Status("Testing NFS...");
+                results.Add(await TestNfsAsync(config, testContent, testFileName));
             });
 
         // Display results table
@@ -553,6 +556,99 @@ public class Program
 
                 fileStore.Disconnect();
                 client.Disconnect();
+            });
+        }
+        catch (Exception ex)
+        {
+            result.Error = ex.Message;
+        }
+
+        return result;
+    }
+
+    static async Task<TestResult> TestNfsAsync(IConfiguration config, string content, string fileName)
+    {
+        var result = new TestResult { Protocol = "NFS" };
+        var host = config["FileSimulator:Nfs:Host"] ?? "localhost";
+        var port = int.Parse(config["FileSimulator:Nfs:Port"] ?? "32149");
+        var mountPath = config["FileSimulator:Nfs:MountPath"] ?? "/mnt/nfs";
+        var basePath = config["FileSimulator:Nfs:BasePath"] ?? "output";
+
+        try
+        {
+            await Task.Run(() =>
+            {
+                var sw = Stopwatch.StartNew();
+
+                // Check if mount path exists (NFS requires pre-mounted filesystem)
+                var fullBasePath = Path.Combine(mountPath, basePath);
+
+                // For Windows, check if the mount path is available
+                // NFS mount on Windows typically requires WSL or third-party NFS client
+                if (!Directory.Exists(mountPath))
+                {
+                    // Try TCP connection to verify NFS server is accessible
+                    try
+                    {
+                        using var tcp = new System.Net.Sockets.TcpClient();
+                        tcp.Connect(host, port);
+                        result.ConnectMs = sw.ElapsedMilliseconds;
+                        result.Connected = true;
+                        tcp.Close();
+
+                        AnsiConsole.MarkupLine($"[grey]  NFS server {host}:{port} is reachable[/]");
+                        AnsiConsole.MarkupLine($"[yellow]  NFS mount path '{mountPath}' not found[/]");
+                        AnsiConsole.MarkupLine($"[yellow]  To test NFS operations, mount the NFS share:[/]");
+                        AnsiConsole.MarkupLine($"[grey]    Linux: sudo mount -t nfs {host}:/data {mountPath}[/]");
+                        AnsiConsole.MarkupLine($"[grey]    Windows WSL: sudo mount -t nfs {host}:/data {mountPath}[/]");
+
+                        // Mark as N/A since we can't test file operations without mount
+                        result.UploadSuccess = null;
+                        result.ListSuccess = null;
+                        result.ReadSuccess = null;
+                        result.DeleteSuccess = null;
+                    }
+                    catch (Exception tcpEx)
+                    {
+                        result.Error = $"NFS server not reachable: {tcpEx.Message}";
+                    }
+                    return;
+                }
+
+                result.ConnectMs = sw.ElapsedMilliseconds;
+                result.Connected = true;
+
+                // Ensure base directory exists
+                if (!Directory.Exists(fullBasePath))
+                {
+                    Directory.CreateDirectory(fullBasePath);
+                }
+
+                var remotePath = Path.Combine(fullBasePath, fileName);
+
+                // Upload (Write file)
+                sw.Restart();
+                File.WriteAllText(remotePath, content);
+                result.UploadMs = sw.ElapsedMilliseconds;
+                result.UploadSuccess = true;
+
+                // List
+                sw.Restart();
+                var files = Directory.GetFiles(fullBasePath);
+                result.ListMs = sw.ElapsedMilliseconds;
+                result.ListSuccess = files.Any(f => Path.GetFileName(f) == fileName);
+
+                // Read
+                sw.Restart();
+                var downloaded = File.ReadAllText(remotePath);
+                result.ReadMs = sw.ElapsedMilliseconds;
+                result.ReadSuccess = downloaded == content;
+
+                // Delete
+                sw.Restart();
+                File.Delete(remotePath);
+                result.DeleteMs = sw.ElapsedMilliseconds;
+                result.DeleteSuccess = !File.Exists(remotePath);
             });
         }
         catch (Exception ex)

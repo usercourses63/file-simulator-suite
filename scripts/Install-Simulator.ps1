@@ -497,6 +497,12 @@ $appsettings = @"
       "Username": "smbuser",
       "Password": "smbpass123",
       "BasePath": "output"
+    },
+    "Nfs": {
+      "Host": "$minikubeIP",
+      "Port": 32149,
+      "MountPath": "/mnt/nfs",
+      "BasePath": "output"
     }
   },
   "TestSettings": {
