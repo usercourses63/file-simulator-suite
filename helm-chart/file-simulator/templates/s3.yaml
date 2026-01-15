@@ -29,7 +29,7 @@ spec:
           imagePullPolicy: {{ .Values.s3.image.pullPolicy }}
           args:
             - server
-            - /minio-data
+            - /shared
             - --console-address
             - ":9001"
           ports:
@@ -45,8 +45,6 @@ spec:
             - name: MINIO_ROOT_PASSWORD
               value: {{ .Values.s3.auth.rootPassword }}
           volumeMounts:
-            - name: minio-data
-              mountPath: /minio-data
             - name: shared-data
               mountPath: /shared
           livenessProbe:
@@ -64,8 +62,6 @@ spec:
           resources:
             {{- toYaml .Values.s3.resources | nindent 12 }}
       volumes:
-        - name: minio-data
-          emptyDir: {}
         - name: shared-data
           persistentVolumeClaim:
             claimName: {{ include "file-simulator.fullname" . }}-pvc

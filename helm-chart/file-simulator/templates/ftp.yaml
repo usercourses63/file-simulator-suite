@@ -51,9 +51,11 @@ spec:
               value: {{ .Values.ftp.passiveAddress | default "127.0.0.1" | quote }}
             - name: LOG_STDOUT
               value: "YES"
+            - name: LOCAL_UMASK
+              value: "022"
           volumeMounts:
             - name: data
-              mountPath: /home/vsftpd
+              mountPath: /home/vsftpd/{{ .Values.ftp.auth.username }}
           securityContext:
             privileged: true
           resources:

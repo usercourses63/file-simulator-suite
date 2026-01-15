@@ -36,6 +36,13 @@ public class Program
         AnsiConsole.Write(new Rule("[yellow]Protocol Test Suite[/]").RuleStyle("grey"));
         AnsiConsole.WriteLine();
 
+        // Check for cross-protocol test mode
+        if (args.Contains("--cross-protocol") || args.Contains("-x"))
+        {
+            await CrossProtocolTest.RunAsync(config);
+            return;
+        }
+
         var results = new List<TestResult>();
         var testContent = $"Test file created at {DateTime.UtcNow:O}\nThis is a test file for protocol validation.";
         var testFileName = $"test-{DateTime.UtcNow:yyyyMMdd-HHmmss}.txt";
@@ -305,8 +312,8 @@ public class Program
         var serviceUrl = config["FileSimulator:S3:ServiceUrl"] ?? "http://localhost:30900";
         var accessKey = config["FileSimulator:S3:AccessKey"] ?? "minioadmin";
         var secretKey = config["FileSimulator:S3:SecretKey"] ?? "minioadmin123";
-        var bucketName = config["FileSimulator:S3:BucketName"] ?? "simulator";
-        var basePath = config["FileSimulator:S3:BasePath"] ?? "output";
+        var bucketName = config["FileSimulator:S3:BucketName"] ?? "output";
+        var basePath = config["FileSimulator:S3:BasePath"] ?? "";
 
         try
         {
@@ -326,7 +333,7 @@ public class Program
             result.Connected = buckets.Buckets.Any(b => b.BucketName == bucketName);
 
             // Upload
-            var key = $"{basePath}/{fileName}";
+            var key = string.IsNullOrEmpty(basePath) ? fileName : $"{basePath}/{fileName}";
             sw.Restart();
             await client.PutObjectAsync(new PutObjectRequest
             {
@@ -342,7 +349,7 @@ public class Program
             var listResponse = await client.ListObjectsV2Async(new ListObjectsV2Request
             {
                 BucketName = bucketName,
-                Prefix = basePath
+                Prefix = string.IsNullOrEmpty(basePath) ? null : basePath
             });
             result.ListMs = sw.ElapsedMilliseconds;
             result.ListSuccess = listResponse.S3Objects.Any(o => o.Key == key);
