@@ -1,6 +1,8 @@
+using FileSimulator.Client.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Extensions.Http;
 
@@ -175,4 +177,183 @@ public static class ServiceCollectionExtensions
 
         return options;
     }
+
+    #region Individual Protocol Service Registration
+
+    /// <summary>
+    /// Adds FtpFileService for direct dependency injection
+    /// </summary>
+    public static IServiceCollection AddFtpFileService(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.Configure<FtpServerOptions>(configuration.GetSection("FileSimulator:Ftp"));
+        services.AddSingleton<FtpFileService>();
+        services.AddSingleton<IFileProtocolService>(sp => sp.GetRequiredService<FtpFileService>());
+        return services;
+    }
+
+    /// <summary>
+    /// Adds FtpFileService with explicit options
+    /// </summary>
+    public static IServiceCollection AddFtpFileService(
+        this IServiceCollection services,
+        Action<FtpServerOptions> configureOptions)
+    {
+        services.Configure(configureOptions);
+        services.AddSingleton<FtpFileService>();
+        services.AddSingleton<IFileProtocolService>(sp => sp.GetRequiredService<FtpFileService>());
+        return services;
+    }
+
+    /// <summary>
+    /// Adds SftpFileService for direct dependency injection
+    /// </summary>
+    public static IServiceCollection AddSftpFileService(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.Configure<SftpServerOptions>(configuration.GetSection("FileSimulator:Sftp"));
+        services.AddSingleton<SftpFileService>();
+        services.AddSingleton<IFileProtocolService>(sp => sp.GetRequiredService<SftpFileService>());
+        return services;
+    }
+
+    /// <summary>
+    /// Adds SftpFileService with explicit options
+    /// </summary>
+    public static IServiceCollection AddSftpFileService(
+        this IServiceCollection services,
+        Action<SftpServerOptions> configureOptions)
+    {
+        services.Configure(configureOptions);
+        services.AddSingleton<SftpFileService>();
+        services.AddSingleton<IFileProtocolService>(sp => sp.GetRequiredService<SftpFileService>());
+        return services;
+    }
+
+    /// <summary>
+    /// Adds S3FileService for direct dependency injection
+    /// </summary>
+    public static IServiceCollection AddS3FileService(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.Configure<S3ServerOptions>(configuration.GetSection("FileSimulator:S3"));
+        services.AddSingleton<S3FileService>();
+        services.AddSingleton<IFileProtocolService>(sp => sp.GetRequiredService<S3FileService>());
+        return services;
+    }
+
+    /// <summary>
+    /// Adds S3FileService with explicit options
+    /// </summary>
+    public static IServiceCollection AddS3FileService(
+        this IServiceCollection services,
+        Action<S3ServerOptions> configureOptions)
+    {
+        services.Configure(configureOptions);
+        services.AddSingleton<S3FileService>();
+        services.AddSingleton<IFileProtocolService>(sp => sp.GetRequiredService<S3FileService>());
+        return services;
+    }
+
+    /// <summary>
+    /// Adds HttpFileService for direct dependency injection
+    /// </summary>
+    public static IServiceCollection AddHttpFileService(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.Configure<HttpServerOptions>(configuration.GetSection("FileSimulator:Http"));
+        services.AddSingleton<HttpFileService>();
+        services.AddSingleton<IFileProtocolService>(sp => sp.GetRequiredService<HttpFileService>());
+        return services;
+    }
+
+    /// <summary>
+    /// Adds HttpFileService with explicit options
+    /// </summary>
+    public static IServiceCollection AddHttpFileService(
+        this IServiceCollection services,
+        Action<HttpServerOptions> configureOptions)
+    {
+        services.Configure(configureOptions);
+        services.AddSingleton<HttpFileService>();
+        services.AddSingleton<IFileProtocolService>(sp => sp.GetRequiredService<HttpFileService>());
+        return services;
+    }
+
+    /// <summary>
+    /// Adds SmbFileService for direct dependency injection
+    /// </summary>
+    public static IServiceCollection AddSmbFileService(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.Configure<SmbServerOptions>(configuration.GetSection("FileSimulator:Smb"));
+        services.AddSingleton<SmbFileService>();
+        services.AddSingleton<IFileProtocolService>(sp => sp.GetRequiredService<SmbFileService>());
+        return services;
+    }
+
+    /// <summary>
+    /// Adds SmbFileService with explicit options
+    /// </summary>
+    public static IServiceCollection AddSmbFileService(
+        this IServiceCollection services,
+        Action<SmbServerOptions> configureOptions)
+    {
+        services.Configure(configureOptions);
+        services.AddSingleton<SmbFileService>();
+        services.AddSingleton<IFileProtocolService>(sp => sp.GetRequiredService<SmbFileService>());
+        return services;
+    }
+
+    /// <summary>
+    /// Adds NfsFileService for direct dependency injection.
+    /// NFS uses mounted filesystem approach - ensure NFS is mounted at the configured path.
+    /// </summary>
+    public static IServiceCollection AddNfsFileService(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.Configure<NfsServerOptions>(configuration.GetSection("FileSimulator:Nfs"));
+        services.AddSingleton<NfsFileService>();
+        services.AddSingleton<IFileProtocolService>(sp => sp.GetRequiredService<NfsFileService>());
+        return services;
+    }
+
+    /// <summary>
+    /// Adds NfsFileService with explicit options.
+    /// NFS uses mounted filesystem approach - ensure NFS is mounted at the configured path.
+    /// </summary>
+    public static IServiceCollection AddNfsFileService(
+        this IServiceCollection services,
+        Action<NfsServerOptions> configureOptions)
+    {
+        services.Configure(configureOptions);
+        services.AddSingleton<NfsFileService>();
+        services.AddSingleton<IFileProtocolService>(sp => sp.GetRequiredService<NfsFileService>());
+        return services;
+    }
+
+    /// <summary>
+    /// Adds all file protocol services for direct dependency injection.
+    /// Each service can be injected individually or via IEnumerable&lt;IFileProtocolService&gt;.
+    /// </summary>
+    public static IServiceCollection AddAllFileProtocolServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.AddFtpFileService(configuration);
+        services.AddSftpFileService(configuration);
+        services.AddS3FileService(configuration);
+        services.AddHttpFileService(configuration);
+        services.AddSmbFileService(configuration);
+        services.AddNfsFileService(configuration);
+        return services;
+    }
+
+    #endregion
 }
