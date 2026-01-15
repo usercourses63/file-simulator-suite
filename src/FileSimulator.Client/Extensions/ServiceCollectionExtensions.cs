@@ -89,6 +89,12 @@ public static class ServiceCollectionExtensions
             name: "file-simulator-http",
             tags: new[] { "file-simulator", "http" });
 
+        // NFS Health Check (TCP to NFS port)
+        builder.AddTcpHealthCheck(
+            setup => setup.AddHost(options.NfsHost, options.NfsPort),
+            name: "file-simulator-nfs",
+            tags: new[] { "file-simulator", "nfs" });
+
         return builder;
     }
 
@@ -158,6 +164,14 @@ public static class ServiceCollectionExtensions
         // HTTP
         if (Environment.GetEnvironmentVariable("FILE_HTTP_URL") is { } httpUrl)
             options.HttpBaseUrl = httpUrl;
+
+        // NFS
+        if (Environment.GetEnvironmentVariable("FILE_NFS_MOUNT_PATH") is { } nfsMountPath)
+            options.NfsMountPath = nfsMountPath;
+        if (Environment.GetEnvironmentVariable("FILE_NFS_HOST") is { } nfsHost)
+            options.NfsHost = nfsHost;
+        if (int.TryParse(Environment.GetEnvironmentVariable("FILE_NFS_PORT"), out var nfsPort))
+            options.NfsPort = nfsPort;
 
         return options;
     }

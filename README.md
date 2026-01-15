@@ -358,6 +358,12 @@ Configure the client to connect to the simulator:
       "Username": "smbuser",
       "Password": "smbpass123",
       "BasePath": "output"
+    },
+    "Nfs": {
+      "Host": "172.23.17.71",
+      "Port": 32149,
+      "MountPath": "/mnt/nfs",
+      "BasePath": "output"
     }
   },
   "TestSettings": {
@@ -773,6 +779,90 @@ public class SftpFileService : ISftpFileService, IDisposable
 }
 ```
 
+### NFS Client Example
+
+NFS requires the share to be mounted locally. The client works with the mounted filesystem.
+
+```csharp
+using Microsoft.Extensions.Options;
+
+public class NfsFileService : INfsFileService
+{
+    private readonly NfsOptions _options;
+    private readonly ILogger<NfsFileService> _logger;
+
+    public NfsFileService(IOptions<NfsOptions> options, ILogger<NfsFileService> logger)
+    {
+        _options = options.Value;
+        _logger = logger;
+    }
+
+    public async Task<bool> UploadFileAsync(string localPath, string remotePath, CancellationToken ct = default)
+    {
+        var fullPath = Path.Combine(_options.MountPath, _options.BasePath.TrimStart('/'), remotePath.TrimStart('/'));
+        var directory = Path.GetDirectoryName(fullPath);
+
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        await Task.Run(() => File.Copy(localPath, fullPath, overwrite: true), ct);
+        _logger.LogInformation("Uploaded {LocalPath} to NFS:{RemotePath}", localPath, fullPath);
+        return true;
+    }
+
+    public async Task<byte[]> DownloadFileAsync(string remotePath, CancellationToken ct = default)
+    {
+        var fullPath = Path.Combine(_options.MountPath, _options.BasePath.TrimStart('/'), remotePath.TrimStart('/'));
+        return await File.ReadAllBytesAsync(fullPath, ct);
+    }
+
+    public Task<IEnumerable<string>> ListFilesAsync(string path = "", string pattern = "*", CancellationToken ct = default)
+    {
+        var fullPath = Path.Combine(_options.MountPath, _options.BasePath.TrimStart('/'), path.TrimStart('/'));
+
+        if (!Directory.Exists(fullPath))
+        {
+            return Task.FromResult(Enumerable.Empty<string>());
+        }
+
+        var files = Directory.GetFiles(fullPath, pattern).Select(f => Path.GetFileName(f));
+        return Task.FromResult(files);
+    }
+
+    public bool IsMountAvailable()
+    {
+        return Directory.Exists(_options.MountPath);
+    }
+}
+
+public class NfsOptions
+{
+    public string Host { get; set; } = "localhost";
+    public int Port { get; set; } = 2049;
+    public string MountPath { get; set; } = "/mnt/nfs";
+    public string BasePath { get; set; } = "output";
+}
+```
+
+**Mounting NFS on Windows (via WSL):**
+
+```powershell
+# In WSL2
+sudo apt install nfs-common
+sudo mkdir -p /mnt/nfs
+sudo mount -t nfs 172.23.17.71:/data /mnt/nfs
+```
+
+**Mounting NFS on Linux:**
+
+```bash
+sudo apt install nfs-common
+sudo mkdir -p /mnt/nfs
+sudo mount -t nfs 172.23.17.71:/data /mnt/nfs
+```
+
 ### Console Test Application
 
 The project includes a test console application at `src/FileSimulator.TestConsole/`:
@@ -824,6 +914,11 @@ Update your microservice's `appsettings.json` or environment variables:
     "Smb": {
       "Host": "172.23.17.71",
       "Port": 445
+    },
+    "Nfs": {
+      "Host": "172.23.17.71",
+      "Port": 32149,
+      "MountPath": "/mnt/nfs"
     }
   }
 }
@@ -848,6 +943,9 @@ data:
   FILE_S3_ACCESS_KEY: "minioadmin"
   FILE_SMB_HOST: "172.23.17.71"
   FILE_SMB_PORT: "445"
+  FILE_NFS_HOST: "172.23.17.71"
+  FILE_NFS_PORT: "32149"
+  FILE_NFS_MOUNT_PATH: "/mnt/nfs"
 ---
 apiVersion: v1
 kind: Secret

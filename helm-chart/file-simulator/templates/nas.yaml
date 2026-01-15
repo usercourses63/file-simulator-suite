@@ -90,11 +90,9 @@ spec:
           resources:
             {{- toYaml .Values.nas.resources | nindent 12 }}
       volumes:
-        # Note: erichough/nfs-server requires filesystem with proper NFS support
-        # In minikube with 9p mount, we use emptyDir (no shared data with other protocols)
-        # In OCP/production with proper storage, change to PVC
         - name: data
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: {{ include "file-simulator.fullname" . }}-pvc
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

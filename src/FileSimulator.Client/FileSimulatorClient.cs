@@ -194,6 +194,59 @@ public class FileSimulatorClient : IDisposable
 
     #endregion
 
+    #region NFS Operations
+
+    /// <summary>
+    /// Upload a file via NFS (requires NFS mount at configured path)
+    /// </summary>
+    public async Task UploadViaNfsAsync(string localPath, string remotePath)
+    {
+        var fullPath = Path.Combine(_options.NfsMountPath, remotePath.TrimStart('/'));
+        var directory = Path.GetDirectoryName(fullPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+        await Task.Run(() => File.Copy(localPath, fullPath, overwrite: true));
+    }
+
+    /// <summary>
+    /// Download a file via NFS (requires NFS mount at configured path)
+    /// </summary>
+    public async Task DownloadViaNfsAsync(string remotePath, string localPath)
+    {
+        var fullPath = Path.Combine(_options.NfsMountPath, remotePath.TrimStart('/'));
+        var directory = Path.GetDirectoryName(localPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+        await Task.Run(() => File.Copy(fullPath, localPath, overwrite: true));
+    }
+
+    /// <summary>
+    /// List files in NFS directory (requires NFS mount at configured path)
+    /// </summary>
+    public IEnumerable<string> ListNfsDirectory(string path = "/")
+    {
+        var fullPath = Path.Combine(_options.NfsMountPath, path.TrimStart('/'));
+        if (!Directory.Exists(fullPath))
+        {
+            return Enumerable.Empty<string>();
+        }
+        return Directory.GetFiles(fullPath).Select(f => Path.GetFileName(f));
+    }
+
+    /// <summary>
+    /// Check if NFS mount is available
+    /// </summary>
+    public bool IsNfsMountAvailable()
+    {
+        return Directory.Exists(_options.NfsMountPath);
+    }
+
+    #endregion
+
     #region Unified Operations
 
     /// <summary>
@@ -215,6 +268,9 @@ public class FileSimulatorClient : IDisposable
                 break;
             case FileProtocol.HTTP:
                 await UploadViaHttpAsync(localPath, remotePath);
+                break;
+            case FileProtocol.NFS:
+                await UploadViaNfsAsync(localPath, remotePath);
                 break;
             default:
                 throw new ArgumentException($"Unsupported protocol: {protocol}");
@@ -240,6 +296,9 @@ public class FileSimulatorClient : IDisposable
                 break;
             case FileProtocol.HTTP:
                 await DownloadViaHttpAsync(remotePath, localPath);
+                break;
+            case FileProtocol.NFS:
+                await DownloadViaNfsAsync(remotePath, localPath);
                 break;
             default:
                 throw new ArgumentException($"Unsupported protocol: {protocol}");
@@ -305,6 +364,11 @@ public class FileSimulatorOptions
     public string SmbUsername { get; set; } = "smbuser";
     public string SmbPassword { get; set; } = "smbpass123";
 
+    // NFS Settings
+    public string NfsMountPath { get; set; } = "/mnt/nfs";
+    public string NfsHost { get; set; } = "localhost";
+    public int NfsPort { get; set; } = 2049;
+
     /// <summary>
     /// Creates options from environment variables
     /// </summary>
@@ -333,7 +397,11 @@ public class FileSimulatorOptions
             SmbHost = Environment.GetEnvironmentVariable("FILE_SMB_HOST") ?? "localhost",
             SmbShare = Environment.GetEnvironmentVariable("FILE_SMB_SHARE") ?? "simulator",
             SmbUsername = Environment.GetEnvironmentVariable("FILE_SMB_USERNAME") ?? "smbuser",
-            SmbPassword = Environment.GetEnvironmentVariable("FILE_SMB_PASSWORD") ?? "smbpass123"
+            SmbPassword = Environment.GetEnvironmentVariable("FILE_SMB_PASSWORD") ?? "smbpass123",
+
+            NfsMountPath = Environment.GetEnvironmentVariable("FILE_NFS_MOUNT_PATH") ?? "/mnt/nfs",
+            NfsHost = Environment.GetEnvironmentVariable("FILE_NFS_HOST") ?? "localhost",
+            NfsPort = int.Parse(Environment.GetEnvironmentVariable("FILE_NFS_PORT") ?? "2049")
         };
     }
 
@@ -350,7 +418,10 @@ public class FileSimulatorOptions
             SftpPort = 30022,
             S3Endpoint = $"http://{minikubeIp}:30900",
             HttpBaseUrl = $"http://{minikubeIp}:30088",
-            SmbHost = minikubeIp
+            SmbHost = minikubeIp,
+            NfsHost = minikubeIp,
+            NfsPort = 32149,
+            NfsMountPath = "/mnt/nfs"
         };
     }
 
@@ -361,7 +432,7 @@ public class FileSimulatorOptions
     {
         var prefix = $"{releaseName}-file-simulator";
         var suffix = $".{@namespace}.svc.cluster.local";
-        
+
         return new FileSimulatorOptions
         {
             FtpHost = $"{prefix}-ftp{suffix}",
@@ -370,7 +441,10 @@ public class FileSimulatorOptions
             SftpPort = 22,
             S3Endpoint = $"http://{prefix}-s3{suffix}:9000",
             HttpBaseUrl = $"http://{prefix}-http{suffix}",
-            SmbHost = $"{prefix}-smb{suffix}"
+            SmbHost = $"{prefix}-smb{suffix}",
+            NfsHost = $"{prefix}-nas{suffix}",
+            NfsPort = 2049,
+            NfsMountPath = "/mnt/nfs"
         };
     }
 }
