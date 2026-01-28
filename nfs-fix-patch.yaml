@@ -1,0 +1,16 @@
+spec:
+  template:
+    spec:
+      containers:
+      - name: nfs-server
+        volumeMounts:
+        - name: nfs-data
+          mountPath: /data
+        - name: shared-data
+          mountPath: /shared
+      volumes:
+      - name: nfs-data
+        emptyDir: {}
+      - name: shared-data
+        persistentVolumeClaim:
+          claimName: file-sim-file-simulator-pvc

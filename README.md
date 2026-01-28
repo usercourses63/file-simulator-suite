@@ -10,12 +10,14 @@ A comprehensive file access simulator for Kubernetes development and testing. Th
 - [Installation](#-installation)
   - [Automated Installation](#automated-installation)
   - [Manual Installation](#manual-installation)
+- [Multi-Profile Setup (IMPORTANT)](#-multi-profile-setup-important)
 - [Service Endpoints](#-service-endpoints)
 - [Configuration](#-configuration)
 - [.NET Client Library](#-net-client-library)
 - [Cross-Cluster Configuration](#-cross-cluster-configuration)
 - [Testing](#-testing)
 - [Troubleshooting](#-troubleshooting)
+  - [NFS Server Fix (Critical)](#nfs-server-fix-critical)
 - [Project Structure](#-project-structure)
 
 ---
@@ -157,17 +159,18 @@ icacls $basePath /grant Everyone:F /T
 minikube delete -p file-simulator
 
 # Create new cluster with Hyper-V driver
+# VERIFIED CONFIGURATION: 8GB RAM, 4 CPUs for stable operation of all 8 protocols
 minikube start `
     --profile file-simulator `
     --driver=hyperv `
-    --memory=4096 `
-    --cpus=2 `
+    --memory=8192 `
+    --cpus=4 `
     --disk-size=20g `
     --mount `
     --mount-string="C:\simulator-data:/mnt/simulator-data"
 
-# Set as default profile
-minikube profile file-simulator
+# DO NOT set as default profile if you have other clusters
+# Use --context flag instead (see Multi-Profile Setup section)
 ```
 
 #### Step 3: Deploy Helm Chart
@@ -181,9 +184,45 @@ helm upgrade --install file-sim ./helm-chart/file-simulator `
     --namespace file-simulator `
     --create-namespace
 
-# Wait for pods to be ready
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/part-of=file-simulator-suite `
-    -n file-simulator --timeout=300s
+# Wait for pods to be ready (7 out of 8 will start immediately)
+kubectl --context=file-simulator get pods -n file-simulator
+
+# NFS will be in CrashLoopBackOff - this is expected and will be fixed in next step
+```
+
+#### Step 3.1: Apply NFS Server Fix (REQUIRED)
+
+The NFS server cannot export Windows-mounted hostPath volumes. Apply this fix:
+
+```powershell
+# Create the NFS fix patch file
+@"
+spec:
+  template:
+    spec:
+      containers:
+      - name: nfs-server
+        volumeMounts:
+        - name: nfs-data
+          mountPath: /data
+        - name: shared-data
+          mountPath: /shared
+      volumes:
+      - name: nfs-data
+        emptyDir: {}
+      - name: shared-data
+        persistentVolumeClaim:
+          claimName: file-sim-file-simulator-pvc
+"@ | Out-File -FilePath nfs-fix-patch.yaml -Encoding UTF8
+
+# Apply the patch
+kubectl --context=file-simulator patch deployment file-sim-file-simulator-nas `
+    -n file-simulator `
+    --patch-file nfs-fix-patch.yaml
+
+# Verify NFS is now running
+Start-Sleep -Seconds 20
+kubectl --context=file-simulator get pods -n file-simulator | Select-String nas
 ```
 
 #### Step 4: Start Minikube Tunnel (Required for SMB)
@@ -193,11 +232,24 @@ kubectl wait --for=condition=ready pod -l app.kubernetes.io/part-of=file-simulat
 minikube tunnel -p file-simulator
 ```
 
-#### Step 5: Get Service Endpoints
+#### Step 5: Verify All 8 Protocols
 
 ```powershell
 # Get Minikube IP
 $MINIKUBE_IP = minikube ip -p file-simulator
+
+# Check all pods are running
+kubectl --context=file-simulator get pods -n file-simulator
+
+# All 8 pods should show 1/1 READY status:
+# - file-sim-file-simulator-ftp
+# - file-sim-file-simulator-sftp
+# - file-sim-file-simulator-http
+# - file-sim-file-simulator-webdav
+# - file-sim-file-simulator-s3
+# - file-sim-file-simulator-smb
+# - file-sim-file-simulator-nas (NFS)
+# - file-sim-file-simulator-management
 
 # Display endpoints
 Write-Host "Service Endpoints:"
@@ -205,10 +257,151 @@ Write-Host "  Management UI: http://$MINIKUBE_IP`:30180"
 Write-Host "  FTP:           ftp://$MINIKUBE_IP`:30021"
 Write-Host "  SFTP:          sftp://$MINIKUBE_IP`:30022"
 Write-Host "  HTTP:          http://$MINIKUBE_IP`:30088"
+Write-Host "  WebDAV:        http://$MINIKUBE_IP`:30089"
 Write-Host "  S3 API:        http://$MINIKUBE_IP`:30900"
 Write-Host "  S3 Console:    http://$MINIKUBE_IP`:30901"
+Write-Host "  NFS:           $MINIKUBE_IP`:32149"
 Write-Host "  SMB:           \\$MINIKUBE_IP\simulator"
 ```
+
+---
+
+## Multi-Profile Setup (IMPORTANT)
+
+### Why Use Separate Minikube Profiles?
+
+If you're running multiple Kubernetes environments (e.g., ez-platform on Docker driver + file-simulator on Hyper-V), using separate profiles prevents accidental operations on the wrong cluster.
+
+**CRITICAL SAFETY RULE:** Always use `--context` flag with kubectl commands to explicitly target the correct cluster.
+
+### Profile Architecture (Recommended Setup)
+
+```
+Host Machine
+├── Minikube Profile: "minikube" (Docker driver)
+│   └── Namespace: ez-platform
+│       └── Your production/test services
+│
+└── Minikube Profile: "file-simulator" (Hyper-V driver)
+    └── Namespace: file-simulator
+        └── 8 file transfer protocol services
+```
+
+**Key Benefits:**
+- ✅ Complete isolation between environments
+- ✅ Different drivers (Docker vs Hyper-V)
+- ✅ No resource competition
+- ✅ Independent scaling and configuration
+
+### Safe kubectl Operations
+
+**❌ DANGEROUS - DO NOT DO THIS:**
+```powershell
+# Switching contexts is error-prone
+kubectl config use-context file-simulator
+kubectl delete pod <name> -n file-simulator
+
+kubectl config use-context minikube
+kubectl delete pod <name> -n ez-platform
+
+# Problem: Easy to forget which context is active!
+```
+
+**✅ SAFE - ALWAYS USE --context FLAG:**
+```powershell
+# Explicitly specify context in every command
+kubectl --context=file-simulator get pods -n file-simulator
+kubectl --context=file-simulator logs <pod-name> -n file-simulator
+kubectl --context=file-simulator delete pod <name> -n file-simulator
+
+kubectl --context=minikube get pods -n ez-platform
+kubectl --context=minikube logs <pod-name> -n ez-platform
+kubectl --context=minikube delete pod <name> -n ez-platform
+```
+
+### PowerShell Helper Functions (Optional)
+
+Add to your PowerShell profile for convenience:
+
+```powershell
+# Edit profile: notepad $PROFILE
+
+# File Simulator shortcuts
+function k-fs { kubectl --context=file-simulator --namespace=file-simulator $args }
+function helm-fs { helm --kube-context=file-simulator $args }
+
+# ez-platform shortcuts
+function k-ez { kubectl --context=minikube --namespace=ez-platform $args }
+function helm-ez { helm --kube-context=minikube $args }
+
+# Usage examples:
+# k-fs get pods
+# k-fs logs <pod-name>
+# k-ez get pods
+# helm-fs upgrade file-sim ./helm-chart/file-simulator
+```
+
+### Verify Current Context
+
+```powershell
+# Check which contexts exist
+kubectl config get-contexts
+
+# Output shows:
+# CURRENT   NAME             CLUSTER
+# *         file-simulator   file-simulator
+#           minikube         minikube
+
+# The * indicates active context, but IGNORE THIS - always use --context flag!
+```
+
+### Profile Management Commands
+
+```powershell
+# List all Minikube profiles
+minikube profile list
+
+# Get IP of specific profile
+minikube ip -p file-simulator   # Hyper-V cluster
+minikube ip -p minikube          # Docker cluster
+
+# Stop specific profile
+minikube stop -p file-simulator
+minikube stop -p minikube
+
+# Start specific profile
+minikube start -p file-simulator
+minikube start -p minikube
+
+# Delete specific profile (CAREFUL!)
+minikube delete -p file-simulator  # Only deletes file-simulator
+```
+
+### Helm Operations with Multiple Profiles
+
+```powershell
+# Deploy to file-simulator cluster
+helm upgrade --install file-sim ./helm-chart/file-simulator `
+    --kube-context=file-simulator `
+    --namespace file-simulator `
+    --create-namespace
+
+# List releases in specific cluster
+helm list --kube-context=file-simulator -A
+helm list --kube-context=minikube -A
+
+# Uninstall from specific cluster
+helm uninstall file-sim --kube-context=file-simulator -n file-simulator
+```
+
+### Best Practices Summary
+
+1. **Never use `kubectl config use-context`** - it causes accidental deletions
+2. **Always include `--context=<profile-name>` flag** in kubectl commands
+3. **Always include `--kube-context=<profile-name>` flag** in helm commands
+4. **Use PowerShell functions** to enforce context safety
+5. **Keep one namespace per profile** for clarity
+6. **Label terminal windows** with their target profile
 
 ---
 
@@ -882,41 +1075,65 @@ dotnet run -- --protocol ftp --action upload --file test.txt
 
 ### Scenario: Microservices in Different Minikube Cluster
 
-When your microservices run in a different Minikube cluster (e.g., Docker driver) than the simulator (Hyper-V driver), configure them to use the external IP:
+When your microservices run in a different Minikube cluster (e.g., `minikube` profile with Docker driver) than the simulator (`file-simulator` profile with Hyper-V driver), configure them to use the NodePort endpoints:
 
-#### Step 1: Get Simulator IP
+#### Step 1: Get Simulator IP and Verify Services
 
 ```powershell
-# Get the Hyper-V Minikube IP
+# Get the Hyper-V file-simulator cluster IP
 $SIMULATOR_IP = minikube ip -p file-simulator
 Write-Host "Simulator IP: $SIMULATOR_IP"
-# Example output: 172.23.17.71
+# Example output: 172.25.201.3
+
+# Verify all services are running
+kubectl --context=file-simulator get svc -n file-simulator
+
+# Verify all 8 pods are healthy
+kubectl --context=file-simulator get pods -n file-simulator
+# All should show STATUS=Running, READY=1/1
 ```
 
 #### Step 2: Configure Microservice appsettings
 
-Update your microservice's `appsettings.json` or environment variables:
+Update your microservice's `appsettings.json` with the actual Simulator IP (get it from `minikube ip -p file-simulator`):
 
 ```json
 {
   "FileSimulator": {
     "Ftp": {
-      "Host": "172.23.17.71",
-      "Port": 30021
+      "Host": "172.25.201.3",
+      "Port": 30021,
+      "Username": "ftpuser",
+      "Password": "ftppass123"
     },
     "Sftp": {
-      "Host": "172.23.17.71",
-      "Port": 30022
+      "Host": "172.25.201.3",
+      "Port": 30022,
+      "Username": "sftpuser",
+      "Password": "sftppass123"
+    },
+    "Http": {
+      "BaseUrl": "http://172.25.201.3:30088"
+    },
+    "WebDav": {
+      "BaseUrl": "http://172.25.201.3:30089",
+      "Username": "httpuser",
+      "Password": "httppass123"
     },
     "S3": {
-      "ServiceUrl": "http://172.23.17.71:30900"
+      "ServiceUrl": "http://172.25.201.3:30900",
+      "AccessKey": "minioadmin",
+      "SecretKey": "minioadmin123"
     },
     "Smb": {
-      "Host": "172.23.17.71",
-      "Port": 445
+      "Host": "172.25.201.3",
+      "Port": 445,
+      "ShareName": "simulator",
+      "Username": "smbuser",
+      "Password": "smbpass123"
     },
     "Nfs": {
-      "Host": "172.23.17.71",
+      "Host": "172.25.201.3",
       "Port": 32149,
       "MountPath": "/mnt/nfs"
     }
@@ -926,47 +1143,62 @@ Update your microservice's `appsettings.json` or environment variables:
 
 #### Step 3: Deploy ConfigMap in Microservice Cluster
 
-```yaml
-# file-simulator-config.yaml
+**Important**: Deploy this to your OTHER cluster (e.g., minikube profile with Docker driver):
+
+```powershell
+# First, get the file-simulator IP
+$SIMULATOR_IP = minikube ip -p file-simulator
+Write-Host "Using Simulator IP: $SIMULATOR_IP"
+
+# Create ConfigMap (replace IP in the YAML below with your $SIMULATOR_IP)
+kubectl --context=minikube apply -f - <<EOF
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: file-simulator-config
-  namespace: your-namespace
+  namespace: ez-platform
 data:
-  FILE_FTP_HOST: "172.23.17.71"
+  FILE_FTP_HOST: "$SIMULATOR_IP"
   FILE_FTP_PORT: "30021"
-  FILE_SFTP_HOST: "172.23.17.71"
+  FILE_SFTP_HOST: "$SIMULATOR_IP"
   FILE_SFTP_PORT: "30022"
-  FILE_HTTP_URL: "http://172.23.17.71:30088"
-  FILE_S3_ENDPOINT: "http://172.23.17.71:30900"
+  FILE_HTTP_URL: "http://$SIMULATOR_IP:30088"
+  FILE_WEBDAV_URL: "http://$SIMULATOR_IP:30089"
+  FILE_S3_ENDPOINT: "http://$SIMULATOR_IP:30900"
   FILE_S3_ACCESS_KEY: "minioadmin"
-  FILE_SMB_HOST: "172.23.17.71"
+  FILE_SMB_HOST: "$SIMULATOR_IP"
   FILE_SMB_PORT: "445"
-  FILE_NFS_HOST: "172.23.17.71"
+  FILE_NFS_HOST: "$SIMULATOR_IP"
   FILE_NFS_PORT: "32149"
-  FILE_NFS_MOUNT_PATH: "/mnt/nfs"
 ---
 apiVersion: v1
 kind: Secret
 metadata:
   name: file-simulator-secrets
-  namespace: your-namespace
+  namespace: ez-platform
 type: Opaque
 stringData:
+  FILE_FTP_USERNAME: "ftpuser"
   FILE_FTP_PASSWORD: "ftppass123"
+  FILE_SFTP_USERNAME: "sftpuser"
   FILE_SFTP_PASSWORD: "sftppass123"
+  FILE_HTTP_USERNAME: "httpuser"
+  FILE_HTTP_PASSWORD: "httppass123"
   FILE_S3_SECRET_KEY: "minioadmin123"
+  FILE_SMB_USERNAME: "smbuser"
   FILE_SMB_PASSWORD: "smbpass123"
+EOF
 ```
 
-#### Step 4: Use in Deployment
+#### Step 4: Use in Your Deployment
 
 ```yaml
+# Deploy to ez-platform namespace in minikube cluster
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: your-microservice
+  namespace: ez-platform
 spec:
   template:
     spec:
@@ -978,13 +1210,21 @@ spec:
                 name: file-simulator-config
             - secretRef:
                 name: file-simulator-secrets
+
+# Apply with:
+# kubectl --context=minikube apply -f your-deployment.yaml
 ```
 
 ### NFS PersistentVolume for Cross-Cluster Access
 
-To mount the file-simulator's NFS share in your application cluster:
+To mount the file-simulator's NFS share in your application cluster (e.g., ez-platform in minikube profile):
 
-```yaml
+```powershell
+# Get file-simulator IP first
+$SIMULATOR_IP = minikube ip -p file-simulator
+
+# Apply to your application cluster (use correct context!)
+kubectl --context=minikube apply -f - <<EOF
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -996,19 +1236,17 @@ spec:
     - ReadWriteMany
   storageClassName: file-simulator-nfs
   nfs:
-    server: 172.23.17.71    # File-simulator node IP
-    path: /                  # NFSv4 root (fsid=0)
+    server: $SIMULATOR_IP    # File-simulator cluster IP (e.g., 172.25.201.3)
+    path: /data              # NFS export path
   mountOptions:
-    - nfsvers=4              # Use NFSv4 (single port)
-    - port=32149             # NFS NodePort
-    - nolock                 # Avoid lockd dependency
-    - soft                   # Better error handling
+    - nfsvers=4.2            # Use NFSv4.2 (single port)
+    - port=32149             # NFS NodePort from file-simulator cluster
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: file-simulator-nfs-pvc
-  namespace: your-namespace
+  namespace: ez-platform
 spec:
   accessModes:
     - ReadWriteMany
@@ -1017,9 +1255,14 @@ spec:
     requests:
       storage: 10Gi
   volumeName: file-simulator-nfs-pv
+EOF
 ```
 
-**Important:** The NFS path is `/` (not `/data`) because the export uses `fsid=0`, making `/data` the NFSv4 pseudo-root.
+**Important Notes:**
+- The NFS path is `/data` (the actual export path)
+- Use `--context=minikube` to deploy to your application cluster
+- NFSv4.2 with port parameter requires kernel NFS client support
+- Test connectivity before deploying PV/PVC
 
 ### Complete Examples
 
@@ -1031,26 +1274,64 @@ See [`examples/client-cluster/`](examples/client-cluster/) for complete, tested 
 
 ### Network Considerations
 
-For cross-cluster communication:
+For cross-cluster communication between different Minikube profiles:
 
-1. **Both clusters must be on the same network** (default with Hyper-V and Docker Desktop)
+1. **Both clusters must be network-accessible** (Hyper-V and Docker drivers are typically on different networks)
 2. **Firewall rules** may need to allow traffic on NodePorts (30000-32767)
-3. **SMB (port 445)** requires `minikube tunnel` running on the simulator cluster
+3. **SMB (port 445)** requires `minikube tunnel` running on the file-simulator cluster
+4. **Use NodePort endpoints** for external access, not internal DNS names
 
-Test connectivity from microservice cluster:
+**Test connectivity from your application cluster:**
 
 ```powershell
-# From a pod in the microservice cluster
-kubectl run test-pod --rm -it --image=alpine -- sh
-# Inside pod:
+# Get simulator IP
+$SIMULATOR_IP = minikube ip -p file-simulator
+
+# Test from microservice cluster (use correct context!)
+kubectl --context=minikube run test-pod --rm -it --image=alpine -n ez-platform -- sh
+
+# Inside pod, test connectivity:
 apk add curl
-curl http://172.23.17.71:30088/health
-curl http://172.23.17.71:30900/minio/health/live
+curl http://172.25.201.3:30088/           # HTTP server
+curl http://172.25.201.3:30901/           # S3 console
+nc -zv 172.25.201.3 30021                 # FTP port
+nc -zv 172.25.201.3 30022                 # SFTP port
+nc -zv 172.25.201.3 32149                 # NFS port
 ```
+
+### Tested Configuration
+
+**Verified working configuration:**
+- **Profile:** file-simulator
+- **Driver:** Hyper-V
+- **Memory:** 8GB (8192 MB)
+- **CPUs:** 4
+- **Disk:** 20GB
+- **Mount:** C:\simulator-data → /mnt/simulator-data
+- **All 8 protocols:** Tested and operational ✅
+
+**Resource utilization at full load:**
+- CPU requests: 575m (~14% of 4 CPUs)
+- CPU limits: 1.9 CPUs (~48% of 4 CPUs)
+- Memory requests: 706Mi (~9% of 8GB)
+- Memory limits: 2.8Gi (~35% of 8GB)
+
+**Recommended minimum:** 4GB RAM, 2 CPUs (tight)
+**Recommended comfortable:** 8GB RAM, 4 CPUs (tested ✅)
+**Production recommended:** 12GB RAM, 6 CPUs (headroom)
 
 ---
 
 ## Testing
+
+### Quick Health Check
+
+```powershell
+# Verify all 8 pods are running
+kubectl --context=file-simulator get pods -n file-simulator
+
+# Expected output: All 8 pods with STATUS=Running, READY=1/1
+```
 
 ### Run Test Scripts
 
@@ -1059,74 +1340,223 @@ curl http://172.23.17.71:30900/minio/health/live
 .\scripts\test-simulator.ps1
 
 # With specific IP
-.\scripts\test-simulator.ps1 -MinikubeIp 172.23.17.71
+.\scripts\test-simulator.ps1 -MinikubeIp 172.25.201.3
 ```
 
 ### Manual Protocol Tests
 
+**Important**: Always use the correct Minikube IP for your file-simulator cluster:
+
+```powershell
+$SIMULATOR_IP = minikube ip -p file-simulator
+Write-Host "File Simulator IP: $SIMULATOR_IP"
+```
+
 #### FTP
 
 ```powershell
-$ip = minikube ip -p file-simulator
 # Using Windows FTP client
 ftp
-open $ip 30021
+open $SIMULATOR_IP 30021
 # Login: ftpuser / ftppass123
+
+# Commands to test:
+# dir              - list files
+# put test.txt     - upload file
+# get test.txt     - download file
+# bye              - disconnect
 ```
 
 #### SFTP
 
 ```powershell
+$SIMULATOR_IP = minikube ip -p file-simulator
+
 # Using OpenSSH (if installed)
-sftp -P 30022 sftpuser@172.23.17.71
+sftp -P 30022 sftpuser@$SIMULATOR_IP
 # Password: sftppass123
 
+# Commands to test:
+# ls               - list files
+# put test.txt     - upload file
+# get test.txt     - download file
+# exit             - disconnect
+
 # Or using WinSCP command line
-winscp.com /command "open sftp://sftpuser:sftppass123@172.23.17.71:30022/" "ls" "exit"
+winscp.com /command "open sftp://sftpuser:sftppass123@${SIMULATOR_IP}:30022/" "ls" "exit"
 ```
 
 #### S3 (MinIO)
 
 ```powershell
+$SIMULATOR_IP = minikube ip -p file-simulator
+
 # Using AWS CLI
 aws configure set aws_access_key_id minioadmin
 aws configure set aws_secret_access_key minioadmin123
-aws --endpoint-url http://172.23.17.71:30900 s3 ls
-aws --endpoint-url http://172.23.17.71:30900 s3 mb s3://test-bucket
-aws --endpoint-url http://172.23.17.71:30900 s3 cp test.txt s3://test-bucket/
+aws --endpoint-url http://${SIMULATOR_IP}:30900 s3 ls
+aws --endpoint-url http://${SIMULATOR_IP}:30900 s3 mb s3://test-bucket
+aws --endpoint-url http://${SIMULATOR_IP}:30900 s3 cp test.txt s3://test-bucket/
+
+# Or access MinIO Console in browser
+Start-Process "http://${SIMULATOR_IP}:30901"
 ```
 
 #### SMB
 
 ```powershell
-# Map network drive (requires minikube tunnel running)
-net use Z: \\172.23.17.71\simulator /user:smbuser smbpass123
+$SIMULATOR_IP = minikube ip -p file-simulator
+
+# IMPORTANT: Ensure minikube tunnel is running first!
+# In separate Administrator terminal: minikube tunnel -p file-simulator
+
+# Get LoadBalancer IP
+$SMB_IP = kubectl --context=file-simulator get svc file-sim-file-simulator-smb -n file-simulator -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+
+# Map network drive
+net use Z: \\${SMB_IP}\simulator /user:smbuser smbpass123
 
 # Test access
 dir Z:\
 echo "test" > Z:\output\test.txt
+type Z:\output\test.txt
 
-# Disconnect
+# Disconnect when done
 net use Z: /delete
 ```
 
 #### HTTP/WebDAV
 
 ```powershell
-# List files
-Invoke-RestMethod -Uri "http://172.23.17.71:30088/"
+$SIMULATOR_IP = minikube ip -p file-simulator
+
+# Test HTTP file server
+Invoke-RestMethod -Uri "http://${SIMULATOR_IP}:30088/"
 
 # Upload via WebDAV
-$cred = Get-Credential  # httpuser / httppass123
-Invoke-WebRequest -Uri "http://172.23.17.71:30089/output/test.txt" `
+$password = ConvertTo-SecureString "httppass123" -AsPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential ("httpuser", $password)
+Invoke-WebRequest -Uri "http://${SIMULATOR_IP}:30089/output/test.txt" `
     -Method PUT `
     -InFile "test.txt" `
     -Credential $cred
+
+# Download via HTTP
+Invoke-WebRequest -Uri "http://${SIMULATOR_IP}:30088/output/test.txt" -OutFile "downloaded.txt"
+```
+
+#### NFS
+
+```bash
+# From Linux or WSL
+SIMULATOR_IP=$(minikube ip -p file-simulator)
+
+# Install NFS client tools
+sudo apt install nfs-common
+
+# Create mount point
+sudo mkdir -p /mnt/nfs
+
+# Mount NFS share
+sudo mount -t nfs ${SIMULATOR_IP}:/data /mnt/nfs
+
+# Test operations
+echo "test" | sudo tee /mnt/nfs/test.txt
+cat /mnt/nfs/test.txt
+ls -lh /mnt/nfs/
+
+# Unmount when done
+sudo umount /mnt/nfs
+```
+
+**NFS Test from Kubernetes Pod:**
+
+```powershell
+# Create test pod that mounts NFS
+kubectl --context=file-simulator apply -f - <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nfs-test
+  namespace: file-simulator
+spec:
+  containers:
+  - name: test
+    image: alpine
+    command: ['sh', '-c', 'apk add nfs-utils && mkdir -p /mnt/nfs && mount -t nfs file-sim-file-simulator-nas.file-simulator.svc.cluster.local:/data /mnt/nfs && echo "test" > /mnt/nfs/test.txt && cat /mnt/nfs/test.txt && sleep 3600']
+  restartPolicy: Never
+EOF
+
+# Check logs
+kubectl --context=file-simulator logs nfs-test -n file-simulator
+
+# Cleanup
+kubectl --context=file-simulator delete pod nfs-test -n file-simulator
 ```
 
 ---
 
 ## Troubleshooting
+
+### NFS Server Fix (Critical)
+
+**Problem**: NFS pod crashes with error:
+```
+exportfs: /data does not support NFS export
+----> ERROR: /usr/sbin/exportfs failed
+```
+
+**Root Cause**: The NFS server cannot re-export a Windows-mounted hostPath volume (`/mnt/simulator-data`). This is a known limitation - NFS requires a native filesystem to create export tables.
+
+**Solution**: Patch the NFS deployment to use emptyDir for NFS exports:
+
+```powershell
+# Create patch file
+@"
+spec:
+  template:
+    spec:
+      containers:
+      - name: nfs-server
+        volumeMounts:
+        - name: nfs-data
+          mountPath: /data
+        - name: shared-data
+          mountPath: /shared
+      volumes:
+      - name: nfs-data
+        emptyDir: {}
+      - name: shared-data
+        persistentVolumeClaim:
+          claimName: file-sim-file-simulator-pvc
+"@ | Out-File -FilePath nfs-fix-patch.yaml -Encoding UTF8
+
+# Apply the patch
+kubectl --context=file-simulator patch deployment file-sim-file-simulator-nas `
+    -n file-simulator `
+    --patch-file nfs-fix-patch.yaml
+
+# Verify NFS is running
+Start-Sleep -Seconds 20
+kubectl --context=file-simulator logs -n file-simulator -l app.kubernetes.io/component=nas --tail=10
+
+# Should show: "READY AND WAITING FOR NFS CLIENT CONNECTIONS"
+```
+
+**How the Fix Works:**
+- `/data` → emptyDir (ephemeral storage for NFS daemon state/exports)
+- `/shared` → PVC (shared storage accessible to all protocols)
+- Clients mount NFS and access data through NFSv4 protocol
+- Files can still be shared across all protocols via the PVC at `/shared`
+
+**Verification:**
+```powershell
+# Test NFS connectivity
+kubectl --context=file-simulator exec -n file-simulator <nas-pod-name> -- ls -lh /data/
+
+# Test file operations
+kubectl --context=file-simulator exec -n file-simulator <nas-pod-name> -- sh -c "echo 'test' > /data/test.txt && cat /data/test.txt"
+```
 
 ### SMB Connection Issues
 
@@ -1136,7 +1566,7 @@ Invoke-WebRequest -Uri "http://172.23.17.71:30089/output/test.txt" `
 1. Ensure `minikube tunnel` is running in Administrator terminal
 2. Check if LoadBalancer has external IP:
    ```powershell
-   kubectl get svc -n file-simulator | findstr smb
+   kubectl --context=file-simulator get svc -n file-simulator | findstr smb
    # Should show EXTERNAL-IP, not <pending>
    ```
 3. Verify port 445 is not blocked by firewall
@@ -1166,18 +1596,25 @@ Invoke-WebRequest -Uri "http://172.23.17.71:30089/output/test.txt" `
 **Problem**: Pods stuck in `Pending` or `CrashLoopBackOff`
 
 **Solutions**:
-1. Check pod logs:
+1. Check pod logs (always use --context flag):
    ```powershell
-   kubectl logs -n file-simulator -l app.kubernetes.io/component=ftp
-   kubectl logs -n file-simulator -l app.kubernetes.io/component=smb
+   kubectl --context=file-simulator logs -n file-simulator -l app.kubernetes.io/component=ftp
+   kubectl --context=file-simulator logs -n file-simulator -l app.kubernetes.io/component=smb
+   kubectl --context=file-simulator logs -n file-simulator -l app.kubernetes.io/component=nas
    ```
 2. Check events:
    ```powershell
-   kubectl get events -n file-simulator --sort-by='.lastTimestamp'
+   kubectl --context=file-simulator get events -n file-simulator --sort-by='.lastTimestamp'
    ```
 3. Check resource availability:
    ```powershell
-   kubectl describe nodes
+   kubectl --context=file-simulator describe nodes
+   ```
+4. **If insufficient memory/CPU**: Increase cluster resources:
+   ```powershell
+   minikube delete -p file-simulator
+   minikube start -p file-simulator --driver=hyperv --memory=8192 --cpus=4 --disk-size=20g `
+       --mount --mount-string="C:\simulator-data:/mnt/simulator-data"
    ```
 
 ### Connection Refused from Microservice Cluster
@@ -1188,14 +1625,39 @@ Invoke-WebRequest -Uri "http://172.23.17.71:30089/output/test.txt" `
 1. Verify network connectivity:
    ```powershell
    # Get IPs of both clusters
-   minikube ip -p file-simulator      # e.g., 172.23.17.71
-   minikube ip -p your-other-cluster  # e.g., 192.168.49.2
+   minikube ip -p file-simulator      # e.g., 172.25.201.3 (Hyper-V)
+   minikube ip -p minikube            # e.g., 192.168.49.2 (Docker)
 
    # Test ping from other cluster
-   kubectl run test --rm -it --image=alpine -n default -- ping -c 3 172.23.17.71
+   kubectl --context=minikube run test --rm -it --image=alpine -n default -- ping -c 3 172.25.201.3
    ```
 2. Check firewall rules allow cross-network traffic
 3. Ensure both Minikube instances use compatible network modes
+4. **Use NodePorts (30XXX) for cross-cluster access**, not internal cluster DNS names
+
+### Accidental Operations on Wrong Cluster
+
+**Problem**: Deleted resources from the wrong cluster by forgetting to switch context
+
+**Root Cause**: Using `kubectl config use-context` to switch between clusters
+
+**Prevention**:
+- ✅ **ALWAYS use `--context=<profile-name>` flag** in every kubectl command
+- ✅ **NEVER use `kubectl config use-context`** - this causes accidents
+- ✅ Use PowerShell helper functions that enforce context safety
+- ✅ Keep one namespace per profile (file-simulator in one, ez-platform in another)
+
+**Recovery**: If you accidentally delete resources:
+```powershell
+# Redeploy file-simulator
+helm upgrade --install file-sim ./helm-chart/file-simulator `
+    --kube-context=file-simulator `
+    --namespace file-simulator
+
+# Apply NFS fix
+kubectl --context=file-simulator patch deployment file-sim-file-simulator-nas `
+    -n file-simulator --patch-file nfs-fix-patch.yaml
+```
 
 ---
 

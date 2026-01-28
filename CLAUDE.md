@@ -4,6 +4,49 @@
 
 This project implements a File Access Simulator Suite for Kubernetes/OpenShift environments. It provides multiple file transfer protocol simulators (FTP, SFTP, HTTP/WebDAV, S3/MinIO, SMB, NFS) that allow microservices in Minikube to work identically to production OCP environments, while enabling Windows-based testers to supply input files and retrieve outputs.
 
+## CRITICAL: Multi-Profile kubectl Safety
+
+**⚠️ IMPORTANT: This project uses separate Minikube profiles to avoid conflicts.**
+
+### Profile Architecture
+- **file-simulator** (Hyper-V driver): Contains file-simulator namespace with 8 protocol servers
+- **minikube** (Docker driver): Contains ez-platform namespace with user's applications
+
+### Mandatory kubectl Practice
+
+**✅ ALWAYS USE --context FLAG:**
+```bash
+kubectl --context=file-simulator get pods -n file-simulator
+kubectl --context=file-simulator apply -f deployment.yaml
+kubectl --context=file-simulator delete pod <name> -n file-simulator
+
+kubectl --context=minikube get pods -n ez-platform
+kubectl --context=minikube logs <pod> -n ez-platform
+```
+
+**❌ NEVER DO THIS:**
+```bash
+kubectl config use-context file-simulator  # ❌ Causes accidental deletions
+kubectl delete namespace file-simulator    # ❌ Which cluster? Don't know!
+```
+
+**Helm commands must also use --kube-context:**
+```bash
+helm upgrade --install file-sim ./helm-chart/file-simulator \
+    --kube-context=file-simulator \
+    --namespace file-simulator
+```
+
+### Why This Matters
+
+Without using `--context` flag, the user experienced:
+- Accidental deletion of file-simulator namespace from wrong cluster
+- Confusion about which cluster is active
+- Lost deployments requiring full re-deployment
+- Cross-contamination between isolated environments
+
+**ROOT CAUSE:** Using `kubectl config use-context` to switch between clusters creates hidden state that leads to mistakes.
+
 ## Technology Stack
 
 - **Runtime**: .NET 9.0
@@ -383,26 +426,104 @@ public static FileSimulatorOptions ForCluster(string @namespace = "file-simulato
 
 ## DEPLOYMENT COMMANDS
 
-```bash
-# Deploy simulator to Minikube
-minikube start --mount --mount-string="C:\simulator-data:/mnt/simulator-data"
-helm upgrade --install file-sim ./helm-chart/file-simulator \
-    --namespace file-simulator --create-namespace
+### Verified Working Configuration
 
-# Deploy with multi-instance config
-helm upgrade --install file-sim ./helm-chart/file-simulator \
-    -f ./helm-chart/file-simulator/values-multi-instance.yaml \
-    --namespace file-simulator --create-namespace
+```powershell
+# 1. Create cluster with Hyper-V driver (REQUIRED for SMB)
+minikube start `
+    --profile file-simulator `
+    --driver=hyperv `
+    --memory=8192 `
+    --cpus=4 `
+    --disk-size=20g `
+    --mount `
+    --mount-string="C:\simulator-data:/mnt/simulator-data"
 
-# Verify deployment
-kubectl get pods -n file-simulator
-kubectl get svc -n file-simulator
+# 2. Deploy simulator (ALWAYS use --kube-context)
+helm upgrade --install file-sim ./helm-chart/file-simulator `
+    --kube-context=file-simulator `
+    --namespace file-simulator `
+    --create-namespace
 
-# Test connectivity
+# 3. CRITICAL: Apply NFS fix (NFS will crash without this!)
+kubectl --context=file-simulator patch deployment file-sim-file-simulator-nas `
+    -n file-simulator `
+    --patch-file nfs-fix-patch.yaml
+
+# 4. Start tunnel for SMB (separate Administrator terminal)
+minikube tunnel -p file-simulator
+
+# 5. Verify deployment (ALWAYS use --context)
+kubectl --context=file-simulator get pods -n file-simulator
+kubectl --context=file-simulator get svc -n file-simulator
+
+# All 8 pods should show: STATUS=Running, READY=1/1
+
+# 6. Test connectivity
 ./scripts/test-simulator.ps1
 ```
 
+### NFS Fix Patch File (REQUIRED)
+
+Create `nfs-fix-patch.yaml`:
+```yaml
+spec:
+  template:
+    spec:
+      containers:
+      - name: nfs-server
+        volumeMounts:
+        - name: nfs-data
+          mountPath: /data
+        - name: shared-data
+          mountPath: /shared
+      volumes:
+      - name: nfs-data
+        emptyDir: {}
+      - name: shared-data
+        persistentVolumeClaim:
+          claimName: file-sim-file-simulator-pvc
+```
+
+**Why needed:** NFS cannot export Windows-mounted hostPath volumes. This patch uses emptyDir for NFS exports while maintaining shared storage access via PVC.
+
+### Multi-Instance Deployment
+
+```bash
+# Deploy with multiple FTP/SFTP servers
+helm upgrade --install file-sim ./helm-chart/file-simulator \
+    --kube-context=file-simulator \
+    -f ./helm-chart/file-simulator/values-multi-instance.yaml \
+    --namespace file-simulator --create-namespace
+```
+
 ---
+
+## VERIFIED CONFIGURATION (TESTED ✅)
+
+**Cluster Specifications:**
+- **Minikube Profile:** file-simulator
+- **Driver:** hyperv (required for SMB LoadBalancer)
+- **Memory:** 8GB (8192 MB) - minimum for all 8 protocols
+- **CPUs:** 4 - comfortable headroom
+- **Disk:** 20GB
+- **Mount:** C:\simulator-data:/mnt/simulator-data
+
+**Resource Utilization:**
+- CPU Requests: 575m (~14% of 4 CPUs)
+- CPU Limits: 1.9 CPUs (~48% of 4 CPUs)
+- Memory Requests: 706Mi (~9% of 8GB)
+- Memory Limits: 2.85Gi (~35% of 8GB)
+
+**All 8 Protocols Tested:**
+1. ✅ Management UI - HTTP 200
+2. ✅ HTTP Server - HTTP 200
+3. ✅ WebDAV - HTTP 401 (auth working)
+4. ✅ S3/MinIO - Console accessible
+5. ✅ FTP - TCP connection successful
+6. ✅ SFTP - TCP connection successful
+7. ✅ SMB - LoadBalancer active
+8. ✅ NFS - File operations verified (write/read/list)
 
 ## ERROR HANDLING
 
@@ -414,13 +535,50 @@ All protocol services should:
 5. Support cancellation tokens
 6. Dispose resources properly
 
+**kubectl Operations:** ALWAYS include `--context=file-simulator` flag to prevent accidental operations on wrong cluster.
+
 ---
 
 ## NOTES FOR CLAUDE CODE
 
-1. **Start with the Helm chart** - Deploy infrastructure first
-2. **Test each protocol individually** - Ensure connectivity before integration
-3. **Use the test scripts** - Verify everything works before moving on
-4. **Follow the patterns** - Consistency across all protocol implementations
-5. **Log extensively** - Debug issues will be easier with good logs
-6. **Handle offline network** - OCP is offline, no external dependencies
+1. **ALWAYS use --context flag** - Never switch contexts, always explicit: `kubectl --context=file-simulator`
+2. **Apply NFS fix immediately** - NFS pod will crash without the emptyDir patch (see DEPLOYMENT COMMANDS)
+3. **Start with the Helm chart** - Deploy infrastructure first
+4. **Test each protocol individually** - Ensure connectivity before integration
+5. **Use 8GB/4CPU minimum** - Lower resources cause pod scheduling failures
+6. **Use the test scripts** - Verify everything works before moving on
+7. **Follow the patterns** - Consistency across all protocol implementations
+8. **Log extensively** - Debug issues will be easier with good logs
+9. **Handle offline network** - OCP is offline, no external dependencies
+10. **Keep profiles separate** - file-simulator (Hyper-V) for this, minikube (Docker) for ez-platform
+
+## CRITICAL FIXES REQUIRED
+
+### NFS Server Fix (Mandatory)
+
+**Problem:** NFS server crashes with `exportfs: /data does not support NFS export`
+
+**Solution:** Apply nfs-fix-patch.yaml after every deployment
+
+```powershell
+kubectl --context=file-simulator patch deployment file-sim-file-simulator-nas `
+    -n file-simulator `
+    --patch-file nfs-fix-patch.yaml
+```
+
+See DEPLOYMENT-NOTES.md for detailed explanation.
+
+### Multi-Profile Safety
+
+**Problem:** Accidental deletions when forgetting which cluster is active
+
+**Solution:** ALWAYS use explicit context flags
+
+```bash
+# ✅ CORRECT
+kubectl --context=file-simulator get pods -n file-simulator
+helm --kube-context=file-simulator list -n file-simulator
+
+# ❌ WRONG
+kubectl get pods  # Which cluster? Dangerous!
+```
