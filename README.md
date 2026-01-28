@@ -232,12 +232,19 @@ kubectl --context=file-simulator get pods -n file-simulator | Select-String nas
 minikube tunnel -p file-simulator
 ```
 
-#### Step 5: Verify All 8 Protocols
+#### Step 5: Configure Stable Hostname (RECOMMENDED)
 
 ```powershell
-# Get Minikube IP
-$MINIKUBE_IP = minikube ip -p file-simulator
+# Run as Administrator to add hosts file entry
+.\configure-stable-hostname.ps1
 
+# This creates a DNS entry: file-simulator.local → current cluster IP
+# Allows using hostname instead of IP in configurations
+```
+
+#### Step 6: Verify All 8 Protocols
+
+```powershell
 # Check all pods are running
 kubectl --context=file-simulator get pods -n file-simulator
 
@@ -251,17 +258,22 @@ kubectl --context=file-simulator get pods -n file-simulator
 # - file-sim-file-simulator-nas (NFS)
 # - file-sim-file-simulator-management
 
+# Get cluster IP or use hostname
+$MINIKUBE_IP = minikube ip -p file-simulator
+# Or use stable hostname: $HOSTNAME = "file-simulator.local"
+
 # Display endpoints
-Write-Host "Service Endpoints:"
-Write-Host "  Management UI: http://$MINIKUBE_IP`:30180"
-Write-Host "  FTP:           ftp://$MINIKUBE_IP`:30021"
-Write-Host "  SFTP:          sftp://$MINIKUBE_IP`:30022"
-Write-Host "  HTTP:          http://$MINIKUBE_IP`:30088"
-Write-Host "  WebDAV:        http://$MINIKUBE_IP`:30089"
-Write-Host "  S3 API:        http://$MINIKUBE_IP`:30900"
-Write-Host "  S3 Console:    http://$MINIKUBE_IP`:30901"
-Write-Host "  NFS:           $MINIKUBE_IP`:32149"
-Write-Host "  SMB:           \\$MINIKUBE_IP\simulator"
+Write-Host "Service Endpoints (via hostname):"
+Write-Host "  Management UI: http://file-simulator.local:30180"
+Write-Host "  FTP:           ftp://file-simulator.local:30021"
+Write-Host "  SFTP:          sftp://file-simulator.local:30022"
+Write-Host "  HTTP:          http://file-simulator.local:30088"
+Write-Host "  WebDAV:        http://file-simulator.local:30089"
+Write-Host "  S3 API:        http://file-simulator.local:30900"
+Write-Host "  S3 Console:    http://file-simulator.local:30901"
+Write-Host "  NFS:           file-simulator.local:32149"
+Write-Host "  SMB:           \\<LoadBalancer-IP>\simulator"
+Write-Host "`nOr via IP: $MINIKUBE_IP (use hostname for stability)"
 ```
 
 ---

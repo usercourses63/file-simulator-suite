@@ -44,3 +44,13 @@ appsettings.Development.json
 *.pfx
 *.key
 secrets.json
+
+# Claude working directory
+.claude/
+
+# Test files (temporary)
+nfs-test-pod.yaml
+nfs-client-test.yaml
+
+# Deprecated scripts
+set-static-ip.ps1

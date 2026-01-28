@@ -496,28 +496,59 @@ curl http://${SIMULATOR_IP}:30901  # S3 Console
 
 ---
 
+## Stable Hostname Configuration
+
+### Problem: IP Address Changes
+
+When the Hyper-V cluster is recreated, the IP address may change, breaking your ez-platform configuration.
+
+### Solution: Use Hostname Instead of IP
+
+Run the configuration script as Administrator:
+
+```powershell
+.\configure-stable-hostname.ps1
+```
+
+This adds an entry to `C:\Windows\System32\drivers\etc\hosts`:
+```
+172.25.201.3    file-simulator.local
+```
+
+**Benefits:**
+- ✅ Use `file-simulator.local` instead of IP in configs
+- ✅ If IP changes, just re-run the script
+- ✅ More readable configuration
+- ✅ Works across all protocols
+
 ## Service URLs Quick Reference
 
 ```powershell
-# Get current IP
+# Get current IP (for reference)
 $IP = minikube ip -p file-simulator
 Write-Host "Simulator IP: $IP"
 
-# Service URLs
+# Recommended: Use stable hostname
+$HOST = "file-simulator.local"
+
+# Service URLs (hostname-based - RECOMMENDED)
 Write-Host @"
 
-Management UI: http://${IP}:30180 (admin/admin123)
-HTTP Server:   http://${IP}:30088
-WebDAV:        http://${IP}:30089 (httpuser/httppass123)
-S3 Console:    http://${IP}:30901 (minioadmin/minioadmin123)
-S3 API:        http://${IP}:30900
+Management UI: http://${HOST}:30180 (admin/admin123)
+HTTP Server:   http://${HOST}:30088
+WebDAV:        http://${HOST}:30089 (httpuser/httppass123)
+S3 Console:    http://${HOST}:30901 (minioadmin/minioadmin123)
+S3 API:        http://${HOST}:30900
 
-FTP:           ftp://${IP}:30021 (ftpuser/ftppass123)
-SFTP:          sftp://${IP}:30022 (sftpuser/sftppass123)
-NFS:           ${IP}:32149 (mount -t nfs ${IP}:/data /mnt/nfs)
+FTP:           ftp://${HOST}:30021 (ftpuser/ftppass123)
+SFTP:          sftp://${HOST}:30022 (sftpuser/sftppass123)
+NFS:           ${HOST}:32149 (mount -t nfs ${HOST}:/data /mnt/nfs)
 SMB:           \\<LoadBalancer-IP>\simulator (smbuser/smbpass123)
 
 "@
+
+# Or use IP directly (less stable):
+# http://${IP}:30180
 ```
 
 ---
