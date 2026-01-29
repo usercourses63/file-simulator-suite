@@ -39,7 +39,7 @@ Plans:
 ### Phase 2: 7-Server Topology
 **Goal**: Deploy 7 independent NAS servers with unique DNS names and isolated storage matching production OCP configuration
 **Depends on**: Phase 1
-**Requirements**: NAS-01, NAS-02, NAS-03, NAS-06, WIN-02, EXP-01, EXP-02, EXP-05, INT-03, INT-04, DEP-01, DEP-02, DEP-03, DEP-05
+**Requirements**: NAS-01, NAS-02, NAS-03, NAS-06, EXP-01, EXP-02, EXP-05, INT-03, INT-04, DEP-01, DEP-02, DEP-03, DEP-05
 **Success Criteria** (what must be TRUE):
   1. 7 NAS pods deployed (nas-input-1/2/3, nas-backup, nas-output-1/2/3) with stable DNS names
   2. Each NAS accessible via unique NodePort (32150-32156) from Windows host
@@ -47,22 +47,24 @@ Plans:
   4. Files in nas-input-1 NOT visible in nas-input-2 (storage isolation verified)
   5. Each NAS has unique fsid value preventing server conflicts
   6. All 7 servers operational simultaneously under Minikube 8GB/4CPU constraints
-**Plans**: 2 plans
+**Plans**: 3 plans
 
 Plans:
 - [ ] 02-01-PLAN.md — Create nas-multi.yaml Helm template + values-multi-nas.yaml configuration
 - [ ] 02-02-PLAN.md — Deploy 7 NAS servers and validate storage isolation (includes human verification checkpoint)
+- [ ] 02-03-PLAN.md — Validate advanced features (EXP-02, INT-03) and create test-multi-nas.ps1 script
 
 ### Phase 3: Bidirectional Sync
 **Goal**: Enable output NAS servers to sync files written via NFS mount back to Windows for tester retrieval
 **Depends on**: Phase 2
-**Requirements**: WIN-03, WIN-05
+**Requirements**: WIN-02, WIN-03, WIN-05
 **Success Criteria** (what must be TRUE):
   1. System writes file via NFS to nas-output-1:/data, file appears in C:\simulator-data\nas-output-1\ within 60 seconds
   2. Sidecar rsync container runs continuously in output NAS pods (nas-output-1/2/3, nas-backup)
   3. Input NAS servers remain one-way sync only (no sidecar overhead)
   4. Bidirectional sync interval configurable via Helm values (default 30 seconds)
   5. No sync loops or file corruption after 100 write cycles
+  6. Files placed in Windows directory visible via NFS mount within 30 seconds (WIN-02 - requires continuous sync sidecar)
 **Plans**: TBD
 
 Plans:
@@ -106,7 +108,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Single NAS Validation | 2/2 | Complete | 2026-01-29 |
-| 2. 7-Server Topology | 0/2 | Not started | - |
+| 2. 7-Server Topology | 0/3 | Not started | - |
 | 3. Bidirectional Sync | 0/1 | Not started | - |
 | 4. Configuration Templates | 0/1 | Not started | - |
 | 5. Testing Suite | 0/1 | Not started | - |

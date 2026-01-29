@@ -18,9 +18,9 @@
 ### Windows Integration
 
 - [ ] **WIN-01**: Each NAS maps to separate Windows directory (C:\simulator-data\nas-input-1\, etc.)
-- [ ] **WIN-02**: Files placed in Windows directory visible via NFS mount within 30 seconds
+- [ ] **WIN-02**: Files placed in Windows directory visible via NFS mount within 30 seconds (requires continuous sync sidecar)
 - [ ] **WIN-03**: Files written via NFS mount appear in Windows directory (output NAS servers)
-- [ ] **WIN-04**: Init container syncs Windows → NFS on pod startup
+- [ ] **WIN-04**: Init container syncs Windows -> NFS on pod startup
 - [ ] **WIN-05**: Sidecar container provides continuous sync for output directories
 - [ ] **WIN-06**: Files survive pod restarts without data loss
 - [ ] **WIN-07**: Windows directory structure created automatically if missing
@@ -100,7 +100,7 @@ Mapping to phases:
 | NAS-06 | Phase 2 | Pending |
 | NAS-07 | Phase 1 | Complete |
 | WIN-01 | Phase 1 | Complete |
-| WIN-02 | Phase 2 | Pending |
+| WIN-02 | Phase 3 | Pending |
 | WIN-03 | Phase 3 | Pending |
 | WIN-04 | Phase 1 | Complete |
 | WIN-05 | Phase 3 | Pending |
@@ -134,4 +134,4 @@ Mapping to phases:
 
 ---
 *Requirements defined: 2026-01-29*
-*Last updated: 2026-01-29 after roadmap creation*
+*Last updated: 2026-01-29 after WIN-02 moved to Phase 3 (requires continuous sync sidecar)*
