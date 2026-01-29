@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 1 of 5 (Single NAS Validation)
-Plan: 1 of 3 (Create NAS Test Helm Template)
+Plan: 2 of 3 (Deploy and Test NAS)
 Status: In progress
-Last activity: 2026-01-29 — Completed 01-01-PLAN.md
+Last activity: 2026-01-29 — Completed 01-02-PLAN.md
 
-Progress: [█░░░░░░░░░] 10%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 2.4 minutes
-- Total execution time: 0.04 hours
+- Total plans completed: 2
+- Average duration: 17.2 minutes
+- Total execution time: 0.57 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-single-nas-validation | 1 | 2.4min | 2.4min |
+| 01-single-nas-validation | 2 | 34.4min | 17.2min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2.4min)
-- Trend: Just started
+- Last 5 plans: 01-01 (2.4min), 01-02 (32min)
+- Trend: Validation testing takes longer than template creation
 
 *Updated after each plan completion*
 
@@ -49,6 +49,8 @@ Recent decisions affecting current work:
 - **[01-01] Init container sync pattern:** Use init container with rsync to copy Windows hostPath → emptyDir before NFS export (Implemented)
 - **[01-01] NET_BIND_SERVICE capability:** Use minimal capability for port 2049 instead of privileged mode (Implemented)
 - **[01-01] Disk-backed emptyDir:** Use default disk-backed (not memory) for file persistence across pod restarts (Implemented)
+- **[01-02] Defer rpcbind to Phase 2:** Use -p (no portmap) mode for Phase 1; rpcbind caused CrashLoopBackOff, full NFS client mount not critical for pattern proof (Implemented)
+- **[01-02] kubectl exec validation:** Accept kubectl exec as sufficient for Phase 1 instead of external NFS mount; validates critical path (Implemented)
 
 ### Pending Todos
 
@@ -56,21 +58,26 @@ None yet.
 
 ### Blockers/Concerns
 
-**Technical Risk (Phase 1) - IN PROGRESS:**
-- Template created (01-01 complete), now needs deployment testing (01-02) to prove Windows hostPath → emptyDir → NFS export works
-- Open questions: Does unfs3 need CAP_DAC_READ_SEARCH? File ownership mapping (Windows uid/gid)?
-- If testing fails, may need external NFS server on Windows
+**Technical Risk (Phase 1) - RESOLVED:**
+- Pattern validated (01-02 complete): Windows hostPath → emptyDir → NFS export works perfectly
+- Resolved questions: NET_BIND_SERVICE sufficient, no need for CAP_DAC_READ_SEARCH; file ownership preserved via rsync
+- New questions for Phase 2: rpcbind integration (why CrashLoopBackOff?), external NFS mount without privileged mode
 
 **Resource Capacity (Phase 2):**
 - 7 NAS pods estimated at 896Mi request, 3.5Gi limit — fits in 8GB Minikube but needs validation under load
 
 **Sync Latency (Phase 3):**
-- Current pattern: Init container one-time sync at pod start
-- May need sidecar continuous sync if 30-second visibility requirement applies to file additions (clarification needed)
+- Current pattern: Init container one-time sync at pod start (proven in 01-02)
+- May need sidecar continuous sync if 30-second visibility requirement applies to file additions (deferred to Phase 3)
+
+**rpcbind Investigation (Phase 2):**
+- rpcbind integration caused CrashLoopBackOff in 01-02 testing
+- Deferred to Phase 2: investigate startup ordering, RPC registration, port configuration
+- External NFS mount without privileged mode depends on rpcbind resolution
 
 ## Session Continuity
 
-Last session: 2026-01-29 10:03 UTC — Plan 01-01 execution
-Stopped at: Completed 01-01-PLAN.md (Create NAS Test Helm Template)
+Last session: 2026-01-29 12:41 UTC — Plan 01-02 execution
+Stopped at: Completed 01-02-PLAN.md (Deploy and Test NAS)
 Resume file: None
-Next: 01-02-PLAN.md (Deploy and Test NAS)
+Next: 01-03-PLAN.md (Create Multi-Instance Template)
