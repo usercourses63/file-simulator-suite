@@ -5,33 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Dev systems must use identical PV/PVC configs as production OCP, with Windows test files visible via NFS.
-**Current focus:** Phase 1: Single NAS Validation
+**Current focus:** Phase 2: 7-Server Topology
 
 ## Current Position
 
-Phase: 1 of 5 (Single NAS Validation)
-Plan: 2 of 3 (Deploy and Test NAS)
-Status: In progress
-Last activity: 2026-01-29 — Completed 01-02-PLAN.md
+Phase: 2 of 5 (7-Server Topology)
+Plan: 1 of 3 (Multi-Instance NAS Template)
+Status: Complete
+Last activity: 2026-01-29 — Completed 02-01-PLAN.md
 
-Progress: [██░░░░░░░░] 20%
+Progress: [███░░░░░░░] 30%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 17.2 minutes
-- Total execution time: 0.57 hours
+- Total plans completed: 3
+- Average duration: 13.1 minutes
+- Total execution time: 0.65 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-single-nas-validation | 2 | 34.4min | 17.2min |
+| 02-7-server-topology | 1 | 4.5min | 4.5min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2.4min), 01-02 (32min)
-- Trend: Validation testing takes longer than template creation
+- Last 5 plans: 01-01 (2.4min), 01-02 (32min), 02-01 (4.5min)
+- Trend: Template creation faster than validation testing
 
 *Updated after each plan completion*
 
@@ -51,6 +52,10 @@ Recent decisions affecting current work:
 - **[01-01] Disk-backed emptyDir:** Use default disk-backed (not memory) for file persistence across pod restarts (Implemented)
 - **[01-02] Defer rpcbind to Phase 2:** Use -p (no portmap) mode for Phase 1; rpcbind caused CrashLoopBackOff, full NFS client mount not critical for pattern proof (Implemented)
 - **[01-02] kubectl exec validation:** Accept kubectl exec as sufficient for Phase 1 instead of external NFS mount; validates critical path (Implemented)
+- **[02-01] Range loop pattern from ftp-multi.yaml:** Use Helm range loop with $ root scope for multi-instance NAS deployments (Implemented)
+- **[02-01] Unique fsid per server (1-7):** NAS-07 requirement for NFS filesystem identification, logged in container startup (Implemented)
+- **[02-01] Per-server exportOptions:** EXP-05 requirement, allows read-only backup server demonstration (Implemented)
+- **[02-01] NodePort range 32150-32156:** Sequential ports for 7 NAS servers, avoids conflicts with existing services (Implemented)
 
 ### Pending Todos
 
@@ -63,8 +68,10 @@ None yet.
 - Resolved questions: NET_BIND_SERVICE sufficient, no need for CAP_DAC_READ_SEARCH; file ownership preserved via rsync
 - New questions for Phase 2: rpcbind integration (why CrashLoopBackOff?), external NFS mount without privileged mode
 
-**Resource Capacity (Phase 2):**
-- 7 NAS pods estimated at 896Mi request, 3.5Gi limit — fits in 8GB Minikube but needs validation under load
+**Resource Capacity (Phase 2) - UPDATED:**
+- 7 NAS pods: 448Mi request, 1.75Gi limit (revised from initial estimate)
+- Fits comfortably in 8GB Minikube with room for microservices
+- Deployment testing pending in 02-02
 
 **Sync Latency (Phase 3):**
 - Current pattern: Init container one-time sync at pod start (proven in 01-02)
@@ -77,7 +84,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29 12:41 UTC — Plan 01-02 execution
-Stopped at: Completed 01-02-PLAN.md (Deploy and Test NAS)
+Last session: 2026-01-29 12:19 UTC — Plan 02-01 execution
+Stopped at: Completed 02-01-PLAN.md (Multi-Instance NAS Template)
 Resume file: None
-Next: 01-03-PLAN.md (Create Multi-Instance Template)
+Next: 02-02-PLAN.md (Deploy and Test 7 NAS Servers)
