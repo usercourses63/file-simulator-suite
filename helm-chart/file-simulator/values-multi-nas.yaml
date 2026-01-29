@@ -1,0 +1,236 @@
+# Multi-Instance NAS Configuration
+# Deploy 7 independent NAS servers matching production topology
+# Use with: helm install file-sim ./helm-chart/file-simulator -f ./helm-chart/file-simulator/values-multi-nas.yaml
+
+global:
+  storage:
+    hostPath: /mnt/simulator-data
+    size: 10Gi
+    storageClass: ""
+  labels: {}
+
+namespace:
+  create: true
+  name: file-simulator
+
+# ============================================================================
+# NAS SERVERS (7 total: 3 input + 1 backup + 3 output)
+# ============================================================================
+# Total resource allocation:
+#   - Requests: 7 pods × 64Mi = 448Mi (fits in 8GB Minikube)
+#   - Limits: 7 pods × 256Mi = 1.75Gi
+#   - CPU: 7 pods × 50m request = 350m, 7 pods × 200m limit = 1400m
+#
+# Each NAS server:
+#   - Has unique hostPath: /mnt/simulator-data/{nas-name}
+#   - Has unique NodePort (32150-32156)
+#   - Has unique fsid value (1-7) for NFS filesystem identification (NAS-07)
+#   - Has configurable exportOptions per server (EXP-05)
+#   - Uses Phase 1 validated pattern: init container + unfs3 (non-privileged)
+# ============================================================================
+
+nasServers:
+  # ============================================================================
+  # INPUT SERVERS (3) - Read-write for file ingestion from external systems
+  # ============================================================================
+
+  - name: nas-input-1
+    enabled: true
+    fsid: 1  # NAS-07: Unique filesystem ID for NFS exports
+    exportOptions: "rw,sync,no_root_squash"  # EXP-05: Read-write with root access
+    initImage:
+      repository: alpine
+      tag: latest
+      pullPolicy: IfNotPresent
+    image:
+      repository: alpine
+      tag: latest
+      pullPolicy: IfNotPresent
+    service:
+      type: NodePort
+      port: 2049
+      nodePort: 32150
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+
+  - name: nas-input-2
+    enabled: true
+    fsid: 2
+    exportOptions: "rw,sync,no_root_squash"
+    initImage:
+      repository: alpine
+      tag: latest
+      pullPolicy: IfNotPresent
+    image:
+      repository: alpine
+      tag: latest
+      pullPolicy: IfNotPresent
+    service:
+      type: NodePort
+      port: 2049
+      nodePort: 32151
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+
+  - name: nas-input-3
+    enabled: true
+    fsid: 3
+    exportOptions: "rw,sync,no_root_squash"
+    initImage:
+      repository: alpine
+      tag: latest
+      pullPolicy: IfNotPresent
+    image:
+      repository: alpine
+      tag: latest
+      pullPolicy: IfNotPresent
+    service:
+      type: NodePort
+      port: 2049
+      nodePort: 32152
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+
+  # ============================================================================
+  # BACKUP SERVER (1) - Read-only to demonstrate EXP-05 configurability
+  # ============================================================================
+
+  - name: nas-backup
+    enabled: true
+    fsid: 4
+    exportOptions: "ro,sync,no_root_squash"  # EXP-05: Read-only backup server
+    initImage:
+      repository: alpine
+      tag: latest
+      pullPolicy: IfNotPresent
+    image:
+      repository: alpine
+      tag: latest
+      pullPolicy: IfNotPresent
+    service:
+      type: NodePort
+      port: 2049
+      nodePort: 32153
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+
+  # ============================================================================
+  # OUTPUT SERVERS (3) - Read-write for system-generated outputs
+  # ============================================================================
+
+  - name: nas-output-1
+    enabled: true
+    fsid: 5
+    exportOptions: "rw,sync,no_root_squash"
+    initImage:
+      repository: alpine
+      tag: latest
+      pullPolicy: IfNotPresent
+    image:
+      repository: alpine
+      tag: latest
+      pullPolicy: IfNotPresent
+    service:
+      type: NodePort
+      port: 2049
+      nodePort: 32154
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+
+  - name: nas-output-2
+    enabled: true
+    fsid: 6
+    exportOptions: "rw,sync,no_root_squash"
+    initImage:
+      repository: alpine
+      tag: latest
+      pullPolicy: IfNotPresent
+    image:
+      repository: alpine
+      tag: latest
+      pullPolicy: IfNotPresent
+    service:
+      type: NodePort
+      port: 2049
+      nodePort: 32155
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+
+  - name: nas-output-3
+    enabled: true
+    fsid: 7
+    exportOptions: "rw,sync,no_root_squash"
+    initImage:
+      repository: alpine
+      tag: latest
+      pullPolicy: IfNotPresent
+    image:
+      repository: alpine
+      tag: latest
+      pullPolicy: IfNotPresent
+    service:
+      type: NodePort
+      port: 2049
+      nodePort: 32156
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+
+# ============================================================================
+# DISABLE OTHER PROTOCOLS (Focus on NAS for Phase 2)
+# ============================================================================
+
+ftp:
+  enabled: false
+
+sftp:
+  enabled: false
+
+http:
+  enabled: false
+
+s3:
+  enabled: false
+
+smb:
+  enabled: false
+
+management:
+  enabled: false
+
+nasTest:
+  enabled: false
