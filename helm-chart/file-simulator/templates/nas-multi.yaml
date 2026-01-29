@@ -1,0 +1,160 @@
+{{- /*
+  Multi-Instance NAS Servers Template
+  Deploys 7 independent NAS servers matching production topology
+  Uses Phase 1 validated pattern: init container + unfs3 (non-privileged)
+  Use with values-multi-nas.yaml for 7-server configuration
+*/ -}}
+
+{{- if .Values.nasServers }}
+{{- range $index, $nas := .Values.nasServers }}
+{{- if $nas.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "file-simulator.fullname" $ }}-{{ $nas.name }}
+  namespace: {{ include "file-simulator.namespace" $ }}
+  labels:
+    {{- include "file-simulator.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $nas.name }}
+    simulator.protocol: nfs
+    simulator.instance: "{{ $index }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "file-simulator.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ $nas.name }}
+  template:
+    metadata:
+      labels:
+        {{- include "file-simulator.selectorLabels" $ | nindent 8 }}
+        app.kubernetes.io/component: {{ $nas.name }}
+    spec:
+      # Init container: sync Windows hostPath -> emptyDir
+      initContainers:
+        - name: sync-windows-data
+          image: {{ $nas.initImage.repository }}:{{ $nas.initImage.tag }}
+          imagePullPolicy: {{ $nas.initImage.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              echo "=== NAS {{ $nas.name }} Init Container - Syncing Windows Data ==="
+              echo "Installing rsync..."
+              apk add --no-cache rsync
+
+              echo "Creating NFS export directory..."
+              mkdir -p /nfs-data
+
+              echo "Syncing from Windows mount to NFS export..."
+              echo "Source: /windows-mount/"
+              echo "Destination: /nfs-data/"
+              rsync -av --delete /windows-mount/ /nfs-data/
+
+              echo "Sync complete. Files in export:"
+              ls -la /nfs-data | head -20
+              echo "Total files: $(find /nfs-data -type f 2>/dev/null | wc -l)"
+              echo "Total directories: $(find /nfs-data -type d 2>/dev/null | wc -l)"
+              echo "=== Init Container Complete ==="
+          volumeMounts:
+            - name: windows-data
+              mountPath: /windows-mount
+              readOnly: true
+            - name: nfs-export
+              mountPath: /nfs-data
+          securityContext:
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+
+      # Main container: unfs3 NFS server
+      containers:
+        - name: nfs-server
+          image: {{ $nas.image.repository }}:{{ $nas.image.tag }}
+          imagePullPolicy: {{ $nas.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              echo "=== NAS {{ $nas.name }} NFS Server Starting ==="
+              echo "Installing unfs3..."
+              apk add --no-cache unfs3
+
+              echo "Creating exports file..."
+              mkdir -p /etc
+              # Export options from values: $nas.exportOptions (default: rw,sync,no_root_squash)
+              echo '/data 0.0.0.0/0({{ $nas.exportOptions | default "rw,sync,no_root_squash" }})' > /etc/exports
+              echo "Exports configuration:"
+              cat /etc/exports
+
+              echo "Starting NFS server (fsid={{ $nas.fsid | default (add $index 1) }})..."
+              echo "Flags: -d (foreground) -p (no portmap) -t (TCP only) -n 2049 (port)"
+              # unfsd command does NOT take exportOptions - they go in /etc/exports file
+              unfsd -d -p -t -n 2049 -e /etc/exports
+          ports:
+            - name: nfs
+              containerPort: 2049
+              protocol: TCP
+          volumeMounts:
+            - name: nfs-export
+              mountPath: /data
+          securityContext:
+            capabilities:
+              add:
+                - NET_BIND_SERVICE
+              drop:
+                - ALL
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+          livenessProbe:
+            tcpSocket:
+              port: 2049
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 2049
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            {{- toYaml $nas.resources | nindent 12 }}
+
+      volumes:
+        - name: windows-data
+          hostPath:
+            path: {{ $.Values.global.storage.hostPath }}/{{ $nas.name }}
+            type: DirectoryOrCreate
+        - name: nfs-export
+          emptyDir: {}  # Disk-backed (default) for persistence
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "file-simulator.fullname" $ }}-{{ $nas.name }}
+  namespace: {{ include "file-simulator.namespace" $ }}
+  labels:
+    {{- include "file-simulator.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $nas.name }}
+spec:
+  type: {{ $nas.service.type }}
+  ports:
+    - port: {{ $nas.service.port }}
+      targetPort: nfs
+      protocol: TCP
+      name: nfs
+      {{- if and (eq $nas.service.type "NodePort") $nas.service.nodePort }}
+      nodePort: {{ $nas.service.nodePort }}
+      {{- end }}
+  selector:
+    {{- include "file-simulator.selectorLabels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $nas.name }}
+{{- end }}
+{{- end }}
+{{- end }}
