@@ -81,7 +81,9 @@ spec:
 
               echo "Creating exports file..."
               mkdir -p /etc
-              echo '/data {{ .Values.nasTest.exportOptions | default "*(rw,sync,no_root_squash)" }},fsid={{ .Values.nasTest.fsid | default 1 }}' > /etc/exports
+              # unfs3 exports syntax: /path network/mask(options) or /path *(options)
+              # Testing with subnet instead of wildcard
+              echo '/data 0.0.0.0/0(rw,no_root_squash)' > /etc/exports
               echo "Exports configuration:"
               cat /etc/exports
 
