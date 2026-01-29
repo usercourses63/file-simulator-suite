@@ -88,17 +88,50 @@ Deferred to future releases:
 
 ## Traceability
 
-Mapping to phases (to be filled by roadmap creation):
+Mapping to phases:
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TBD | TBD | Pending |
+| NAS-01 | Phase 2 | Pending |
+| NAS-02 | Phase 2 | Pending |
+| NAS-03 | Phase 2 | Pending |
+| NAS-04 | Phase 1 | Pending |
+| NAS-05 | Phase 1 | Pending |
+| NAS-06 | Phase 2 | Pending |
+| NAS-07 | Phase 1 | Pending |
+| WIN-01 | Phase 1 | Pending |
+| WIN-02 | Phase 2 | Pending |
+| WIN-03 | Phase 3 | Pending |
+| WIN-04 | Phase 1 | Pending |
+| WIN-05 | Phase 3 | Pending |
+| WIN-06 | Phase 1 | Pending |
+| WIN-07 | Phase 1 | Pending |
+| EXP-01 | Phase 2 | Pending |
+| EXP-02 | Phase 2 | Pending |
+| EXP-03 | Phase 1 | Pending |
+| EXP-04 | Phase 1 | Pending |
+| EXP-05 | Phase 2 | Pending |
+| INT-01 | Phase 4 | Pending |
+| INT-02 | Phase 4 | Pending |
+| INT-03 | Phase 2 | Pending |
+| INT-04 | Phase 2 | Pending |
+| INT-05 | Phase 4 | Pending |
+| DEP-01 | Phase 2 | Pending |
+| DEP-02 | Phase 2 | Pending |
+| DEP-03 | Phase 2 | Pending |
+| DEP-04 | Phase 1 | Pending |
+| DEP-05 | Phase 2 | Pending |
+| TST-01 | Phase 5 | Pending |
+| TST-02 | Phase 5 | Pending |
+| TST-03 | Phase 5 | Pending |
+| TST-04 | Phase 5 | Pending |
+| TST-05 | Phase 5 | Pending |
 
 **Coverage:**
-- v1 requirements: 35 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 35 ⚠️
+- v1 requirements: 34 total
+- Mapped to phases: 34 (100%)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-29*
-*Last updated: 2026-01-29 after research synthesis*
+*Last updated: 2026-01-29 after roadmap creation*
