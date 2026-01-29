@@ -30,10 +30,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Pod restart preserves Windows files (init container re-syncs on startup)
   4. NFS client can mount nas-test-1:/data and list files
   5. unfs3 exports /data with rw,sync,no_root_squash options
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: TBD
+- [ ] 01-01-PLAN.md — Create Helm template for nas-test-1 with init container + unfs3 pattern
+- [ ] 01-02-PLAN.md — Deploy and validate NAS pattern (includes human verification checkpoint)
 
 ### Phase 2: 7-Server Topology
 **Goal**: Deploy 7 independent NAS servers with unique DNS names and isolated storage matching production OCP configuration
@@ -87,7 +88,7 @@ Plans:
 **Requirements**: TST-01, TST-02, TST-03, TST-04, TST-05
 **Success Criteria** (what must be TRUE):
   1. Automated test script verifies all 7 NAS servers respond to health check
-  2. Round-trip test (Windows → NFS → Windows) passes for input and output NAS
+  2. Round-trip test (Windows -> NFS -> Windows) passes for input and output NAS
   3. Cross-NAS isolation test confirms files on one server not visible on others
   4. Pod restart test demonstrates files persist after killing all NAS pods
   5. Test suite executable as single command: ./scripts/test-multi-nas.ps1
@@ -99,11 +100,11 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Single NAS Validation | 0/1 | Not started | - |
+| 1. Single NAS Validation | 0/2 | Planned | - |
 | 2. 7-Server Topology | 0/1 | Not started | - |
 | 3. Bidirectional Sync | 0/1 | Not started | - |
 | 4. Configuration Templates | 0/1 | Not started | - |
