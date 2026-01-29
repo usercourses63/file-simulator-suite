@@ -87,14 +87,11 @@ spec:
               echo "Exports configuration:"
               cat /etc/exports
 
-              echo "Starting rpcbind..."
-              rpcbind -w
-              sleep 3
-
               echo "Starting NFS server..."
-              echo "Flags: -d (foreground) -t (TCP only)"
-              # Run in foreground - rpcbind will be in background
-              unfsd -d -t -e /etc/exports
+              echo "Flags: -d (foreground) -p (no portmap) -t (TCP only) -n 2049 (port)"
+              echo "NOTE: Running without portmapper for Phase 1 validation"
+              echo "Full NFS client mount support requires rpcbind (Phase 2 TODO)"
+              unfsd -d -p -t -n 2049 -e /etc/exports
           ports:
             - name: nfs
               containerPort: 2049
