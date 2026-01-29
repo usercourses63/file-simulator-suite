@@ -33,8 +33,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Create Helm template for nas-test-1 with init container + unfs3 pattern
-- [ ] 01-02-PLAN.md — Deploy and validate NAS pattern (includes human verification checkpoint)
+- [x] 01-01-PLAN.md — Create Helm template for nas-test-1 with init container + unfs3 pattern
+- [x] 01-02-PLAN.md — Deploy and validate NAS pattern (includes human verification checkpoint)
 
 ### Phase 2: 7-Server Topology
 **Goal**: Deploy 7 independent NAS servers with unique DNS names and isolated storage matching production OCP configuration
@@ -47,10 +47,11 @@ Plans:
   4. Files in nas-input-1 NOT visible in nas-input-2 (storage isolation verified)
   5. Each NAS has unique fsid value preventing server conflicts
   6. All 7 servers operational simultaneously under Minikube 8GB/4CPU constraints
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: TBD
+- [ ] 02-01-PLAN.md — Create nas-multi.yaml Helm template + values-multi-nas.yaml configuration
+- [ ] 02-02-PLAN.md — Deploy 7 NAS servers and validate storage isolation (includes human verification checkpoint)
 
 ### Phase 3: Bidirectional Sync
 **Goal**: Enable output NAS servers to sync files written via NFS mount back to Windows for tester retrieval
@@ -105,7 +106,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Single NAS Validation | 2/2 | Complete | 2026-01-29 |
-| 2. 7-Server Topology | 0/1 | Not started | - |
+| 2. 7-Server Topology | 0/2 | Not started | - |
 | 3. Bidirectional Sync | 0/1 | Not started | - |
 | 4. Configuration Templates | 0/1 | Not started | - |
 | 5. Testing Suite | 0/1 | Not started | - |
