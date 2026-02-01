@@ -12,7 +12,19 @@ Development systems must connect to simulated NAS servers using identical PV/PVC
 
 ### Validated
 
-Existing capabilities from current codebase:
+v1.0 Multi-NAS Production Topology (Shipped: 2026-02-01):
+
+- ✓ 7 independent NAS servers (3 input, 1 backup, 3 output) with unique DNS names — v1.0
+- ✓ Each NAS exports Windows directory via NFS with init container sync pattern — v1.0
+- ✓ Bidirectional sync: Windows→NFS (init) + NFS→Windows (sidecar, 15-30s) — v1.0
+- ✓ Static PV/PVC provisioning matching production OCP patterns — v1.0
+- ✓ ConfigMap service discovery for all 7 NAS servers — v1.0
+- ✓ Multi-NAS mount example (6 servers simultaneously) — v1.0
+- ✓ Comprehensive test suite (57 tests: health, isolation, persistence) — v1.0
+- ✓ Windows directory automation via enhanced setup-windows.ps1 — v1.0
+- ✓ 1200+ line integration guide (NAS-INTEGRATION-GUIDE.md) — v1.0
+
+Existing capabilities (pre-v1.0):
 
 - ✓ Single NFS server deployment via Helm chart — existing
 - ✓ FTP, SFTP, HTTP, WebDAV, S3, SMB protocol servers operational — existing
@@ -24,16 +36,7 @@ Existing capabilities from current codebase:
 
 ### Active
 
-Production topology simulation for development testing:
-
-- [ ] 7 independent NAS servers (3 input, 1 backup, 3 output) deployed as separate pods
-- [ ] Each NAS server exports Windows directory via NFS (files written on Windows visible via NFS mount)
-- [ ] Each NAS has unique service DNS name (nas-input-1, nas-input-2, etc.)
-- [ ] System under development can mount each NAS via separate PV/PVC
-- [ ] Test files placed in C:\simulator-data\nas-input-1\ immediately accessible via NFS mount
-- [ ] Files written by system via NFS mount appear in corresponding Windows directory
-- [ ] NFS servers survive pod restarts without losing Windows directory mapping
-- [ ] Configuration matches production OCP topology (7 NAS devices)
+(No active requirements - next milestone not yet defined)
 
 ### Out of Scope
 
@@ -72,13 +75,26 @@ Production topology simulation for development testing:
 - **No Data Loss**: Windows files persist across pod restarts
 - **Filesystem Limitation**: NFS cannot directly export Windows CIFS/9p mounted filesystems (known Linux kernel limitation)
 
+## Current State
+
+**Shipped version:** v1.0 (2026-02-01)
+**System status:** Production-ready 7-server NAS topology
+**Tech stack:** Kubernetes, Helm, unfs3, rsync, PowerShell
+**Lines of code:** ~15,000 (YAML + PowerShell)
+**Test coverage:** 57 tests across 5 phases (health, sync, isolation, persistence)
+
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Multiple NFS servers vs single with exports | Production has multiple physical NAS devices; dev must match topology | — Pending |
-| 7 total NAS servers (3 input, 1 backup, 3 output) | Matches production network configuration | — Pending |
-| Windows directories as source of truth | Testers work on Windows; test files must be accessible via NFS | — Pending |
+| Multiple NFS servers vs single with exports | Production has multiple physical NAS devices; dev must match topology | ✓ Good - 7 servers deployed, validated in Phase 2 |
+| 7 total NAS servers (3 input, 1 backup, 3 output) | Matches production network configuration | ✓ Good - Topology matches OCP architecture |
+| Windows directories as source of truth | Testers work on Windows; test files must be accessible via NFS | ✓ Good - Bidirectional sync working (15-30s latency) |
+| unfs3 vs kernel NFS | Kernel NFS cannot export Windows mounts; unfs3 userspace workaround | ✓ Good - Pattern validated in Phase 1 |
+| Init container + sidecar sync architecture | Separate one-way syncs prevent loops; native sidecar for lifecycle | ✓ Good - No sync loops, proper ordering |
+| Static PV/PVC provisioning | Matches production OCP patterns better than dynamic provisioning | ✓ Good - Label selector binding reliable |
+| Selective sidecar deployment | Only output servers need NFS→Windows sync; avoid overhead on inputs | ✓ Good - Resource efficient (96Mi vs 128Mi) |
+| kubectl --context mandatory | Multi-profile Minikube safety; prevent cross-cluster accidents | ✓ Good - Zero accidental deletions in v1.0 |
 
 ---
-*Last updated: 2026-01-29 after initialization*
+*Last updated: 2026-02-01 after v1.0 milestone*
