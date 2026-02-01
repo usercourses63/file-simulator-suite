@@ -478,6 +478,173 @@ try {
     Write-Fail "Security context check error: $_"
 }
 
+function Test-NFSToWindows {
+    param(
+        [string]$NasName,
+        [int]$TimeoutSeconds = 60
+    )
+
+    $testId = Get-Date -Format "yyyyMMddHHmmss"
+    $testFile = "nfs-to-windows-$testId.txt"
+    $testContent = "Written via NFS at $(Get-Date)"
+    $windowsPath = "C:\simulator-data\$NasName\$testFile"
+
+    Write-Host "  Testing WIN-03: NFS -> Windows sync for $NasName"
+
+    # Get pod name
+    $pod = kubectl --context=file-simulator get pod -n file-simulator `
+        -l "app.kubernetes.io/component=$NasName" `
+        -o jsonpath='{.items[0].metadata.name}' 2>$null
+
+    if (-not $pod) {
+        Write-Host "  FAIL: Could not find pod for $NasName"
+        return $false
+    }
+
+    # Write file to NFS export via kubectl exec
+    kubectl --context=file-simulator exec -n file-simulator $pod -c nfs-server -- `
+        sh -c "echo '$testContent' > /data/$testFile" 2>$null | Out-Null
+
+    # Wait for file to appear on Windows (up to timeout)
+    $elapsed = 0
+    while ($elapsed -lt $TimeoutSeconds) {
+        if (Test-Path $windowsPath) {
+            $windowsContent = Get-Content $windowsPath -Raw -ErrorAction SilentlyContinue
+            if ($windowsContent -match "Written via NFS") {
+                Write-Host "  PASS: File synced to Windows in ${elapsed}s"
+                # Cleanup
+                Remove-Item $windowsPath -Force -ErrorAction SilentlyContinue
+                kubectl --context=file-simulator exec -n file-simulator $pod -c nfs-server -- `
+                    rm -f "/data/$testFile" 2>$null | Out-Null
+                return $true
+            }
+        }
+        Start-Sleep -Seconds 5
+        $elapsed += 5
+        Write-Host "    Waiting... (${elapsed}s / ${TimeoutSeconds}s)"
+    }
+
+    Write-Host "  FAIL: File not synced to Windows within ${TimeoutSeconds}s"
+    return $false
+}
+
+function Test-SidecarRunning {
+    param([string]$NasName)
+
+    Write-Host "  Testing WIN-05: Sidecar running for $NasName"
+
+    # Get pod name
+    $pod = kubectl --context=file-simulator get pod -n file-simulator `
+        -l "app.kubernetes.io/component=$NasName" `
+        -o jsonpath='{.items[0].metadata.name}' 2>$null
+
+    # Check if sync-to-windows init container exists
+    $initContainers = kubectl --context=file-simulator get pod -n file-simulator $pod `
+        -o jsonpath='{.spec.initContainers[*].name}' 2>$null
+
+    if ($initContainers -match "sync-to-windows") {
+        # Check if it's running
+        $allStates = kubectl --context=file-simulator get pod -n file-simulator $pod `
+            -o jsonpath='{.status.initContainerStatuses[*].name} {.status.initContainerStatuses[*].state}' 2>$null
+
+        if ($allStates -match "running") {
+            Write-Host "  PASS: Sidecar running"
+            return $true
+        } else {
+            Write-Host "  FAIL: Sidecar not running. States: $allStates"
+            return $false
+        }
+    } else {
+        Write-Host "  FAIL: Sidecar not found"
+        return $false
+    }
+}
+
+function Test-NoSidecar {
+    param([string]$NasName)
+
+    Write-Host "  Testing: $NasName should NOT have sidecar"
+
+    $pod = kubectl --context=file-simulator get pod -n file-simulator `
+        -l "app.kubernetes.io/component=$NasName" `
+        -o jsonpath='{.items[0].metadata.name}' 2>$null
+
+    $initContainers = kubectl --context=file-simulator get pod -n file-simulator $pod `
+        -o jsonpath='{.spec.initContainers[*].name}' 2>$null
+
+    if ($initContainers -notmatch "sync-to-windows") {
+        Write-Host "  PASS: No sidecar (correct)"
+        return $true
+    } else {
+        Write-Host "  FAIL: Unexpected sidecar found"
+        return $false
+    }
+}
+
+# ============================================================================
+# PHASE 3: BIDIRECTIONAL SYNC TESTS (WIN-03, WIN-05)
+# ============================================================================
+# Scope: NFS -> Windows sync only (via sidecar on output servers)
+# WIN-02 (Windows -> NFS) uses init container pattern (requires pod restart)
+# ============================================================================
+
+Write-Host ""
+Write-Host "=== Phase 3: Bidirectional Sync Validation ===" -ForegroundColor Cyan
+Write-Host ""
+
+# Test WIN-05: Sidecar running on output servers only
+Write-Host "Step B1: Verify sidecars on output servers only" -ForegroundColor Cyan
+$sidecarResults = @()
+
+# Output servers SHOULD have sidecar
+foreach ($nas in @("nas-output-1", "nas-output-2", "nas-output-3")) {
+    $result = Test-SidecarRunning -NasName $nas
+    $sidecarResults += @{ Name = $nas; Result = $result; Expected = "sidecar" }
+}
+
+# Input servers and nas-backup should NOT have sidecar
+foreach ($nas in @("nas-input-1", "nas-input-2", "nas-input-3", "nas-backup")) {
+    $result = Test-NoSidecar -NasName $nas
+    $sidecarResults += @{ Name = $nas; Result = $result; Expected = "no-sidecar" }
+}
+
+# Test WIN-03: NFS to Windows sync (only output servers with sidecar)
+Write-Host ""
+Write-Host "Step B2: Test NFS -> Windows sync (WIN-03)" -ForegroundColor Cyan
+$nfsToWindowsResults = @()
+foreach ($nas in @("nas-output-1", "nas-output-2", "nas-output-3")) {
+    $result = Test-NFSToWindows -NasName $nas -TimeoutSeconds 60
+    $nfsToWindowsResults += @{ Name = $nas; Result = $result }
+}
+
+# WIN-02 note (not tested - requires pod restart or second sidecar)
+Write-Host ""
+Write-Host "Step B3: Windows -> NFS visibility (WIN-02)" -ForegroundColor Cyan
+Write-Host "  NOTE: WIN-02 uses init container pattern (proven in Phase 2)" -ForegroundColor Yellow
+Write-Host "  Continuous Windows->NFS sync would require second sidecar (not in scope)" -ForegroundColor Yellow
+Write-Host "  To test: Create file on Windows, restart pod, verify via kubectl exec" -ForegroundColor Yellow
+
+# Phase 3 Summary
+Write-Host ""
+Write-Host "=== Phase 3 Results ===" -ForegroundColor Cyan
+$phase3Pass = 0
+$phase3Fail = 0
+
+foreach ($r in $sidecarResults) {
+    if ($r.Result -eq $true) { $phase3Pass++ }
+    else { $phase3Fail++ }
+}
+
+foreach ($r in $nfsToWindowsResults) {
+    if ($r.Result -eq $true) { $phase3Pass++ }
+    else { $phase3Fail++ }
+}
+
+Write-Host "PASS: $phase3Pass" -ForegroundColor Green
+Write-Host "FAIL: $phase3Fail" -ForegroundColor Red
+Write-Host ""
+Write-Host "Phase 3 tests complete." -ForegroundColor Cyan
+
 # ============================================================================
 # Summary
 # ============================================================================
