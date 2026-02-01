@@ -57,14 +57,18 @@ Plans:
 ### Phase 3: Bidirectional Sync
 **Goal**: Enable output NAS servers to sync files written via NFS mount back to Windows for tester retrieval
 **Depends on**: Phase 2
-**Requirements**: WIN-02, WIN-03, WIN-05
+**Requirements**: WIN-03, WIN-05 (WIN-02 uses init container pattern from Phase 2)
 **Success Criteria** (what must be TRUE):
-  1. System writes file via NFS to nas-output-1:/data, file appears in C:\simulator-data\nas-output-1\ within 60 seconds
-  2. Sidecar rsync container runs continuously in output NAS pods (nas-output-1/2/3, nas-backup)
-  3. Input NAS servers remain one-way sync only (no sidecar overhead)
-  4. Bidirectional sync interval configurable via Helm values (default 30 seconds)
-  5. No sync loops or file corruption after 100 write cycles
-  6. Files placed in Windows directory visible via NFS mount within 30 seconds (WIN-02 - requires continuous sync sidecar)
+  1. System writes file via NFS to nas-output-*:/data, file appears in C:\simulator-data\nas-output-*\ within 60 seconds (WIN-03)
+  2. Sidecar rsync container runs continuously in output NAS pods (nas-output-1/2/3 ONLY)
+  3. nas-backup has NO sidecar (read-only export cannot receive NFS writes)
+  4. Input NAS servers remain one-way sync only (no sidecar overhead)
+  5. Bidirectional sync interval configurable via Helm values (default 30 seconds)
+  6. No sync loops or file corruption after multiple write cycles
+  7. Init container uses --delete only for input NAS (preserves NFS-written files on output NAS)
+
+**WIN-02 Scope Note**: WIN-02 requires "Files placed in Windows directory visible via NFS mount within 30 seconds". Phase 3 implements NFS-to-Windows sync only (sidecar). Windows-to-NFS visibility uses the init container pattern from Phase 2 (sync at pod start). Continuous Windows-to-NFS without pod restart would require a second sidecar running in reverse direction (not in Phase 3 scope).
+
 **Plans**: 2 plans
 
 Plans:
