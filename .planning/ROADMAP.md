@@ -102,10 +102,10 @@ Plans:
   3. Cross-NAS isolation test confirms files on one server not visible on others
   4. Pod restart test demonstrates files persist after killing all NAS pods
   5. Test suite executable as single command: ./scripts/test-multi-nas.ps1
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 05-01: TBD
+- [ ] 05-01-PLAN.md — Extend test-multi-nas.ps1 with Phase 5 comprehensive tests (TST-01 through TST-05)
 
 ## Progress
 
