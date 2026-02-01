@@ -35,11 +35,11 @@
 
 ### System Integration
 
-- [ ] **INT-01**: Example PV/PVC manifests provided for each NAS server
-- [ ] **INT-02**: PV/PVC configuration matches production OCP patterns
+- [x] **INT-01**: Example PV/PVC manifests provided for each NAS server
+- [x] **INT-02**: PV/PVC configuration matches production OCP patterns
 - [ ] **INT-03**: System can mount multiple NAS servers simultaneously
 - [ ] **INT-04**: Each PVC isolated (nas-input-1 data separate from nas-output-1)
-- [ ] **INT-05**: Documentation shows how to configure multiple NFS mounts
+- [x] **INT-05**: Documentation shows how to configure multiple NFS mounts
 
 ### Deployment & Configuration
 
@@ -111,11 +111,11 @@ Mapping to phases:
 | EXP-03 | Phase 1 | Complete |
 | EXP-04 | Phase 1 | Complete |
 | EXP-05 | Phase 2 | Complete |
-| INT-01 | Phase 4 | Pending |
-| INT-02 | Phase 4 | Pending |
+| INT-01 | Phase 4 | Complete |
+| INT-02 | Phase 4 | Complete |
 | INT-03 | Phase 2 | Complete |
 | INT-04 | Phase 2 | Complete |
-| INT-05 | Phase 4 | Pending |
+| INT-05 | Phase 4 | Complete |
 | DEP-01 | Phase 2 | Complete |
 | DEP-02 | Phase 2 | Complete |
 | DEP-03 | Phase 2 | Complete |
