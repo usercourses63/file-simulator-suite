@@ -169,9 +169,13 @@ try {
     }
 
     # Verify pod count
-    $podsJson = kubectl get pods -n file-simulator -l simulator.protocol=nfs -o json 2>&1 | Out-String
-    $pods = $podsJson | ConvertFrom-Json
-    $podCount = $pods.items.Count
+    $podsJson = kubectl --context=file-simulator get pods -n file-simulator -l simulator.protocol=nfs -o json 2>&1 | Out-String
+    if ($podsJson -match '"items"') {
+        $pods = $podsJson | ConvertFrom-Json
+        $podCount = $pods.items.Count
+    } else {
+        $podCount = 0
+    }
     if ($podCount -eq 7) {
         Write-Pass "All 7 NAS pods deployed"
     } else {
