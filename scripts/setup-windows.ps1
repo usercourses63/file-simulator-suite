@@ -14,7 +14,7 @@ Write-Host "  File Simulator Suite - Windows Setup" -ForegroundColor Cyan
 Write-Host "=============================================" -ForegroundColor Cyan
 
 # 1. Create directory structure
-Write-Host "`n[1/5] Creating directory structure..." -ForegroundColor Yellow
+Write-Host "`n[1/6] Creating directory structure..." -ForegroundColor Yellow
 
 $directories = @(
     "$SimulatorPath",
@@ -33,8 +33,42 @@ foreach ($dir in $directories) {
     }
 }
 
-# 2. Configure Minikube mount
-Write-Host "`n[2/5] Configuring Minikube mount..." -ForegroundColor Yellow
+# NAS Server directories (Phase 4: Configuration Templates)
+Write-Host "`n[2/6] Creating NAS server directories..." -ForegroundColor Yellow
+
+$nasServers = @(
+    @{ name = "nas-input-1"; role = "Input files for processing" },
+    @{ name = "nas-input-2"; role = "Input files for processing" },
+    @{ name = "nas-input-3"; role = "Input files for processing" },
+    @{ name = "nas-backup"; role = "Backup storage (read-only export)" },
+    @{ name = "nas-output-1"; role = "Output files from processing" },
+    @{ name = "nas-output-2"; role = "Output files from processing" },
+    @{ name = "nas-output-3"; role = "Output files from processing" }
+)
+
+foreach ($nas in $nasServers) {
+    $dir = "$SimulatorPath\$($nas.name)"
+    if (-not (Test-Path $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        Write-Host "  Created: $dir" -ForegroundColor Green
+
+        # Create README.txt with purpose
+        $readme = @"
+NAS Server: $($nas.name)
+Created: $(Get-Date)
+Purpose: $($nas.role)
+
+This directory is mounted into the $($nas.name) NAS server pod.
+Files placed here will be available via NFS mount after pod restart.
+"@
+        Set-Content -Path "$dir\README.txt" -Value $readme
+    } else {
+        Write-Host "  Exists: $dir" -ForegroundColor Gray
+    }
+}
+
+# 3. Configure Minikube mount
+Write-Host "`n[3/6] Configuring Minikube mount..." -ForegroundColor Yellow
 
 # Check if Minikube is installed
 $minikubeInstalled = Get-Command minikube -ErrorAction SilentlyContinue
@@ -64,8 +98,8 @@ if ($minikubeStatus -ne "Running") {
     }
 }
 
-# 3. Get Minikube IP
-Write-Host "`n[3/5] Getting Minikube IP..." -ForegroundColor Yellow
+# 4. Get Minikube IP
+Write-Host "`n[4/6] Getting Minikube IP..." -ForegroundColor Yellow
 $minikubeIP = minikube ip 2>$null
 if ($minikubeIP) {
     Write-Host "  Minikube IP: $minikubeIP" -ForegroundColor Green
@@ -92,8 +126,8 @@ if ($minikubeIP) {
     Write-Host "  Created: $SimulatorPath\config\env.ps1" -ForegroundColor Green
 }
 
-# 4. Create helper scripts
-Write-Host "`n[4/5] Creating helper scripts..." -ForegroundColor Yellow
+# 5. Create helper scripts
+Write-Host "`n[5/6] Creating helper scripts..." -ForegroundColor Yellow
 
 # Quick-connect scripts
 $ftpScript = @"
@@ -166,9 +200,9 @@ $mapDriveScript | Out-File "$SimulatorPath\config\map-drive.ps1" -Encoding UTF8
 
 Write-Host "  Created helper scripts in $SimulatorPath\config\" -ForegroundColor Green
 
-# 5. Deploy Helm chart (if requested)
+# 6. Deploy Helm chart (if requested)
 if ($DeployChart) {
-    Write-Host "`n[5/5] Deploying Helm chart..." -ForegroundColor Yellow
+    Write-Host "`n[6/6] Deploying Helm chart..." -ForegroundColor Yellow
     $helmInstalled = Get-Command helm -ErrorAction SilentlyContinue
     if ($helmInstalled) {
         $chartPath = Join-Path $PSScriptRoot "helm-chart\file-simulator"
@@ -181,7 +215,7 @@ if ($DeployChart) {
         Write-Host "  Helm not installed. Install from: https://helm.sh/docs/intro/install/" -ForegroundColor Yellow
     }
 } else {
-    Write-Host "`n[5/5] Skipping Helm deployment (use -DeployChart to deploy)" -ForegroundColor Gray
+    Write-Host "`n[6/6] Skipping Helm deployment (use -DeployChart to deploy)" -ForegroundColor Gray
 }
 
 # Summary
@@ -191,10 +225,17 @@ Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Directory Structure:" -ForegroundColor White
 Write-Host "  $SimulatorPath\"
-Write-Host "  ├── input\     <- Place test files here"
-Write-Host "  ├── output\    <- Services write here"
-Write-Host "  ├── temp\      <- Temporary files"
-Write-Host "  └── config\    <- Helper scripts"
+Write-Host "  ├── input\       <- General input files"
+Write-Host "  ├── output\      <- General output files"
+Write-Host "  ├── temp\        <- Temporary files"
+Write-Host "  ├── config\      <- Helper scripts"
+Write-Host "  ├── nas-input-1\ <- NAS input server 1"
+Write-Host "  ├── nas-input-2\ <- NAS input server 2"
+Write-Host "  ├── nas-input-3\ <- NAS input server 3"
+Write-Host "  ├── nas-backup\  <- NAS backup server (read-only)"
+Write-Host "  ├── nas-output-1\<- NAS output server 1"
+Write-Host "  ├── nas-output-2\<- NAS output server 2"
+Write-Host "  └── nas-output-3\<- NAS output server 3"
 Write-Host ""
 Write-Host "Next Steps:" -ForegroundColor White
 Write-Host "  1. Ensure Minikube has the mount:"
