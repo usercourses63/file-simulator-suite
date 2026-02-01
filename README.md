@@ -2,10 +2,29 @@
 
 A comprehensive file access simulator for Kubernetes development and testing. This suite provides multiple file transfer protocols (FTP, SFTP, HTTP/WebDAV, S3/MinIO, SMB, NFS) in a unified deployment, enabling seamless testing between Windows development environments and Kubernetes/OpenShift clusters.
 
+## 🎉 v1.0: Multi-NAS Production Topology (Shipped: 2026-02-01)
+
+**NEW:** The v1.0 release adds a production-ready **7-server NAS topology** that replicates OpenShift network architecture:
+
+- **7 independent NAS servers** (nas-input-1/2/3, nas-backup, nas-output-1/2/3) with unique DNS names
+- **Bidirectional Windows sync**: Files written on Windows visible via NFS (init container), files written via NFS visible on Windows (sidecar, 15-30s)
+- **Production-identical PV/PVC patterns**: Static provisioning with label selectors matching OCP deployment patterns
+- **Ready-to-use integration templates**: 14 PV/PVC manifests, ConfigMap service discovery, multi-mount examples
+- **Comprehensive test suite**: 57 tests validating health, isolation, and persistence
+
+**📖 For Multi-NAS integration**, see [`helm-chart/file-simulator/docs/NAS-INTEGRATION-GUIDE.md`](helm-chart/file-simulator/docs/NAS-INTEGRATION-GUIDE.md) (1200+ lines)
+
+**🧪 Run tests**: `./scripts/test-multi-nas.ps1` (validates all 7 servers)
+
+---
+
 ## Table of Contents
 
+- [v1.0 Multi-NAS Features](#-v10-multi-nas-production-topology-shipped-2026-02-01)
 - [Purpose](#-purpose)
 - [Architecture](#-architecture)
+  - [Multi-NAS Topology (v1.0)](#multi-nas-topology-v10)
+  - [Legacy Single-NAS + Multi-Protocol](#legacy-single-nas--multi-protocol)
 - [Prerequisites](#-prerequisites)
 - [Installation](#-installation)
   - [Automated Installation](#automated-installation)
@@ -33,6 +52,62 @@ A comprehensive file access simulator for Kubernetes development and testing. Th
 ---
 
 ## Architecture
+
+### Multi-NAS Topology (v1.0)
+
+**7 independent NAS servers** matching production OCP network architecture:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    file-simulator namespace                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌────────────┐ ┌────────────┐ ┌────────────┐                  │
+│  │ nas-input-1│ │ nas-input-2│ │ nas-input-3│  (Input NAS)     │
+│  │  :32150    │ │  :32151    │ │  :32152    │                  │
+│  └─────┬──────┘ └─────┬──────┘ └─────┬──────┘                  │
+│        │              │              │                           │
+│  ┌─────┴──────────────┴──────────────┴──────┐                  │
+│  │         Windows: C:\simulator-data\       │                  │
+│  │  nas-input-1\  nas-input-2\  nas-input-3\ │                  │
+│  └────────────────────────────────────────────┘                  │
+│                                                                  │
+│  ┌────────────┐                                                 │
+│  │ nas-backup │  (Backup NAS, read-only)                        │
+│  │  :32153    │                                                 │
+│  └─────┬──────┘                                                 │
+│        │                                                         │
+│  ┌─────┴──────────────┐                                         │
+│  │ Windows: nas-backup│                                         │
+│  └────────────────────┘                                         │
+│                                                                  │
+│  ┌────────────┐ ┌────────────┐ ┌────────────┐                  │
+│  │nas-output-1│ │nas-output-2│ │nas-output-3│  (Output NAS)    │
+│  │  :32154    │ │  :32155    │ │  :32156    │  + Sidecar Sync  │
+│  └─────┬──────┘ └─────┬──────┘ └─────┬──────┘                  │
+│        │              │              │                           │
+│        │  ┌───────────┴──────────┐   │                          │
+│        │  │  Sidecar: NFS→Windows │   │                          │
+│        │  │  (30s continuous sync)│   │                          │
+│        │  └───────────┬──────────┘   │                          │
+│        │              │              │                           │
+│  ┌─────┴──────────────┴──────────────┴──────┐                  │
+│  │         Windows: C:\simulator-data\       │                  │
+│  │ nas-output-1\ nas-output-2\ nas-output-3\ │                  │
+│  └────────────────────────────────────────────┘                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Key Features:**
+- Each NAS has unique DNS: `file-sim-nas-{name}.file-simulator.svc.cluster.local`
+- Each NAS has unique NodePort (32150-32156) for external access
+- Storage isolation: Files on nas-input-1 not visible on nas-input-2
+- Bidirectional sync on output servers (init container + sidecar)
+- See [NAS-INTEGRATION-GUIDE.md](helm-chart/file-simulator/docs/NAS-INTEGRATION-GUIDE.md) for PV/PVC integration
+
+### Legacy Single-NAS + Multi-Protocol
+
+The original architecture with single NFS server + other protocols:
 
 ```
 +-----------------------------------------------------------------------------+
@@ -419,7 +494,25 @@ helm uninstall file-sim --kube-context=file-simulator -n file-simulator
 
 ## Service Endpoints
 
-### NodePort Services
+### Multi-NAS Topology (v1.0) - 7 NAS Servers
+
+| Service | NodePort | DNS (cluster-internal) | Description |
+|---------|----------|------------------------|-------------|
+| nas-input-1 | 32150 | `file-sim-nas-input-1.file-simulator.svc.cluster.local:2049` | Input NAS server 1 |
+| nas-input-2 | 32151 | `file-sim-nas-input-2.file-simulator.svc.cluster.local:2049` | Input NAS server 2 |
+| nas-input-3 | 32152 | `file-sim-nas-input-3.file-simulator.svc.cluster.local:2049` | Input NAS server 3 |
+| nas-backup | 32153 | `file-sim-nas-backup.file-simulator.svc.cluster.local:2049` | Backup NAS (read-only) |
+| nas-output-1 | 32154 | `file-sim-nas-output-1.file-simulator.svc.cluster.local:2049` | Output NAS server 1 |
+| nas-output-2 | 32155 | `file-sim-nas-output-2.file-simulator.svc.cluster.local:2049` | Output NAS server 2 |
+| nas-output-3 | 32156 | `file-sim-nas-output-3.file-simulator.svc.cluster.local:2049` | Output NAS server 3 |
+
+**Deployment:** `helm upgrade --install file-sim ./helm-chart/file-simulator -f ./helm-chart/file-simulator/values-multi-nas.yaml --kube-context=file-simulator -n file-simulator`
+
+**Windows directories:** `C:\simulator-data\nas-{name}\` (created by `setup-windows.ps1`)
+
+**Integration:** See examples in `helm-chart/file-simulator/examples/` (PV/PVC manifests, ConfigMap, multi-mount deployment)
+
+### Legacy Protocol Services
 
 | Service | Port | URL Format | Description |
 |---------|------|------------|-------------|
@@ -430,7 +523,7 @@ helm uninstall file-sim --kube-context=file-simulator -n file-simulator
 | WebDAV | 30089 | `http://<IP>:30089` | WebDAV server |
 | S3 API | 30900 | `http://<IP>:30900` | MinIO S3 API |
 | S3 Console | 30901 | `http://<IP>:30901` | MinIO web console |
-| NFS | 32149 | `<IP>:32149` | NFS export |
+| NFS (single) | 32149 | `<IP>:32149` | NFS export (legacy) |
 
 ### LoadBalancer Services (Requires minikube tunnel)
 
@@ -1336,23 +1429,51 @@ nc -zv 172.25.201.3 32149                 # NFS port
 
 ## Testing
 
-### Quick Health Check
+### Multi-NAS Test Suite (v1.0)
+
+**Comprehensive validation** for the 7-server NAS topology:
 
 ```powershell
-# Verify all 8 pods are running
-kubectl --context=file-simulator get pods -n file-simulator
+# Run full test suite (57 tests: health, sync, isolation, persistence)
+.\scripts\test-multi-nas.ps1
 
-# Expected output: All 8 pods with STATUS=Running, READY=1/1
+# Quick validation (skip slow persistence tests ~7 min)
+.\scripts\test-multi-nas.ps1 -SkipPersistenceTests
 ```
 
-### Run Test Scripts
+**Test coverage:**
+- Phase 2: Storage isolation, subdirectory mounts, DNS resolution (37 tests)
+- Phase 3: Bidirectional sync, sidecar validation (10 tests)
+- Phase 5: Health checks, cross-NAS isolation, pod restart persistence (10 tests)
+
+**Expected results:**
+- All 7 NAS servers: Running and accessible
+- Storage isolation: PASS (files on nas-input-1 not on nas-input-2)
+- Sync timing: 15-30s NFS→Windows (under 60s requirement)
+- Persistence: PASS (files survive pod restart)
+
+### Legacy Protocol Tests
 
 ```powershell
-# PowerShell test script
+# Test original FTP/SFTP/HTTP/S3/SMB protocols
 .\scripts\test-simulator.ps1
 
 # With specific IP
 .\scripts\test-simulator.ps1 -MinikubeIp 172.25.201.3
+```
+
+### Quick Health Check
+
+```powershell
+# Verify all pods running in file-simulator namespace
+kubectl --context=file-simulator get pods -n file-simulator
+
+# For Multi-NAS (7 servers):
+kubectl --context=file-simulator get pods -n file-simulator -l simulator.protocol=nfs
+# Expected: 7 NAS pods with STATUS=Running, READY=1/1
+
+# For all protocols (8 servers total):
+# Expected output: All 8 pods with STATUS=Running, READY=1/1
 ```
 
 ### Manual Protocol Tests
@@ -1728,6 +1849,27 @@ file-simulator-suite/
 
 ---
 
+## v1.0 Documentation
+
+**Multi-NAS Integration:**
+- [`helm-chart/file-simulator/docs/NAS-INTEGRATION-GUIDE.md`](helm-chart/file-simulator/docs/NAS-INTEGRATION-GUIDE.md) - Comprehensive integration guide (1200+ lines)
+- [`helm-chart/file-simulator/examples/`](helm-chart/file-simulator/examples/) - PV/PVC manifests, ConfigMap, multi-mount examples
+- [`helm-chart/file-simulator/examples/deployments/README.md`](helm-chart/file-simulator/examples/deployments/README.md) - Step-by-step deployment instructions
+
+**Testing:**
+- [`scripts/test-multi-nas.ps1`](scripts/test-multi-nas.ps1) - Comprehensive test suite (57 tests)
+
+**Planning & Architecture:**
+- [`.planning/MILESTONES.md`](.planning/MILESTONES.md) - v1.0 milestone summary
+- [`.planning/milestones/v1.0-ROADMAP.md`](.planning/milestones/v1.0-ROADMAP.md) - Complete phase details
+- [`.planning/milestones/v1.0-MILESTONE-AUDIT.md`](.planning/milestones/v1.0-MILESTONE-AUDIT.md) - Integration verification report
+
+---
+
 ## License
 
 MIT License - See LICENSE file for details.
+
+---
+
+**Version:** v1.0 (2026-02-01) | [See MILESTONES.md](.planning/MILESTONES.md) for full release notes
