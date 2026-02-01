@@ -1,0 +1,31 @@
+# PersistentVolumeClaim for NAS Backup Server
+#
+# Purpose: Claim nas-backup-pv for application use
+# Binds to: nas-backup-pv (via selector nas-server: nas-backup)
+#
+# Usage:
+#   1. Adjust namespace to your application's namespace
+#   2. kubectl apply -f nas-backup-pvc.yaml -n <your-namespace>
+#   3. Reference in deployment: claimName: nas-backup-pvc
+#
+# Note: This server has read-only export options.
+#
+# Integration Guide: See ../docs/NAS-INTEGRATION-GUIDE.md
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nas-backup-pvc
+  namespace: default  # Change to your application namespace
+  labels:
+    nas-server: nas-backup
+    nas-role: backup
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  selector:
+    matchLabels:
+      nas-server: nas-backup  # Binds to nas-backup-pv

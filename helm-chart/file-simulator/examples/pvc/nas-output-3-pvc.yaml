@@ -1,0 +1,29 @@
+# PersistentVolumeClaim for NAS Output Server 3
+#
+# Purpose: Claim nas-output-3-pv for application use
+# Binds to: nas-output-3-pv (via selector nas-server: nas-output-3)
+#
+# Usage:
+#   1. Adjust namespace to your application's namespace
+#   2. kubectl apply -f nas-output-3-pvc.yaml -n <your-namespace>
+#   3. Reference in deployment: claimName: nas-output-3-pvc
+#
+# Integration Guide: See ../docs/NAS-INTEGRATION-GUIDE.md
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nas-output-3-pvc
+  namespace: default  # Change to your application namespace
+  labels:
+    nas-server: nas-output-3
+    nas-role: output
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  selector:
+    matchLabels:
+      nas-server: nas-output-3  # Binds to nas-output-3-pv
