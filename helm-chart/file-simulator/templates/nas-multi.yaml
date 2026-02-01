@@ -33,8 +33,9 @@ spec:
         app.kubernetes.io/component: {{ $nas.name }}
         simulator.protocol: nfs
     spec:
-      # Init container: sync Windows hostPath -> emptyDir
+      # Init containers: one-time sync + optional continuous sidecar
       initContainers:
+        # First: One-time init container (Windows -> NFS)
         - name: sync-windows-data
           image: {{ $nas.initImage.repository }}:{{ $nas.initImage.tag }}
           imagePullPolicy: {{ $nas.initImage.pullPolicy }}
@@ -53,7 +54,15 @@ spec:
               echo "Syncing from Windows mount to NFS export..."
               echo "Source: /windows-mount/"
               echo "Destination: /nfs-data/"
+              {{- if contains "nas-input" $nas.name }}
+              # Input NAS: delete orphans - Windows is source of truth
               rsync -av --delete /windows-mount/ /nfs-data/
+              echo "Sync mode: --delete (input server, Windows is source of truth)"
+              {{- else }}
+              # Output/Backup NAS: don't delete - preserve NFS-written files across restarts
+              rsync -av /windows-mount/ /nfs-data/
+              echo "Sync mode: no --delete (output/backup server, preserve NFS-written files)"
+              {{- end }}
 
               echo "Sync complete. Files in export:"
               ls -la /nfs-data | head -20
@@ -69,6 +78,45 @@ spec:
           securityContext:
             runAsNonRoot: false
             allowPrivilegeEscalation: false
+
+{{- if $nas.sidecar.enabled }}
+        # Second: Kubernetes native sidecar - continuous sync (NFS -> Windows)
+        - name: sync-to-windows
+          image: {{ $nas.sidecar.image.repository }}:{{ $nas.sidecar.image.tag }}
+          imagePullPolicy: {{ $nas.sidecar.image.pullPolicy }}
+          restartPolicy: Always  # Makes this a native sidecar (K8s 1.29+)
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              echo "=== NAS {{ $nas.name }} Sync Sidecar Starting ==="
+              apk add --no-cache rsync
+
+              INTERVAL={{ $nas.sidecar.syncInterval | default 30 }}
+              echo "Sync interval: ${INTERVAL}s"
+              echo "Direction: NFS export -> Windows mount"
+
+              while true; do
+                SYNC_START=$(date +%s)
+                rsync -av --delete /nfs-data/ /windows-mount/
+                SYNC_END=$(date +%s)
+                SYNC_DURATION=$((SYNC_END - SYNC_START))
+                echo "[$(date +%H:%M:%S)] Synced to Windows in ${SYNC_DURATION}s"
+                sleep ${INTERVAL}
+              done
+          volumeMounts:
+            - name: nfs-export
+              mountPath: /nfs-data
+              readOnly: true  # Sidecar only reads from NFS export
+            - name: windows-data
+              mountPath: /windows-mount
+          securityContext:
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+          resources:
+            {{- toYaml $nas.sidecar.resources | nindent 12 }}
+{{- end }}
 
       # Main container: unfs3 NFS server
       containers:
@@ -133,7 +181,8 @@ spec:
             path: {{ $.Values.global.storage.hostPath }}/{{ $nas.name }}
             type: DirectoryOrCreate
         - name: nfs-export
-          emptyDir: {}  # Disk-backed (default) for persistence
+          emptyDir:
+            sizeLimit: 500Mi  # Prevent disk exhaustion; pod evicted if exceeded
 
 ---
 apiVersion: v1
