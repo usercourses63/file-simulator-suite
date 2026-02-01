@@ -19,9 +19,9 @@ Progress: [████████░░] 80%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: 14.2 minutes
-- Total execution time: 1.88 hours
+- Total plans completed: 9
+- Average duration: 13.1 minutes
+- Total execution time: 1.97 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [████████░░] 80%
 | 01-single-nas-validation | 2 | 34.4min | 17.2min |
 | 02-7-server-topology | 3 | 60.5min | 20.2min |
 | 03-bidirectional-sync | 2 | 8.6min | 4.3min |
-| 04-configuration-templates | 1 | 4.2min | 4.2min |
+| 04-configuration-templates | 2 | 8.2min | 4.1min |
 
 **Recent Trend:**
-- Last 5 plans: 02-03 (47min), 03-01 (3.6min), 03-02 (5min), 04-01 (4.2min)
+- Last 5 plans: 03-01 (3.6min), 03-02 (5min), 04-01 (4.2min), 04-02 (4min)
 - Trend: Template-only plans are very fast (sub-5min); validation plans 5-10min; advanced validation with full test suite 30-50min
 
 *Updated after each plan completion*
@@ -69,6 +69,9 @@ Recent decisions affecting current work:
 - **[03-01] emptyDir sizeLimit 500Mi:** Kubernetes best practice to prevent disk exhaustion and node-wide impact (Implemented)
 - **[03-02] Phase 3 validated with 10/10 tests passing:** NFS-to-Windows sync timing 15-30s (under 60s requirement), sidecar correctly deployed on output servers only (Validated)
 - **[03-02] WIN-02 uses init container pattern:** Continuous Windows-to-NFS requires pod restart; second sidecar would be needed for continuous sync without restart (Not in Phase 3 scope)
+- **[04-02] ConfigMap includes both DNS names and NodePorts:** Applications need cluster-internal DNS for NFS mounts and external NodePorts for Windows/external access; single ConfigMap provides complete service discovery (Implemented)
+- **[04-02] Minikube IP as placeholder requiring substitution:** Minikube IP changes on restart; cannot be hardcoded in version-controlled manifest; user must substitute before applying (Implemented)
+- **[04-02] NAS directory creation integrated into setup-windows.ps1:** Single script ensures all prerequisites (base + NAS directories) created before deployment; seamless user experience (Implemented)
 - **[04-01] Static PV provisioning over dynamic:** Use static PV/PVC manifests (not StorageClass) to match production OCP patterns where NAS infrastructure pre-exists (Implemented)
 - **[04-01] Label selector binding:** Use selector.matchLabels.nas-server for PVC-to-PV binding; provides explicit binding to specific NFS server (Implemented)
 - **[04-01] Retain reclaim policy:** persistentVolumeReclaimPolicy: Retain on all PVs prevents data loss on accidental PVC deletion (Implemented)
@@ -106,7 +109,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-01 — Plan 04-01 execution
-Stopped at: Completed 04-01-PLAN.md (PV/PVC Configuration Templates)
+Last session: 2026-02-01 — Plan 04-02 execution
+Stopped at: Completed 04-02-PLAN.md (NAS Endpoints ConfigMap and Windows Setup)
 Resume file: None
-Next: Plan 04-02 (ConfigMap & Service Discovery) — create ConfigMap with NAS endpoints for application integration
+Next: Plan 04-03 (Example Deployments) — demonstrate multi-NAS mount patterns
