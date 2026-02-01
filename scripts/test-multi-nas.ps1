@@ -369,9 +369,13 @@ try {
     Write-Info "INT-03: Testing service-level multi-NAS architecture"
 
     # Verify unique services
-    $servicesJson = kubectl get svc -n file-simulator -l simulator.protocol=nfs -o json 2>&1 | Out-String
-    $services = $servicesJson | ConvertFrom-Json
-    $serviceCount = if ($services.items) { $services.items.Count } else { 0 }
+    $servicesJson = kubectl --context=file-simulator get svc -n file-simulator -l simulator.protocol=nfs -o json 2>&1 | Out-String
+    if ($servicesJson -match '"items"') {
+        $services = $servicesJson | ConvertFrom-Json
+        $serviceCount = if ($services.items) { $services.items.Count } else { 0 }
+    } else {
+        $serviceCount = 0
+    }
 
     if ($serviceCount -eq 7) {
         Write-Pass "All 7 NAS services deployed with unique endpoints"
