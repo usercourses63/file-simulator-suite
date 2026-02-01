@@ -51,11 +51,11 @@
 
 ### Testing & Verification
 
-- [ ] **TST-01**: Test script verifies all 7 NAS servers accessible
-- [ ] **TST-02**: Test creates file on Windows, verifies visible via NFS mount
-- [ ] **TST-03**: Test writes file via NFS mount, verifies appears on Windows
-- [ ] **TST-04**: Cross-NAS isolation verified (files on nas-input-1 not on nas-input-2)
-- [ ] **TST-05**: Pod restart test confirms files persist
+- [x] **TST-01**: Test script verifies all 7 NAS servers accessible
+- [x] **TST-02**: Test creates file on Windows, verifies visible via NFS mount
+- [x] **TST-03**: Test writes file via NFS mount, verifies appears on Windows
+- [x] **TST-04**: Cross-NAS isolation verified (files on nas-input-1 not on nas-input-2)
+- [x] **TST-05**: Pod restart test confirms files persist
 
 ## v2 Requirements
 
@@ -121,11 +121,11 @@ Mapping to phases:
 | DEP-03 | Phase 2 | Complete |
 | DEP-04 | Phase 1 | Complete |
 | DEP-05 | Phase 2 | Complete |
-| TST-01 | Phase 5 | Pending |
-| TST-02 | Phase 5 | Pending |
-| TST-03 | Phase 5 | Pending |
-| TST-04 | Phase 5 | Pending |
-| TST-05 | Phase 5 | Pending |
+| TST-01 | Phase 5 | Complete |
+| TST-02 | Phase 5 | Complete |
+| TST-03 | Phase 5 | Complete |
+| TST-04 | Phase 5 | Complete |
+| TST-05 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 34 total
