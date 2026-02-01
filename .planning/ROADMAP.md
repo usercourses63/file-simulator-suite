@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Single NAS Validation** - Prove init container + unfs3 pattern works
 - [x] **Phase 2: 7-Server Topology** - Scale to production-matching infrastructure
-- [ ] **Phase 3: Bidirectional Sync** - Enable output file retrieval on Windows
+- [x] **Phase 3: Bidirectional Sync** - Enable output file retrieval on Windows
 - [ ] **Phase 4: Configuration Templates** - Deliver developer-ready integration artifacts
 - [ ] **Phase 5: Testing Suite** - Validate topology isolation and persistence
 
@@ -72,8 +72,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Add sidecar configuration to Helm values and conditional sidecar template
-- [ ] 03-02-PLAN.md — Deploy and validate bidirectional sync (includes human verification checkpoint)
+- [x] 03-01-PLAN.md — Add sidecar configuration to Helm values and conditional sidecar template
+- [x] 03-02-PLAN.md — Deploy and validate bidirectional sync (includes human verification checkpoint)
 
 ### Phase 4: Configuration Templates
 **Goal**: Deliver ready-to-use PV/PVC manifests and integration documentation for systems under development
@@ -114,6 +114,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 |-------|----------------|--------|-----------|
 | 1. Single NAS Validation | 2/2 | Complete | 2026-01-29 |
 | 2. 7-Server Topology | 3/3 | Complete | 2026-02-01 |
-| 3. Bidirectional Sync | 0/2 | Not started | - |
+| 3. Bidirectional Sync | 2/2 | Complete | 2026-02-01 |
 | 4. Configuration Templates | 0/1 | Not started | - |
 | 5. Testing Suite | 0/1 | Not started | - |
