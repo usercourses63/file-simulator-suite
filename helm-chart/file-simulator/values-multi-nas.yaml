@@ -20,6 +20,10 @@ namespace:
 #   - Requests: 7 pods × 64Mi = 448Mi (fits in 8GB Minikube)
 #   - Limits: 7 pods × 256Mi = 1.75Gi
 #   - CPU: 7 pods × 50m request = 350m, 7 pods × 200m limit = 1400m
+#   - Additional sidecar resources (3 output servers only):
+#     * Requests: 3 sidecars × 32Mi = 96Mi (total system: 544Mi)
+#     * Limits: 3 sidecars × 64Mi = 192Mi (total system: 1.94Gi)
+#     * CPU: 3 sidecars × 25m request = 75m, 100m limit = 300m
 #
 # Each NAS server:
 #   - Has unique hostPath: /mnt/simulator-data/{nas-name}
@@ -27,6 +31,13 @@ namespace:
 #   - Has unique fsid value (1-7) for NFS filesystem identification (NAS-07)
 #   - Has configurable exportOptions per server (EXP-05)
 #   - Uses Phase 1 validated pattern: init container + unfs3 (non-privileged)
+#
+# Sidecar configuration (Phase 3 - Bidirectional Sync):
+#   - Purpose: Continuous sync from emptyDir (NFS export) to Windows hostPath
+#   - Enabled only for output servers (nas-output-1/2/3): Need NFS writes visible on Windows
+#   - Disabled for input servers (nas-input-1/2/3): Windows is source of truth, no reverse sync needed
+#   - Disabled for nas-backup: Read-only export (ro) cannot receive NFS writes, sidecar would be pointless
+#   - Default interval: 30 seconds (configurable per server)
 # ============================================================================
 
 nasServers:
@@ -38,6 +49,8 @@ nasServers:
     enabled: true
     fsid: 1  # NAS-07: Unique filesystem ID for NFS exports
     exportOptions: "rw,sync,no_root_squash"  # EXP-05: Read-write with root access
+    sidecar:
+      enabled: false  # No reverse sync needed - Windows is source of truth
     initImage:
       repository: alpine
       tag: latest
@@ -62,6 +75,8 @@ nasServers:
     enabled: true
     fsid: 2
     exportOptions: "rw,sync,no_root_squash"
+    sidecar:
+      enabled: false  # No reverse sync needed - Windows is source of truth
     initImage:
       repository: alpine
       tag: latest
@@ -86,6 +101,8 @@ nasServers:
     enabled: true
     fsid: 3
     exportOptions: "rw,sync,no_root_squash"
+    sidecar:
+      enabled: false  # No reverse sync needed - Windows is source of truth
     initImage:
       repository: alpine
       tag: latest
@@ -114,6 +131,8 @@ nasServers:
     enabled: true
     fsid: 4
     exportOptions: "ro,sync,no_root_squash"  # EXP-05: Read-only backup server
+    sidecar:
+      enabled: false  # Read-only export (ro) cannot receive NFS writes - sidecar not needed
     initImage:
       repository: alpine
       tag: latest
@@ -142,6 +161,20 @@ nasServers:
     enabled: true
     fsid: 5
     exportOptions: "rw,sync,no_root_squash"
+    sidecar:
+      enabled: true  # Continuous sync NFS -> Windows for output retrieval
+      syncInterval: 30  # Seconds between sync cycles
+      image:
+        repository: alpine
+        tag: latest
+        pullPolicy: IfNotPresent
+      resources:
+        requests:
+          memory: "32Mi"
+          cpu: "25m"
+        limits:
+          memory: "64Mi"
+          cpu: "100m"
     initImage:
       repository: alpine
       tag: latest
@@ -166,6 +199,20 @@ nasServers:
     enabled: true
     fsid: 6
     exportOptions: "rw,sync,no_root_squash"
+    sidecar:
+      enabled: true  # Continuous sync NFS -> Windows for output retrieval
+      syncInterval: 30  # Seconds between sync cycles
+      image:
+        repository: alpine
+        tag: latest
+        pullPolicy: IfNotPresent
+      resources:
+        requests:
+          memory: "32Mi"
+          cpu: "25m"
+        limits:
+          memory: "64Mi"
+          cpu: "100m"
     initImage:
       repository: alpine
       tag: latest
@@ -190,6 +237,20 @@ nasServers:
     enabled: true
     fsid: 7
     exportOptions: "rw,sync,no_root_squash"
+    sidecar:
+      enabled: true  # Continuous sync NFS -> Windows for output retrieval
+      syncInterval: 30  # Seconds between sync cycles
+      image:
+        repository: alpine
+        tag: latest
+        pullPolicy: IfNotPresent
+      resources:
+        requests:
+          memory: "32Mi"
+          cpu: "25m"
+        limits:
+          memory: "64Mi"
+          cpu: "100m"
     initImage:
       repository: alpine
       tag: latest
