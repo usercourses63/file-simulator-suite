@@ -1,0 +1,35 @@
+# PersistentVolume for NAS Backup Server
+#
+# Purpose: Static PV for nas-backup NFS server (read-only)
+# Usage: kubectl apply -f nas-backup-pv.yaml
+#
+# This PV uses static provisioning to bind to a pre-existing NFS server.
+# The NFS server is deployed in the file-simulator namespace via Helm.
+#
+# Note: This server has read-only export options (ro) for backup/archive purposes.
+#
+# Integration Guide: See ../docs/NAS-INTEGRATION-GUIDE.md
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nas-backup-pv
+  labels:
+    type: nfs
+    nas-role: backup
+    nas-server: nas-backup
+    environment: development
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany  # NFS supports multiple simultaneous mounts
+  persistentVolumeReclaimPolicy: Retain  # Data persists after PVC deletion
+  nfs:
+    server: file-sim-nas-backup.file-simulator.svc.cluster.local
+    path: /data
+  mountOptions:
+    - nfsvers=3
+    - tcp
+    - hard
+    - intr

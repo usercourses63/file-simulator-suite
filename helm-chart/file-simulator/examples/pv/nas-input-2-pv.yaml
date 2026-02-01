@@ -1,0 +1,33 @@
+# PersistentVolume for NAS Input Server 2
+#
+# Purpose: Static PV for nas-input-2 NFS server
+# Usage: kubectl apply -f nas-input-2-pv.yaml
+#
+# This PV uses static provisioning to bind to a pre-existing NFS server.
+# The NFS server is deployed in the file-simulator namespace via Helm.
+#
+# Integration Guide: See ../docs/NAS-INTEGRATION-GUIDE.md
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nas-input-2-pv
+  labels:
+    type: nfs
+    nas-role: input
+    nas-server: nas-input-2
+    environment: development
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany  # NFS supports multiple simultaneous mounts
+  persistentVolumeReclaimPolicy: Retain  # Data persists after PVC deletion
+  nfs:
+    server: file-sim-nas-input-2.file-simulator.svc.cluster.local
+    path: /data
+  mountOptions:
+    - nfsvers=3
+    - tcp
+    - hard
+    - intr
