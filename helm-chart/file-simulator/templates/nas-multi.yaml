@@ -19,6 +19,7 @@ metadata:
     app.kubernetes.io/component: {{ $nas.name }}
     simulator.protocol: nfs
     simulator.instance: "{{ $index }}"
+    simulator.nas-role: {{ $nas.name | regexFind "^[^-]+-[^-]+" }}
 spec:
   replicas: 1
   selector:
@@ -30,6 +31,7 @@ spec:
       labels:
         {{- include "file-simulator.selectorLabels" $ | nindent 8 }}
         app.kubernetes.io/component: {{ $nas.name }}
+        simulator.protocol: nfs
     spec:
       # Init container: sync Windows hostPath -> emptyDir
       initContainers:
@@ -142,6 +144,7 @@ metadata:
   labels:
     {{- include "file-simulator.labels" $ | nindent 4 }}
     app.kubernetes.io/component: {{ $nas.name }}
+    simulator.protocol: nfs
 spec:
   type: {{ $nas.service.type }}
   ports:
