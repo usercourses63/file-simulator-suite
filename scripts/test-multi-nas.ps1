@@ -230,7 +230,7 @@ foreach ($nas in $nasServers) {
         }
 
         # Count files in /data (using escaped paths for Git Bash)
-        $fileList = kubectl exec -n file-simulator $podName -- ls //data// 2>&1 | Out-String
+        $fileList = kubectl --context=file-simulator exec -n file-simulator $podName -c nfs-server -- ls //data// 2>&1 | Out-String
 
         if ($fileList -like "*error*" -or $fileList -like "*cannot*") {
             Write-Fail "$($nas.name): Could not list files"
@@ -268,12 +268,12 @@ try {
         Write-Info "Could not get nas-input-1 pod name for EXP-01 test"
     } else {
         # Check for sub-1 directory
-        $subDirCheck = kubectl exec -n file-simulator $podName -- ls //data// 2>&1 | Out-String
+        $subDirCheck = kubectl --context=file-simulator exec -n file-simulator $podName -c nfs-server -- ls //data// 2>&1 | Out-String
         if ($subDirCheck -like "*sub-1*") {
             Write-Pass "nas-input-1: sub-1 directory present"
 
             # Check nested subdirectory
-            $nestedCheck = kubectl exec -n file-simulator $podName -- ls //data//sub-1// 2>&1 | Out-String
+            $nestedCheck = kubectl --context=file-simulator exec -n file-simulator $podName -c nfs-server -- ls //data//sub-1// 2>&1 | Out-String
             if ($nestedCheck -like "*nested*") {
                 Write-Pass "nas-input-1: sub-1/nested directory accessible"
             } else {
@@ -300,7 +300,7 @@ try {
         Write-Info "Could not get nas-input-1 pod name for EXP-02 test"
     } else {
         # Create runtime directory
-        $createResult = kubectl exec -n file-simulator $podName -- sh -c 'mkdir /data/exp02-test && echo "Runtime test" > /data/exp02-test/test.txt' 2>&1 | Out-String
+        $createResult = kubectl --context=file-simulator exec -n file-simulator $podName -c nfs-server -- sh -c 'mkdir -p /data/exp02-test && echo "Runtime test" > /data/exp02-test/test.txt' 2>&1 | Out-String
 
         if (-not ($createResult -like "*error*" -or $createResult -like "*cannot*")) {
             Write-Pass "Runtime directory created in pod"
