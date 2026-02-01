@@ -1,0 +1,180 @@
+---
+# Multi-NAS Mount Example Deployment
+#
+# PURPOSE:
+#   Demonstrates production-style pattern of mounting multiple NAS servers
+#   simultaneously in a single pod. This example mounts 6 NAS servers:
+#     - 3 input servers (nas-input-1/2/3)
+#     - 3 output servers (nas-output-1/2/3)
+#   Does NOT mount nas-backup (read-only server typically not needed by apps)
+#
+# PREREQUISITES:
+#   1. File Simulator Suite deployed (Helm chart in file-simulator namespace)
+#   2. All 7 NAS server pods running (file-sim-nas-*)
+#   3. Windows directories created at C:\simulator-data\nas-*
+#      Run: .\scripts\setup-windows.ps1
+#   4. PersistentVolumes applied to cluster
+#      Run: kubectl apply -f ../pv/
+#   5. PersistentVolumeClaims applied to application namespace
+#      Run: kubectl apply -f ../pvc/ -n default
+#   6. ConfigMap applied to application namespace
+#      Run: kubectl apply -f ../configmap/ -n default
+#
+# USAGE:
+#   kubectl apply -f multi-mount-example.yaml -n default
+#   kubectl logs -n default -l app=multi-nas-app
+#
+# CUSTOMIZATION:
+#   - Adjust namespace to match your application's namespace
+#   - Add/remove volume mounts based on which NAS servers you need
+#   - Change mount paths (/mnt/input-*, /mnt/output-*) as needed
+#   - Set readOnly: true for input-only access patterns
+#   - Add subdirectory mounts using subPath in volumeMounts
+#
+# INTEGRATION PATTERN:
+#   This example shows the complete integration:
+#   1. PVCs mounted as volumes (for file access)
+#   2. ConfigMap injected as env vars (for service discovery)
+#   3. Init script verifies all mounts accessible
+#
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multi-nas-app
+  namespace: default
+  labels:
+    app: multi-nas-app
+    example: multi-mount
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: multi-nas-app
+  template:
+    metadata:
+      labels:
+        app: multi-nas-app
+    spec:
+      containers:
+        - name: app
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - |
+              echo "=========================================="
+              echo "  Multi-NAS Mount Example"
+              echo "=========================================="
+              echo ""
+              echo "This pod demonstrates mounting 6 NAS servers simultaneously:"
+              echo "  - 3 input servers: nas-input-1/2/3"
+              echo "  - 3 output servers: nas-output-1/2/3"
+              echo ""
+              echo "ConfigMap environment variables loaded:"
+              echo "  NAS_INPUT_1_HOST: $NAS_INPUT_1_HOST"
+              echo "  NAS_INPUT_2_HOST: $NAS_INPUT_2_HOST"
+              echo "  NAS_INPUT_3_HOST: $NAS_INPUT_3_HOST"
+              echo "  NAS_OUTPUT_1_HOST: $NAS_OUTPUT_1_HOST"
+              echo "  NAS_OUTPUT_2_HOST: $NAS_OUTPUT_2_HOST"
+              echo "  NAS_OUTPUT_3_HOST: $NAS_OUTPUT_3_HOST"
+              echo ""
+              echo "=========================================="
+              echo "  Input NAS Server Contents"
+              echo "=========================================="
+              echo ""
+              echo "--- nas-input-1 (/mnt/input-1) ---"
+              ls -lh /mnt/input-1 2>/dev/null || echo "  (empty or not accessible)"
+              echo ""
+              echo "--- nas-input-2 (/mnt/input-2) ---"
+              ls -lh /mnt/input-2 2>/dev/null || echo "  (empty or not accessible)"
+              echo ""
+              echo "--- nas-input-3 (/mnt/input-3) ---"
+              ls -lh /mnt/input-3 2>/dev/null || echo "  (empty or not accessible)"
+              echo ""
+              echo "=========================================="
+              echo "  Output NAS Server Contents"
+              echo "=========================================="
+              echo ""
+              echo "--- nas-output-1 (/mnt/output-1) ---"
+              ls -lh /mnt/output-1 2>/dev/null || echo "  (empty or not accessible)"
+              echo ""
+              echo "--- nas-output-2 (/mnt/output-2) ---"
+              ls -lh /mnt/output-2 2>/dev/null || echo "  (empty or not accessible)"
+              echo ""
+              echo "--- nas-output-3 (/mnt/output-3) ---"
+              ls -lh /mnt/output-3 2>/dev/null || echo "  (empty or not accessible)"
+              echo ""
+              echo "=========================================="
+              echo "  Test: Writing to Output Servers"
+              echo "=========================================="
+              echo ""
+              echo "Creating test files..."
+              echo "Test file from multi-nas-app pod" > /mnt/output-1/test-from-pod.txt 2>/dev/null && echo "  ✓ Written to /mnt/output-1/test-from-pod.txt" || echo "  ✗ Failed to write to output-1"
+              echo "Test file from multi-nas-app pod" > /mnt/output-2/test-from-pod.txt 2>/dev/null && echo "  ✓ Written to /mnt/output-2/test-from-pod.txt" || echo "  ✗ Failed to write to output-2"
+              echo "Test file from multi-nas-app pod" > /mnt/output-3/test-from-pod.txt 2>/dev/null && echo "  ✓ Written to /mnt/output-3/test-from-pod.txt" || echo "  ✗ Failed to write to output-3"
+              echo ""
+              echo "=========================================="
+              echo "  All Mounts Ready"
+              echo "=========================================="
+              echo ""
+              echo "Pod will sleep to allow interactive inspection."
+              echo "Use 'kubectl exec' to explore mounted filesystems:"
+              echo "  kubectl exec -n default -it deploy/multi-nas-app -- sh"
+              echo ""
+              echo "Sleeping indefinitely..."
+              sleep infinity
+          volumeMounts:
+            # Input NAS servers
+            - name: nas-input-1
+              mountPath: /mnt/input-1
+              readOnly: false  # Can read and write (for flexible testing)
+            - name: nas-input-2
+              mountPath: /mnt/input-2
+              readOnly: false
+            - name: nas-input-3
+              mountPath: /mnt/input-3
+              readOnly: false
+            # Output NAS servers
+            - name: nas-output-1
+              mountPath: /mnt/output-1
+              readOnly: false
+            - name: nas-output-2
+              mountPath: /mnt/output-2
+              readOnly: false
+            - name: nas-output-3
+              mountPath: /mnt/output-3
+              readOnly: false
+          envFrom:
+            # Load all NAS endpoints as environment variables
+            - configMapRef:
+                name: file-simulator-nas-endpoints
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
+      volumes:
+        # Reference PVCs for each NAS server
+        # Note: nas-backup not mounted (typically read-only, rarely needed)
+        - name: nas-input-1
+          persistentVolumeClaim:
+            claimName: nas-input-1-pvc
+        - name: nas-input-2
+          persistentVolumeClaim:
+            claimName: nas-input-2-pvc
+        - name: nas-input-3
+          persistentVolumeClaim:
+            claimName: nas-input-3-pvc
+        - name: nas-output-1
+          persistentVolumeClaim:
+            claimName: nas-output-1-pvc
+        - name: nas-output-2
+          persistentVolumeClaim:
+            claimName: nas-output-2-pvc
+        - name: nas-output-3
+          persistentVolumeClaim:
+            claimName: nas-output-3-pvc
+      restartPolicy: Always
