@@ -50,9 +50,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Create nas-multi.yaml Helm template + values-multi-nas.yaml configuration
-- [ ] 02-02-PLAN.md — Deploy 7 NAS servers and validate storage isolation (includes human verification checkpoint)
-- [ ] 02-03-PLAN.md — Validate advanced features (EXP-02, INT-03) and create test-multi-nas.ps1 script
+- [x] 02-01-PLAN.md — Create nas-multi.yaml Helm template + values-multi-nas.yaml configuration
+- [x] 02-02-PLAN.md — Deploy 7 NAS servers and validate storage isolation (includes human verification checkpoint)
+- [x] 02-03-PLAN.md — Validate advanced features (EXP-02, INT-03) and create test-multi-nas.ps1 script
 
 ### Phase 3: Bidirectional Sync
 **Goal**: Enable output NAS servers to sync files written via NFS mount back to Windows for tester retrieval
@@ -65,10 +65,11 @@ Plans:
   4. Bidirectional sync interval configurable via Helm values (default 30 seconds)
   5. No sync loops or file corruption after 100 write cycles
   6. Files placed in Windows directory visible via NFS mount within 30 seconds (WIN-02 - requires continuous sync sidecar)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: TBD
+- [ ] 03-01-PLAN.md — Add sidecar configuration to Helm values and conditional sidecar template
+- [ ] 03-02-PLAN.md — Deploy and validate bidirectional sync (includes human verification checkpoint)
 
 ### Phase 4: Configuration Templates
 **Goal**: Deliver ready-to-use PV/PVC manifests and integration documentation for systems under development
@@ -109,6 +110,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 |-------|----------------|--------|-----------|
 | 1. Single NAS Validation | 2/2 | Complete | 2026-01-29 |
 | 2. 7-Server Topology | 3/3 | Complete | 2026-02-01 |
-| 3. Bidirectional Sync | 0/1 | Not started | - |
+| 3. Bidirectional Sync | 0/2 | Not started | - |
 | 4. Configuration Templates | 0/1 | Not started | - |
 | 5. Testing Suite | 0/1 | Not started | - |
