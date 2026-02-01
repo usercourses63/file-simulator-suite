@@ -92,12 +92,12 @@ Mapping to phases:
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| NAS-01 | Phase 2 | Pending |
-| NAS-02 | Phase 2 | Pending |
-| NAS-03 | Phase 2 | Pending |
+| NAS-01 | Phase 2 | Complete |
+| NAS-02 | Phase 2 | Complete |
+| NAS-03 | Phase 2 | Complete |
 | NAS-04 | Phase 1 | Complete |
 | NAS-05 | Phase 1 | Complete |
-| NAS-06 | Phase 2 | Pending |
+| NAS-06 | Phase 2 | Complete |
 | NAS-07 | Phase 1 | Complete |
 | WIN-01 | Phase 1 | Complete |
 | WIN-02 | Phase 3 | Pending |
@@ -106,21 +106,21 @@ Mapping to phases:
 | WIN-05 | Phase 3 | Pending |
 | WIN-06 | Phase 1 | Complete |
 | WIN-07 | Phase 1 | Complete |
-| EXP-01 | Phase 2 | Pending |
-| EXP-02 | Phase 2 | Pending |
+| EXP-01 | Phase 2 | Complete |
+| EXP-02 | Phase 2 | Complete |
 | EXP-03 | Phase 1 | Complete |
 | EXP-04 | Phase 1 | Complete |
-| EXP-05 | Phase 2 | Pending |
+| EXP-05 | Phase 2 | Complete |
 | INT-01 | Phase 4 | Pending |
 | INT-02 | Phase 4 | Pending |
-| INT-03 | Phase 2 | Pending |
-| INT-04 | Phase 2 | Pending |
+| INT-03 | Phase 2 | Complete |
+| INT-04 | Phase 2 | Complete |
 | INT-05 | Phase 4 | Pending |
-| DEP-01 | Phase 2 | Pending |
-| DEP-02 | Phase 2 | Pending |
-| DEP-03 | Phase 2 | Pending |
+| DEP-01 | Phase 2 | Complete |
+| DEP-02 | Phase 2 | Complete |
+| DEP-03 | Phase 2 | Complete |
 | DEP-04 | Phase 1 | Complete |
-| DEP-05 | Phase 2 | Pending |
+| DEP-05 | Phase 2 | Complete |
 | TST-01 | Phase 5 | Pending |
 | TST-02 | Phase 5 | Pending |
 | TST-03 | Phase 5 | Pending |
