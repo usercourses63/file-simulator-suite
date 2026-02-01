@@ -1,0 +1,107 @@
+# File Simulator NAS Endpoints ConfigMap
+# This ConfigMap provides service discovery for all 7 NAS servers in the file-simulator namespace.
+# Applications can use these environment variables to connect to NAS servers via NFS or external NodePort.
+#
+# DEPLOYMENT:
+# 1. Update MINIKUBE_IP placeholder:
+#    export MINIKUBE_IP=$(minikube ip -p file-simulator)
+#    sed -i "s/<minikube-ip>/$MINIKUBE_IP/g" nas-endpoints-configmap.yaml
+#
+# 2. Apply to your application namespace:
+#    kubectl apply -f nas-endpoints-configmap.yaml -n <your-namespace>
+#
+# USAGE:
+# Reference in your deployment using envFrom:
+#
+#   spec:
+#     containers:
+#       - name: app
+#         envFrom:
+#           - configMapRef:
+#               name: file-simulator-nas-endpoints
+#
+# This will inject all NAS connection details as environment variables.
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: file-simulator-nas-endpoints
+  namespace: default  # Deploy to your application namespace
+  labels:
+    app: file-simulator
+    component: nas-endpoints
+data:
+  # ============================================================================
+  # NAS SERVER COUNT AND NAMESPACE
+  # ============================================================================
+  NAS_COUNT: "7"
+  NAS_NAMESPACE: "file-simulator"
+
+  # ============================================================================
+  # NAS INPUT SERVER 1
+  # ============================================================================
+  NAS_INPUT_1_HOST: "file-sim-nas-input-1.file-simulator.svc.cluster.local"
+  NAS_INPUT_1_PORT: "2049"
+  NAS_INPUT_1_PATH: "/data"
+  NAS_INPUT_1_NODEPORT: "32150"
+  NAS_INPUT_1_PVC: "nas-input-1-pvc"
+
+  # ============================================================================
+  # NAS INPUT SERVER 2
+  # ============================================================================
+  NAS_INPUT_2_HOST: "file-sim-nas-input-2.file-simulator.svc.cluster.local"
+  NAS_INPUT_2_PORT: "2049"
+  NAS_INPUT_2_PATH: "/data"
+  NAS_INPUT_2_NODEPORT: "32151"
+  NAS_INPUT_2_PVC: "nas-input-2-pvc"
+
+  # ============================================================================
+  # NAS INPUT SERVER 3
+  # ============================================================================
+  NAS_INPUT_3_HOST: "file-sim-nas-input-3.file-simulator.svc.cluster.local"
+  NAS_INPUT_3_PORT: "2049"
+  NAS_INPUT_3_PATH: "/data"
+  NAS_INPUT_3_NODEPORT: "32152"
+  NAS_INPUT_3_PVC: "nas-input-3-pvc"
+
+  # ============================================================================
+  # NAS BACKUP SERVER (Read-Only)
+  # ============================================================================
+  NAS_BACKUP_HOST: "file-sim-nas-backup.file-simulator.svc.cluster.local"
+  NAS_BACKUP_PORT: "2049"
+  NAS_BACKUP_PATH: "/data"
+  NAS_BACKUP_NODEPORT: "32153"
+  NAS_BACKUP_PVC: "nas-backup-pvc"
+
+  # ============================================================================
+  # NAS OUTPUT SERVER 1
+  # ============================================================================
+  NAS_OUTPUT_1_HOST: "file-sim-nas-output-1.file-simulator.svc.cluster.local"
+  NAS_OUTPUT_1_PORT: "2049"
+  NAS_OUTPUT_1_PATH: "/data"
+  NAS_OUTPUT_1_NODEPORT: "32154"
+  NAS_OUTPUT_1_PVC: "nas-output-1-pvc"
+
+  # ============================================================================
+  # NAS OUTPUT SERVER 2
+  # ============================================================================
+  NAS_OUTPUT_2_HOST: "file-sim-nas-output-2.file-simulator.svc.cluster.local"
+  NAS_OUTPUT_2_PORT: "2049"
+  NAS_OUTPUT_2_PATH: "/data"
+  NAS_OUTPUT_2_NODEPORT: "32155"
+  NAS_OUTPUT_2_PVC: "nas-output-2-pvc"
+
+  # ============================================================================
+  # NAS OUTPUT SERVER 3
+  # ============================================================================
+  NAS_OUTPUT_3_HOST: "file-sim-nas-output-3.file-simulator.svc.cluster.local"
+  NAS_OUTPUT_3_PORT: "2049"
+  NAS_OUTPUT_3_PATH: "/data"
+  NAS_OUTPUT_3_NODEPORT: "32156"
+  NAS_OUTPUT_3_PVC: "nas-output-3-pvc"
+
+  # ============================================================================
+  # MINIKUBE EXTERNAL ACCESS
+  # ============================================================================
+  # Substitute with: $(minikube ip -p file-simulator)
+  MINIKUBE_IP: "<minikube-ip>"
