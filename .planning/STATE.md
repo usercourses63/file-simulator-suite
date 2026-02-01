@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 
 ## Current Position
 
-Phase: 2 of 5 (7-Server Topology)
-Plan: 3 of 3 (Advanced NAS Topology Validation)
-Status: Phase Complete
-Last activity: 2026-02-01 — Completed 02-03-PLAN.md
+Phase: 3 of 5 (Bidirectional Sync)
+Plan: 1 of 2 (Add Sidecar Configuration)
+Status: Plan Complete
+Last activity: 2026-02-01 — Completed 03-01-PLAN.md
 
-Progress: [█████░░░░░] 50%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 19.4 minutes
-- Total execution time: 1.62 hours
+- Total plans completed: 6
+- Average duration: 17.2 minutes
+- Total execution time: 1.72 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [█████░░░░░] 50%
 |-------|-------|-------|----------|
 | 01-single-nas-validation | 2 | 34.4min | 17.2min |
 | 02-7-server-topology | 3 | 60.5min | 20.2min |
+| 03-bidirectional-sync | 1 | 3.6min | 3.6min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (32min), 02-01 (4.5min), 02-02 (9min), 02-03 (47min)
-- Trend: Validation plans with checkpoints take longer due to iteration; template creation remains fast
+- Last 5 plans: 02-01 (4.5min), 02-02 (9min), 02-03 (47min), 03-01 (3.6min)
+- Trend: Template-only plans are very fast (sub-5min); validation plans with checkpoints take longer
 
 *Updated after each plan completion*
 
@@ -61,6 +62,10 @@ Recent decisions affecting current work:
 - **[02-03] Runtime directories ephemeral for input NAS:** Runtime-created directories lost on pod restart (expected); Windows filesystem is source of truth; init container overwrites on each pod start (Validated)
 - **[02-03] Multi-NAS architecture validated at service level:** 7 unique services with ClusterIPs, DNS names, storage isolation confirmed; NFS volume mount testing blocked by rpcbind (Validated)
 - **[02-03] Test automation via PowerShell:** kubectl exec validation in structured PASS/FAIL/SKIP format sufficient for Phase 2; 37/38 tests passing (Implemented)
+- **[03-01] Native sidecar over regular container:** Use init container with restartPolicy: Always for proper startup ordering and graceful shutdown (Implemented)
+- **[03-01] Init container --delete based on server NAME:** Use server name pattern (nas-input-*) to determine --delete flag, not sidecar.enabled; nas-backup is not an input server (Implemented)
+- **[03-01] nas-backup sidecar disabled:** Read-only export (ro) cannot receive NFS writes; sidecar would be pointless overhead (Implemented)
+- **[03-01] emptyDir sizeLimit 500Mi:** Kubernetes best practice to prevent disk exhaustion and node-wide impact (Implemented)
 
 ### Pending Todos
 
@@ -79,10 +84,11 @@ None yet.
 - Deployment tested in 02-02: All 7 pods running stably with minimal CPU usage (<50m per pod)
 - Phase 2 complete: System meets production-ready criteria
 
-**Sync Latency (Phase 3):**
-- Current pattern: Init container one-time sync at pod start (proven in Phase 2)
-- Need sidecar continuous sync for output NAS bidirectional pattern (planned for Phase 3)
-- Input NAS one-way sync validated and working reliably
+**Sync Latency (Phase 3) - IN PROGRESS:**
+- Init container one-time sync at pod start: Validated and working (Phase 2)
+- Sidecar continuous sync for output NAS: Configuration complete (03-01), pending deployment validation (03-02)
+- Input NAS one-way sync: Validated and working reliably
+- Bidirectional pattern: Infrastructure ready, awaiting validation testing
 
 **rpcbind Investigation (Phase 3):**
 - rpcbind integration still blocked (DNS resolution fails during NFS mount)
@@ -92,7 +98,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-01 10:58 UTC — Plan 02-03 execution
-Stopped at: Completed 02-03-PLAN.md (Advanced NAS Topology Validation) — Phase 2 complete
+Last session: 2026-02-01 12:02 UTC — Plan 03-01 execution
+Stopped at: Completed 03-01-PLAN.md (Add Sidecar Configuration) — Phase 3 started
 Resume file: None
-Next: Phase 3 (Bidirectional Sync) — awaiting planning
+Next: Plan 03-02 (Bidirectional Sync Validation) — deploy and test sidecar pattern
