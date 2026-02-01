@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 
 ## Current Position
 
-Phase: 3 of 5 (Bidirectional Sync)
-Plan: 2 of 2 (Bidirectional Sync Validation)
-Status: Phase Complete
-Last activity: 2026-02-01 — Completed 03-02-PLAN.md
+Phase: 4 of 5 (Configuration Templates)
+Plan: 2 of 3 (NAS Endpoints ConfigMap and Windows Setup)
+Status: In Progress
+Last activity: 2026-02-01 — Completed 04-02-PLAN.md
 
-Progress: [███████░░░] 70%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 15.5 minutes
-- Total execution time: 1.81 hours
+- Total plans completed: 8
+- Average duration: 14.2 minutes
+- Total execution time: 1.88 hours
 
 **By Phase:**
 
@@ -30,9 +30,10 @@ Progress: [███████░░░] 70%
 | 01-single-nas-validation | 2 | 34.4min | 17.2min |
 | 02-7-server-topology | 3 | 60.5min | 20.2min |
 | 03-bidirectional-sync | 2 | 8.6min | 4.3min |
+| 04-configuration-templates | 1 | 4.2min | 4.2min |
 
 **Recent Trend:**
-- Last 5 plans: 02-02 (9min), 02-03 (47min), 03-01 (3.6min), 03-02 (5min)
+- Last 5 plans: 02-03 (47min), 03-01 (3.6min), 03-02 (5min), 04-01 (4.2min)
 - Trend: Template-only plans are very fast (sub-5min); validation plans 5-10min; advanced validation with full test suite 30-50min
 
 *Updated after each plan completion*
@@ -68,6 +69,10 @@ Recent decisions affecting current work:
 - **[03-01] emptyDir sizeLimit 500Mi:** Kubernetes best practice to prevent disk exhaustion and node-wide impact (Implemented)
 - **[03-02] Phase 3 validated with 10/10 tests passing:** NFS-to-Windows sync timing 15-30s (under 60s requirement), sidecar correctly deployed on output servers only (Validated)
 - **[03-02] WIN-02 uses init container pattern:** Continuous Windows-to-NFS requires pod restart; second sidecar would be needed for continuous sync without restart (Not in Phase 3 scope)
+- **[04-01] Static PV provisioning over dynamic:** Use static PV/PVC manifests (not StorageClass) to match production OCP patterns where NAS infrastructure pre-exists (Implemented)
+- **[04-01] Label selector binding:** Use selector.matchLabels.nas-server for PVC-to-PV binding; provides explicit binding to specific NFS server (Implemented)
+- **[04-01] Retain reclaim policy:** persistentVolumeReclaimPolicy: Retain on all PVs prevents data loss on accidental PVC deletion (Implemented)
+- **[04-01] Explicit NFS mount options:** mountOptions [nfsvers=3, tcp, hard, intr] ensures consistent behavior across K8s versions (Implemented)
 
 ### Pending Todos
 
@@ -101,7 +106,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-01 — Plan 03-02 execution
-Stopped at: Completed 03-02-PLAN.md (Bidirectional Sync Validation) — Phase 3 complete ✅
+Last session: 2026-02-01 — Plan 04-01 execution
+Stopped at: Completed 04-01-PLAN.md (PV/PVC Configuration Templates)
 Resume file: None
-Next: Phase 4 (Configuration Templates) — deliver PV/PVC manifests and integration documentation
+Next: Plan 04-02 (ConfigMap & Service Discovery) — create ConfigMap with NAS endpoints for application integration
