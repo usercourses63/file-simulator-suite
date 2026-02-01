@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 
 ## Current Position
 
-Phase: 4 of 5 (Configuration Templates)
-Plan: 3 of 3 (Example Deployments and Integration Guide)
-Status: Phase Complete
-Last activity: 2026-02-01 — Completed 04-03-PLAN.md
+Phase: 5 of 5 (Testing Suite)
+Plan: 1 of 2 (Comprehensive Testing Suite)
+Status: In Progress
+Last activity: 2026-02-01 — Completed 05-01-PLAN.md
 
-Progress: [█████████░] 90%
+Progress: [█████████▓] 92%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 12.3 minutes
-- Total execution time: 2.03 hours
+- Total plans completed: 11
+- Average duration: 11.1 minutes
+- Total execution time: 2.05 hours
 
 **By Phase:**
 
@@ -31,10 +31,11 @@ Progress: [█████████░] 90%
 | 02-7-server-topology | 3 | 60.5min | 20.2min |
 | 03-bidirectional-sync | 2 | 8.6min | 4.3min |
 | 04-configuration-templates | 3 | 15.2min | 5.1min |
+| 05-testing-suite | 1 | 2min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (5min), 04-01 (4.2min), 04-02 (4min), 04-03 (7min)
-- Trend: Template/documentation plans consistently fast (4-7min); validation plans 5-10min; advanced validation with full test suite 30-50min
+- Last 5 plans: 04-01 (4.2min), 04-02 (4min), 04-03 (7min), 05-01 (2min)
+- Trend: Template/documentation plans consistently fast (2-7min); validation plans 5-10min; advanced validation with full test suite 30-50min
 
 *Updated after each plan completion*
 
@@ -79,6 +80,12 @@ Recent decisions affecting current work:
 - **[04-03] Multi-mount example excludes nas-backup:** Example deployment mounts 6 servers (not 7); backup server typically read-only and rarely needed by applications (Implemented)
 - **[04-03] Comprehensive integration guide (1200+ lines):** Serves as authoritative reference for PV/PVC patterns, production OCP replication, and multi-mount configuration; offline OCP environment requires standalone documentation (Implemented)
 - **[04-03] README troubleshooting with diagnostics:** Include diagnostic commands (kubectl describe, logs) not just happy-path; real deployments encounter label mismatches, namespace issues, sync timing (Implemented)
+- **[05-01] Test-AllNASHealthChecks uses jsonpath for Ready condition:** Per-server granularity instead of bulk kubectl wait; reports each NAS individually for debugging (Implemented)
+- **[05-01] Test-CrossNASIsolation negative testing pattern:** Creates marker on nas-input-1, validates absence on all 6 others; proves storage isolation (Implemented)
+- **[05-01] Test-PodRestartPersistence quick restart with --grace-period=0:** Fast test cycles without 30s graceful shutdown wait (Implemented)
+- **[05-01] Persistence tests limited to 3 representative servers:** nas-input-1, nas-output-1, nas-backup provide balanced coverage vs test duration (3 min vs 7 min for all servers) (Implemented)
+- **[05-01] TST-02/TST-03 coverage via existing patterns:** TST-02 validated by init container (Steps 5, 8); TST-03 validated by Test-NFSToWindows (Phase 3); no duplication needed (Documented)
+- **[05-01] -SkipPersistenceTests parameter for CI/CD:** Allows quick validation without 2-3 minute pod restart tests; useful when pods newly deployed (Implemented)
 
 ### Pending Todos
 
@@ -112,7 +119,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-01 — Plan 04-03 execution
-Stopped at: Completed 04-03-PLAN.md (Example Deployments and Integration Guide) — Phase 4 COMPLETE
+Last session: 2026-02-01 — Plan 05-01 execution
+Stopped at: Completed 05-01-PLAN.md (Comprehensive Testing Suite) — Phase 5 in progress (1 of 2 plans)
 Resume file: None
-Next: Phase 5 (Final Documentation) — PROJECT.md consolidation, comprehensive README
+Next: Plan 05-02 (Final Documentation) — PROJECT.md consolidation, ROADMAP update, comprehensive README
