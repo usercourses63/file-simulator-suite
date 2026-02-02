@@ -18,8 +18,8 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
     private readonly ILogger<KubernetesDiscoveryService> _logger;
 
     // Label selectors for file-simulator components
-    private const string AppLabel = "app.kubernetes.io/part-of";
-    private const string AppValue = "file-simulator-suite";
+    private const string AppLabel = "app.kubernetes.io/name";
+    private const string AppValue = "file-simulator";
 
     // Protocol detection from deployment names
     private static readonly Dictionary<string, string> ProtocolMappings = new()
