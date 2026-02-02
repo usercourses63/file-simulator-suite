@@ -2,11 +2,24 @@
 
 ## What This Is
 
-A Kubernetes-based file protocol simulator that replicates production OCP network topology for development testing. Provides 7 independent NAS servers (3 input, 1 backup, 3 output) that expose Windows directories via NFS, enabling systems under development to access test files through production-like PV/PVC mounts while testers manage files directly on Windows.
+A Kubernetes-based file protocol simulator with real-time monitoring and control platform. Replicates production OCP network topology (7 independent NAS servers, Kafka cluster, FTP/SFTP/HTTP/S3/SMB) that expose Windows directories, enabling systems under development to access test files through production-like PV/PVC mounts. Includes React-based dashboard for real-time monitoring, dynamic server management, and configuration control.
 
 ## Core Value
 
 Development systems must connect to simulated NAS servers using identical PV/PVC configurations as production OCP, with test files written on Windows immediately visible through NFS mounts - zero deployment differences between dev and prod.
+
+## Current Milestone: v2.0 Simulator Control Platform
+
+**Goal:** Transform the simulator into an observable, controllable platform with real-time monitoring, dynamic server management, and Kafka integration - enabling self-service test environment orchestration.
+
+**Target capabilities:**
+- React-based monitoring dashboard with real-time updates (WebSockets)
+- Complete observability: health, connectivity, file events, usage metrics, historical trends
+- Dynamic control plane: add/remove servers at runtime (FTP, SFTP, NAS, Kafka topics)
+- Kafka simulator: minimal cluster for pub/sub, topic management, consumer groups
+- File operations: upload/download/delete through UI across all protocols
+- Configuration management: import/export simulator configurations
+- Alerting & notifications: proactive issue detection
 
 ## Requirements
 
@@ -36,7 +49,22 @@ Existing capabilities (pre-v1.0):
 
 ### Active
 
-(No active requirements - next milestone not yet defined)
+v2.0 Simulator Control Platform (In Progress):
+
+- [ ] React monitoring dashboard with real-time updates
+- [ ] Backend API with WebSocket support
+- [ ] Health/connectivity monitoring for all protocols
+- [ ] File event streaming (Windows watcher + protocol tracking)
+- [ ] File browser for Windows directories
+- [ ] Usage metrics and historical data
+- [ ] Alerting and notifications
+- [ ] Dynamic server management (add/remove at runtime)
+- [ ] Kafka simulator (single broker, minimal setup)
+- [ ] Kafka topic management
+- [ ] Consumer group support
+- [ ] File operations in UI (upload/download/delete)
+- [ ] Configuration import/export
+- [ ] Persisted configuration (survives restarts)
 
 ### Out of Scope
 
@@ -97,4 +125,4 @@ Existing capabilities (pre-v1.0):
 | kubectl --context mandatory | Multi-profile Minikube safety; prevent cross-cluster accidents | ✓ Good - Zero accidental deletions in v1.0 |
 
 ---
-*Last updated: 2026-02-01 after v1.0 milestone*
+*Last updated: 2026-02-02 after v2.0 milestone initialization*
