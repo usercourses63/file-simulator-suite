@@ -4,6 +4,7 @@ import { ServerStatus, ServerStatusUpdate } from './types/server';
 import ConnectionStatus from './components/ConnectionStatus';
 import SummaryHeader from './components/SummaryHeader';
 import ServerGrid from './components/ServerGrid';
+import ServerDetailsPanel from './components/ServerDetailsPanel';
 import './App.css';
 
 function App() {
@@ -18,7 +19,7 @@ function App() {
   const [selectedServer, setSelectedServer] = useState<ServerStatus | null>(null);
 
   return (
-    <div className="app">
+    <div className={`app ${selectedServer ? 'app--panel-open' : ''}`}>
       <header className="app-header">
         <div className="header-title">
           <h1>File Simulator Suite</h1>
@@ -57,13 +58,10 @@ function App() {
         )}
       </main>
 
-      {/* Details panel placeholder - implemented in Plan 03 */}
-      {selectedServer && (
-        <div className="details-panel-placeholder">
-          Selected: {selectedServer.Name}
-          <button onClick={() => setSelectedServer(null)}>Close</button>
-        </div>
-      )}
+      <ServerDetailsPanel
+        server={selectedServer}
+        onClose={() => setSelectedServer(null)}
+      />
     </div>
   );
 }
