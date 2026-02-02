@@ -1,0 +1,45 @@
+{{- if and .Values.controlApi.enabled .Values.controlApi.rbac.create }}
+---
+# ServiceAccount for Control API
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-control-api
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: control-api
+
+---
+# Role with permissions to read cluster resources
+# Scoped to file-simulator namespace for security
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-control-api
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: control-api
+rules:
+  {{- toYaml .Values.controlApi.rbac.rules | nindent 2 }}
+
+---
+# RoleBinding connecting ServiceAccount to Role
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-control-api
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: control-api
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "file-simulator.fullname" . }}-control-api
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "file-simulator.fullname" . }}-control-api
+    namespace: {{ include "file-simulator.namespace" . }}
+{{- end }}
