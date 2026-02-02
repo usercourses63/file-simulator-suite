@@ -84,11 +84,13 @@ Plans:
   3. Connection quality metrics show latency and success rate for each protocol
   4. Dashboard reconnects automatically when WebSocket disconnects and displays accurate state
   5. Protocol-specific details panel shows FTP/SFTP/HTTP/S3/SMB/NFS connection information
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 07-01: [TBD during planning]
-- [ ] 07-02: [TBD during planning]
+- [ ] 07-01-PLAN.md — Vite React TypeScript project with SignalR hook and types
+- [ ] 07-02-PLAN.md — Core dashboard components (ConnectionStatus, SummaryHeader, ServerCard, ServerGrid)
+- [ ] 07-03-PLAN.md — Protocol details panel with connection info and copy-to-clipboard
+- [ ] 07-04-PLAN.md — Complete CSS styling and human verification checkpoint
 
 #### Phase 8: File Operations and Event Streaming
 **Goal**: Enable file operations through UI and implement Windows directory event tracking
@@ -193,7 +195,7 @@ v2.0 phases execute sequentially: 6 → 7 → 8 → 9 → 10 → 11 → 12
 | 4. Static PV/PVC Provisioning | v1.0 | 2/2 | Complete | 2026-02-01 |
 | 5. Comprehensive Testing | v1.0 | 1/1 | Complete | 2026-02-01 |
 | 6. Backend API Foundation | v2.0 | 0/3 | Planned | - |
-| 7. Real-Time Monitoring Dashboard | v2.0 | 0/TBD | Not started | - |
+| 7. Real-Time Monitoring Dashboard | v2.0 | 0/4 | Planned | - |
 | 8. File Operations and Event Streaming | v2.0 | 0/TBD | Not started | - |
 | 9. Historical Metrics and Storage | v2.0 | 0/TBD | Not started | - |
 | 10. Kafka Integration for Event Streaming | v2.0 | 0/TBD | Not started | - |
@@ -201,4 +203,4 @@ v2.0 phases execute sequentially: 6 → 7 → 8 → 9 → 10 → 11 → 12
 | 12. Alerting and Production Readiness | v2.0 | 0/TBD | Not started | - |
 
 ---
-*Last updated: 2026-02-02 after Phase 6 planning*
+*Last updated: 2026-02-02 after Phase 7 planning*
