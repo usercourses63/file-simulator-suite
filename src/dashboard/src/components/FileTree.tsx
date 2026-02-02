@@ -81,7 +81,7 @@ export function FileTree({
         onClick={() => node.isInternal && node.toggle()}
       >
         <span className="file-tree-node__icon">
-          {data.isDirectory ? (node.isOpen ? '📂' : '📁') : '📄'}
+          {data.isDirectory ? (node.isOpen ? '\u{1F4C2}' : '\u{1F4C1}') : '\u{1F4C4}'}
         </span>
 
         <span className="file-tree-node__name" title={data.id}>
@@ -106,16 +106,18 @@ export function FileTree({
               className="file-tree-node__action"
               onClick={handleDownloadClick}
               title="Download"
+              type="button"
             >
-              ⬇
+              {'\u2B07'}
             </button>
           )}
           <button
             className="file-tree-node__action file-tree-node__action--delete"
             onClick={handleDeleteClick}
             title="Delete"
+            type="button"
           >
-            🗑
+            {'\u{1F5D1}'}
           </button>
         </div>
       </div>
