@@ -1,0 +1,106 @@
+{{- if .Values.controlApi.enabled }}
+---
+# Deployment for Control API
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-control-api
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: control-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "file-simulator.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: control-api
+  template:
+    metadata:
+      labels:
+        {{- include "file-simulator.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: control-api
+      annotations:
+        # Force pod restart on config changes
+        checksum/config: {{ include (print $.Template.BasePath "/control-api-rbac.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "file-simulator.fullname" . }}-control-api
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: control-api
+          image: "{{ .Values.controlApi.image.repository }}:{{ .Values.controlApi.image.tag }}"
+          imagePullPolicy: {{ .Values.controlApi.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 5000
+              protocol: TCP
+          env:
+            - name: ASPNETCORE_URLS
+              value: "http://+:5000"
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Production"
+            - name: Kubernetes__InCluster
+              value: "true"
+            - name: Kubernetes__Namespace
+              value: {{ include "file-simulator.namespace" . | quote }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.controlApi.healthCheck.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.controlApi.healthCheck.initialDelaySeconds }}
+            periodSeconds: {{ .Values.controlApi.healthCheck.periodSeconds }}
+            timeoutSeconds: {{ .Values.controlApi.healthCheck.timeoutSeconds }}
+            failureThreshold: {{ .Values.controlApi.healthCheck.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.controlApi.healthCheck.path }}
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.controlApi.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false  # .NET needs to write temp files
+            capabilities:
+              drop:
+                - ALL
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+---
+# Service for Control API
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-control-api
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: control-api
+spec:
+  type: {{ .Values.controlApi.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.controlApi.service.httpPort }}
+      targetPort: http
+      protocol: TCP
+      {{- if eq .Values.controlApi.service.type "NodePort" }}
+      nodePort: {{ .Values.controlApi.service.nodePort }}
+      {{- end }}
+  selector:
+    {{- include "file-simulator.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: control-api
+{{- end }}
