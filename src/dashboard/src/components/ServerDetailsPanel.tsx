@@ -40,8 +40,8 @@ export function ServerDetailsPanel({ server, onClose }: ServerDetailsPanelProps)
 
   const healthState = getHealthState(server);
   const healthText = getHealthStateText(healthState);
-  const protocolInfo = getProtocolInfo(server.Name, server.Protocol);
-  const externalConnection = getExternalConnectionString(server.Protocol);
+  const protocolInfo = getProtocolInfo(server.name, server.protocol);
+  const externalConnection = getExternalConnectionString(server.protocol);
 
   // Render a copiable field with button
   const renderCopyField = (label: string, value: string, fieldKey: string) => (
@@ -64,7 +64,7 @@ export function ServerDetailsPanel({ server, onClose }: ServerDetailsPanelProps)
     <aside className={`details-panel ${server ? 'details-panel--open' : ''}`}>
       <div className="panel-header">
         <div className="panel-title">
-          <h3>{server.Name}</h3>
+          <h3>{server.name}</h3>
           <span className="panel-protocol">{protocolInfo.displayName}</span>
         </div>
         <button
@@ -88,12 +88,12 @@ export function ServerDetailsPanel({ server, onClose }: ServerDetailsPanelProps)
           </div>
           <div className="detail-field">
             <span className="field-label">Pod Status</span>
-            <span className="field-value">{server.PodStatus}</span>
+            <span className="field-value">{server.podStatus}</span>
           </div>
-          {server.HealthMessage && (
+          {server.healthMessage && (
             <div className="detail-field">
               <span className="field-label">Message</span>
-              <span className="field-value field-value--message">{server.HealthMessage}</span>
+              <span className="field-value field-value--message">{server.healthMessage}</span>
             </div>
           )}
         </section>
@@ -104,13 +104,13 @@ export function ServerDetailsPanel({ server, onClose }: ServerDetailsPanelProps)
           <div className="detail-field">
             <span className="field-label">Latency</span>
             <span className="field-value">
-              {server.LatencyMs !== undefined ? `${server.LatencyMs}ms` : 'N/A'}
+              {server.latencyMs !== undefined ? `${server.latencyMs}ms` : 'N/A'}
             </span>
           </div>
           <div className="detail-field">
             <span className="field-label">Last Checked</span>
             <span className="field-value">
-              {new Date(server.CheckedAt).toLocaleTimeString()}
+              {new Date(server.checkedAt).toLocaleTimeString()}
             </span>
           </div>
         </section>

@@ -13,17 +13,17 @@ const DEGRADED_LATENCY_THRESHOLD = 3000;
  */
 export function getHealthState(server: ServerStatus): HealthState {
   // Pod not running = down
-  if (server.PodStatus !== 'Running') {
+  if (server.podStatus !== 'Running') {
     return 'down';
   }
 
   // Health check failed = down
-  if (!server.IsHealthy) {
+  if (!server.isHealthy) {
     return 'down';
   }
 
   // High latency = degraded
-  if (server.LatencyMs !== undefined && server.LatencyMs >= DEGRADED_LATENCY_THRESHOLD) {
+  if (server.latencyMs !== undefined && server.latencyMs >= DEGRADED_LATENCY_THRESHOLD) {
     return 'degraded';
   }
 

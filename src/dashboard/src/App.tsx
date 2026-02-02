@@ -43,9 +43,9 @@ function App() {
 
         {data ? (
           <>
-            <SummaryHeader servers={data.Servers} />
+            <SummaryHeader servers={data.servers} />
             <ServerGrid
-              servers={data.Servers}
+              servers={data.servers}
               onCardClick={setSelectedServer}
             />
           </>

@@ -17,8 +17,8 @@ interface ServerGridProps {
  */
 export function ServerGrid({ servers, onCardClick }: ServerGridProps) {
   // Group servers by type
-  const nasServers = servers.filter(s => s.Protocol === 'NFS');
-  const protocolServers = servers.filter(s => s.Protocol !== 'NFS');
+  const nasServers = servers.filter(s => s.protocol === 'NFS');
+  const protocolServers = servers.filter(s => s.protocol !== 'NFS');
 
   return (
     <div className="server-grid-container">
@@ -30,7 +30,7 @@ export function ServerGrid({ servers, onCardClick }: ServerGridProps) {
         <div className="server-grid">
           {nasServers.map(server => (
             <ServerCard
-              key={server.Name}
+              key={server.name}
               server={server}
               onClick={() => onCardClick(server)}
             />
@@ -49,7 +49,7 @@ export function ServerGrid({ servers, onCardClick }: ServerGridProps) {
         <div className="server-grid">
           {protocolServers.map(server => (
             <ServerCard
-              key={server.Name}
+              key={server.name}
               server={server}
               onClick={() => onCardClick(server)}
             />

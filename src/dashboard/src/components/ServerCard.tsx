@@ -52,8 +52,8 @@ export function ServerCard({ server, onClick }: ServerCardProps) {
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
     >
       <div className="server-card-header">
-        <span className="server-name">{server.Name}</span>
-        <span className="server-protocol">{server.Protocol}</span>
+        <span className="server-name">{server.name}</span>
+        <span className="server-protocol">{server.protocol}</span>
       </div>
 
       <div className="server-card-body">
@@ -64,13 +64,13 @@ export function ServerCard({ server, onClick }: ServerCardProps) {
 
         <div className="server-metrics">
           <span className="metric-label">Latency:</span>
-          <span className="metric-value">{formatLatency(server.LatencyMs)}</span>
+          <span className="metric-value">{formatLatency(server.latencyMs)}</span>
         </div>
       </div>
 
-      {server.HealthMessage && (
+      {server.healthMessage && (
         <div className="server-card-footer">
-          <span className="health-message">{server.HealthMessage}</span>
+          <span className="health-message">{server.healthMessage}</span>
         </div>
       )}
     </div>
