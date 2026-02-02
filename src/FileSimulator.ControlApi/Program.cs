@@ -53,6 +53,8 @@ try
     builder.Services.AddSingleton<IHealthCheckService, HealthCheckService>();
     builder.Services.AddSingleton<ServerStatusBroadcaster>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<ServerStatusBroadcaster>());
+    builder.Services.AddSingleton<FileWatcherService>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<FileWatcherService>());
 
     var app = builder.Build();
 
@@ -63,8 +65,9 @@ try
     // Map health check endpoint
     app.MapHealthChecks("/health");
 
-    // Map SignalR hub
+    // Map SignalR hubs
     app.MapHub<ServerStatusHub>("/hubs/status");
+    app.MapHub<FileEventsHub>("/hubs/fileevents");
 
     // API root endpoint
     app.MapGet("/", () => new
@@ -75,10 +78,15 @@ try
         {
             "/health",
             "/hubs/status",
+            "/hubs/fileevents",
             "/api/version",
             "/api/servers",
             "/api/status",
-            "/api/servers/{name}"
+            "/api/servers/{name}",
+            "/api/files",
+            "/api/files/tree",
+            "/api/files/upload",
+            "/api/files/download"
         }
     });
 
@@ -130,6 +138,7 @@ try
 
     Log.Information("File Simulator Control API started successfully");
     Log.Information("SignalR hub available at /hubs/status");
+    Log.Information("FileEvents hub available at /hubs/fileevents");
     Log.Information("Health check available at /health");
 
     app.Run();
