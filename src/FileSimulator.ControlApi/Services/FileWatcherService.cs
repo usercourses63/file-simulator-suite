@@ -23,7 +23,8 @@ public class FileWatcherService : BackgroundService, IDisposable
     private const int MaxHistorySize = 50;
     private const int DebounceDelayMs = 500;
 
-    private string _basePath = @"C:\simulator-data";
+    // Linux container path (mounted from Windows C:\simulator-data via Minikube)
+    private string _basePath = "/mnt/simulator-data";
 
     public FileWatcherService(
         IConfiguration configuration,
@@ -37,8 +38,8 @@ public class FileWatcherService : BackgroundService, IDisposable
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // Get base path from configuration
-        _basePath = _configuration["FileWatcher:Path"] ?? @"C:\simulator-data";
+        // Get base path from configuration (Linux path in container)
+        _basePath = _configuration["FileWatcher:Path"] ?? "/mnt/simulator-data";
 
         if (!Directory.Exists(_basePath))
         {

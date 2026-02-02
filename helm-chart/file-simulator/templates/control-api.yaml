@@ -71,6 +71,14 @@ spec:
             capabilities:
               drop:
                 - ALL
+          volumeMounts:
+            - name: simulator-data
+              mountPath: /mnt/simulator-data
+      volumes:
+        - name: simulator-data
+          hostPath:
+            path: {{ .Values.global.storage.hostPath }}
+            type: DirectoryOrCreate
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

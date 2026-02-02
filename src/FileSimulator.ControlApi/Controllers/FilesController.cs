@@ -18,7 +18,7 @@ public class FilesController : ControllerBase
 
     public FilesController(IConfiguration config, ILogger<FilesController> logger)
     {
-        _basePath = config["FileWatcher:Path"] ?? @"C:\simulator-data";
+        _basePath = config["FileWatcher:Path"] ?? "/mnt/simulator-data";
         _logger = logger;
     }
 
