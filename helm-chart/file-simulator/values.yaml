@@ -349,18 +349,76 @@ gateway:
 # ============================================
 monitoring:
   enabled: true
-  
+
   # Health check endpoints
   healthCheck:
     enabled: true
     path: /health
     port: 8081
-  
+
   # Prometheus metrics (if you have Prometheus)
   prometheus:
     enabled: false
     port: 9090
     path: /metrics
+
+# ============================================
+# Control API - v2.0 Control Plane
+# ============================================
+controlApi:
+  enabled: true
+
+  # Container image (will be built from src/FileSimulator.ControlApi)
+  image:
+    repository: file-simulator-control-api
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  # Service configuration
+  service:
+    type: NodePort
+    httpPort: 5000
+    nodePort: 30500  # External access from Windows
+
+  # RBAC configuration
+  rbac:
+    create: true
+    # Permissions needed for Phase 6 (read-only discovery)
+    # Phase 11 will add create/update/delete for dynamic management
+    rules:
+      - apiGroups: [""]
+        resources: ["pods", "services", "configmaps"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["apps"]
+        resources: ["deployments"]
+        verbs: ["get", "list", "watch"]
+
+  # Resource limits - sized to coexist with v1.0 servers
+  # Current cluster: 8GB RAM, 4 CPU
+  # v1.0 usage: ~706Mi request, ~2.85Gi limit
+  # Control API: adds 256Mi request, 1Gi limit (within budget)
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "1"
+
+  # Health check configuration
+  healthCheck:
+    path: /health
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # SignalR configuration
+  signalr:
+    # Hub path for WebSocket connections
+    hubPath: /hubs/status
+    # Keep-alive interval (seconds)
+    keepAliveInterval: 15
 
 # ============================================
 # Ingress Configuration (optional)
