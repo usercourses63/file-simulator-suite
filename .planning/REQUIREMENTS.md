@@ -130,17 +130,78 @@ Explicitly excluded. Documented to prevent scope creep.
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
+Which phases cover which requirements. Updated after roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (To be filled by roadmapper) | | |
+| BACK-01 | Phase 6 | Pending |
+| BACK-02 | Phase 6 | Pending |
+| BACK-03 | Phase 9 | Pending |
+| BACK-04 | Phase 7 | Pending |
+| BACK-05 | Phase 8 | Pending |
+| BACK-06 | Phase 6 | Pending |
+| BACK-07 | Phase 6 | Pending |
+| BACK-08 | Phase 12 | Pending |
+| DASH-01 | Phase 7 | Pending |
+| DASH-02 | Phase 7 | Pending |
+| DASH-03 | Phase 7 | Pending |
+| DASH-04 | Phase 7 | Pending |
+| DASH-05 | Phase 8 | Pending |
+| DASH-06 | Phase 9 | Pending |
+| DASH-07 | Phase 9 | Pending |
+| DASH-08 | Phase 7 | Pending |
+| MON-01 | Phase 7 | Pending |
+| MON-02 | Phase 7 | Pending |
+| MON-03 | Phase 7 | Pending |
+| MON-04 | Phase 8 | Pending |
+| MON-05 | Phase 8 | Pending |
+| MON-06 | Phase 8 | Pending |
+| MON-07 | Phase 8 | Pending |
+| MON-08 | Phase 9 | Pending |
+| FILE-01 | Phase 8 | Pending |
+| FILE-02 | Phase 8 | Pending |
+| FILE-03 | Phase 8 | Pending |
+| FILE-04 | Phase 8 | Pending |
+| FILE-05 | Phase 8 | Pending |
+| FILE-06 | Phase 8 | Pending |
+| FILE-07 | Phase 8 | Pending |
+| KAFKA-01 | Phase 10 | Pending |
+| KAFKA-02 | Phase 10 | Pending |
+| KAFKA-03 | Phase 10 | Pending |
+| KAFKA-04 | Phase 10 | Pending |
+| KAFKA-05 | Phase 10 | Pending |
+| KAFKA-06 | Phase 10 | Pending |
+| KAFKA-07 | Phase 10 | Pending |
+| KAFKA-08 | Phase 10 | Pending |
+| KAFKA-09 | Phase 10 | Pending |
+| CTRL-01 | Phase 11 | Pending |
+| CTRL-02 | Phase 11 | Pending |
+| CTRL-03 | Phase 11 | Pending |
+| CTRL-04 | Phase 11 | Pending |
+| CTRL-05 | Phase 11 | Pending |
+| CTRL-06 | Phase 11 | Pending |
+| CTRL-07 | Phase 11 | Pending |
+| CTRL-08 | Phase 11 | Pending |
+| CTRL-09 | Phase 11 | Pending |
+| CFG-01 | Phase 11 | Pending |
+| CFG-02 | Phase 11 | Pending |
+| CFG-03 | Phase 11 | Pending |
+| CFG-04 | Phase 11 | Pending |
+| CFG-05 | Phase 11 | Pending |
+| CFG-06 | Phase 11 | Pending |
+| CFG-07 | Phase 11 | Pending |
+| ALERT-01 | Phase 12 | Pending |
+| ALERT-02 | Phase 12 | Pending |
+| ALERT-03 | Phase 12 | Pending |
+| ALERT-04 | Phase 12 | Pending |
+| ALERT-05 | Phase 12 | Pending |
+| ALERT-06 | Phase 9 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 52 total
-- Mapped to phases: (pending)
-- Unmapped: (pending)
+- Mapped to phases: 52 (100% coverage)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-02*
-*Last updated: 2026-02-02 after initial definition*
+*Last updated: 2026-02-02 after roadmap creation*

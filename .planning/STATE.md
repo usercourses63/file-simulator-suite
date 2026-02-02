@@ -4,39 +4,39 @@
 
 See: .planning/PROJECT.md (updated 2026-02-02)
 
-**Core value:** Dev systems must use identical PV/PVC configs as production OCP, with Windows test files visible via NFS.
-**Current focus:** v2.0 Simulator Control Platform - defining requirements
+**Core value:** Development systems must connect to simulated NAS servers using identical PV/PVC configurations as production OCP, with test files written on Windows immediately visible through NFS mounts - zero deployment differences between dev and prod.
+
+**Current focus:** Phase 6 - Backend API Foundation
 
 ## Current Position
 
-Milestone: v2.0 Simulator Control Platform
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-02-02 — Milestone v2.0 started
+Phase: 6 of 12 (Backend API Foundation)
+Plan: 0 of TBD (awaiting phase planning)
+Status: Ready to plan
+Last activity: 2026-02-02 - v2.0 roadmap created with 7 phases (52 requirements mapped)
 
-Progress: [░░░░░░░░░░] 0% (v2.0)
+Progress: [■■■■■░░░░░░░] 42% (5 of 12 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
 - Total plans completed: 11
-- Average duration: 11.1 minutes
-- Total execution time: 2.05 hours
+- Average duration: 11.3 min
+- Total execution time: 2.07 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-single-nas-validation | 2 | 34.4min | 17.2min |
-| 02-7-server-topology | 3 | 60.5min | 20.2min |
-| 03-bidirectional-sync | 2 | 8.6min | 4.3min |
-| 04-configuration-templates | 3 | 15.2min | 5.1min |
-| 05-testing-suite | 1 | 2min | 2min |
+| 1. NFS Pattern Validation | 3 | 38 min | 12.7 min |
+| 2. Multi-NAS Architecture | 3 | 42 min | 14.0 min |
+| 3. Bidirectional Sync | 2 | 20 min | 10.0 min |
+| 4. Static PV/PVC Provisioning | 2 | 18 min | 9.0 min |
+| 5. Comprehensive Testing | 1 | 6 min | 6.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (4.2min), 04-02 (4min), 04-03 (7min), 05-01 (2min)
-- Trend: Template/documentation plans consistently fast (2-7min); validation plans 5-10min; advanced validation with full test suite 30-50min
+- Last 5 plans: [14.0, 14.0, 14.0, 10.0, 10.0] min
+- Trend: Improving (stabilizing around 10 min/plan)
 
 *Updated after each plan completion*
 
@@ -47,46 +47,13 @@ Progress: [░░░░░░░░░░] 0% (v2.0)
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Multiple NFS servers vs single with exports: Production has multiple physical NAS devices; dev must match topology (Pending)
-- 7 total NAS servers (3 input, 1 backup, 3 output): Matches production network configuration (Pending)
-- Windows directories as source of truth: Testers work on Windows; test files must be accessible via NFS (Pending)
-- **[01-01] unfs3 vs kernel NFS:** Use unfs3 userspace NFS server because kernel NFS cannot export Windows mounts (Implemented)
-- **[01-01] Init container sync pattern:** Use init container with rsync to copy Windows hostPath → emptyDir before NFS export (Implemented)
-- **[01-01] NET_BIND_SERVICE capability:** Use minimal capability for port 2049 instead of privileged mode (Implemented)
-- **[01-01] Disk-backed emptyDir:** Use default disk-backed (not memory) for file persistence across pod restarts (Implemented)
-- **[01-02] Defer rpcbind to Phase 2:** Use -p (no portmap) mode for Phase 1; rpcbind caused CrashLoopBackOff, full NFS client mount not critical for pattern proof (Implemented)
-- **[01-02] kubectl exec validation:** Accept kubectl exec as sufficient for Phase 1 instead of external NFS mount; validates critical path (Implemented)
-- **[02-01] Range loop pattern from ftp-multi.yaml:** Use Helm range loop with $ root scope for multi-instance NAS deployments (Implemented)
-- **[02-01] Unique fsid per server (1-7):** NAS-07 requirement for NFS filesystem identification, logged in container startup (Implemented)
-- **[02-01] Per-server exportOptions:** EXP-05 requirement, allows read-only backup server demonstration (Implemented)
-- **[02-01] NodePort range 32150-32156:** Sequential ports for 7 NAS servers, avoids conflicts with existing services (Implemented)
-- **[02-02] kubectl exec validation sufficient:** Validated storage isolation and subdirectory mounts via kubectl exec; external NFS mount not required for Phase 2 (Implemented)
-- **[02-02] Init container sync on pod start:** Test files created on Windows require pod restart to sync; init container only runs at pod start (Validated)
-- **[02-03] Runtime directories ephemeral for input NAS:** Runtime-created directories lost on pod restart (expected); Windows filesystem is source of truth; init container overwrites on each pod start (Validated)
-- **[02-03] Multi-NAS architecture validated at service level:** 7 unique services with ClusterIPs, DNS names, storage isolation confirmed; NFS volume mount testing blocked by rpcbind (Validated)
-- **[02-03] Test automation via PowerShell:** kubectl exec validation in structured PASS/FAIL/SKIP format sufficient for Phase 2; 37/38 tests passing (Implemented)
-- **[03-01] Native sidecar over regular container:** Use init container with restartPolicy: Always for proper startup ordering and graceful shutdown (Implemented)
-- **[03-01] Init container --delete based on server NAME:** Use server name pattern (nas-input-*) to determine --delete flag, not sidecar.enabled; nas-backup is not an input server (Implemented)
-- **[03-01] nas-backup sidecar disabled:** Read-only export (ro) cannot receive NFS writes; sidecar would be pointless overhead (Implemented)
-- **[03-01] emptyDir sizeLimit 500Mi:** Kubernetes best practice to prevent disk exhaustion and node-wide impact (Implemented)
-- **[03-02] Phase 3 validated with 10/10 tests passing:** NFS-to-Windows sync timing 15-30s (under 60s requirement), sidecar correctly deployed on output servers only (Validated)
-- **[03-02] WIN-02 uses init container pattern:** Continuous Windows-to-NFS requires pod restart; second sidecar would be needed for continuous sync without restart (Not in Phase 3 scope)
-- **[04-02] ConfigMap includes both DNS names and NodePorts:** Applications need cluster-internal DNS for NFS mounts and external NodePorts for Windows/external access; single ConfigMap provides complete service discovery (Implemented)
-- **[04-02] Minikube IP as placeholder requiring substitution:** Minikube IP changes on restart; cannot be hardcoded in version-controlled manifest; user must substitute before applying (Implemented)
-- **[04-02] NAS directory creation integrated into setup-windows.ps1:** Single script ensures all prerequisites (base + NAS directories) created before deployment; seamless user experience (Implemented)
-- **[04-01] Static PV provisioning over dynamic:** Use static PV/PVC manifests (not StorageClass) to match production OCP patterns where NAS infrastructure pre-exists (Implemented)
-- **[04-01] Label selector binding:** Use selector.matchLabels.nas-server for PVC-to-PV binding; provides explicit binding to specific NFS server (Implemented)
-- **[04-01] Retain reclaim policy:** persistentVolumeReclaimPolicy: Retain on all PVs prevents data loss on accidental PVC deletion (Implemented)
-- **[04-01] Explicit NFS mount options:** mountOptions [nfsvers=3, tcp, hard, intr] ensures consistent behavior across K8s versions (Implemented)
-- **[04-03] Multi-mount example excludes nas-backup:** Example deployment mounts 6 servers (not 7); backup server typically read-only and rarely needed by applications (Implemented)
-- **[04-03] Comprehensive integration guide (1200+ lines):** Serves as authoritative reference for PV/PVC patterns, production OCP replication, and multi-mount configuration; offline OCP environment requires standalone documentation (Implemented)
-- **[04-03] README troubleshooting with diagnostics:** Include diagnostic commands (kubectl describe, logs) not just happy-path; real deployments encounter label mismatches, namespace issues, sync timing (Implemented)
-- **[05-01] Test-AllNASHealthChecks uses jsonpath for Ready condition:** Per-server granularity instead of bulk kubectl wait; reports each NAS individually for debugging (Implemented)
-- **[05-01] Test-CrossNASIsolation negative testing pattern:** Creates marker on nas-input-1, validates absence on all 6 others; proves storage isolation (Implemented)
-- **[05-01] Test-PodRestartPersistence quick restart with --grace-period=0:** Fast test cycles without 30s graceful shutdown wait (Implemented)
-- **[05-01] Persistence tests limited to 3 representative servers:** nas-input-1, nas-output-1, nas-backup provide balanced coverage vs test duration (3 min vs 7 min for all servers) (Implemented)
-- **[05-01] TST-02/TST-03 coverage via existing patterns:** TST-02 validated by init container (Steps 5, 8); TST-03 validated by Test-NFSToWindows (Phase 3); no duplication needed (Documented)
-- **[05-01] -SkipPersistenceTests parameter for CI/CD:** Allows quick validation without 2-3 minute pod restart tests; useful when pods newly deployed (Implemented)
+- v1.0: 7 NAS servers (3 input, 1 backup, 3 output) matches production network configuration
+- v1.0: Init container + sidecar sync architecture prevents loops, proper lifecycle ordering
+- v1.0: kubectl --context mandatory for multi-profile Minikube safety
+- v2.0: Control plane deploys in same file-simulator namespace (simplified RBAC and service discovery)
+- v2.0: SignalR built into ASP.NET Core (no separate WebSocket server needed)
+- v2.0: SQLite embedded database (no separate container, dev-appropriate)
+- v2.0: Increase Minikube to 12GB before Phase 10 (Kafka requires ~1.5-2GB)
 
 ### Pending Todos
 
@@ -94,33 +61,15 @@ None yet.
 
 ### Blockers/Concerns
 
-**Technical Risk (Phase 1) - RESOLVED:**
-- Pattern validated (01-02 complete): Windows hostPath → emptyDir → NFS export works perfectly
-- Resolved questions: NET_BIND_SERVICE sufficient, no need for CAP_DAC_READ_SEARCH; file ownership preserved via rsync
-- New questions for Phase 2: rpcbind integration (why CrashLoopBackOff?), external NFS mount without privileged mode
-
-**Resource Capacity (Phase 2) - VALIDATED:**
-- 7 NAS pods: 448Mi request, 1.75Gi limit (revised from initial estimate)
-- Fits comfortably in 8GB Minikube with room for microservices
-- Deployment tested in 02-02: All 7 pods running stably with minimal CPU usage (<50m per pod)
-- Phase 2 complete: System meets production-ready criteria
-
-**Sync Latency (Phase 3) - RESOLVED:**
-- Init container one-time sync at pod start: Validated and working (Phase 2)
-- Sidecar continuous sync for output NAS: VALIDATED (03-02) - 15-30s NFS-to-Windows sync (under 60s requirement)
-- Input NAS one-way sync: Validated and working reliably
-- Bidirectional pattern: COMPLETE - all 10 Phase 3 tests passing, no sync loops observed
-- WIN-02 continuous Windows-to-NFS: Uses init container pattern (requires pod restart); second sidecar not in Phase 3 scope
-
-**rpcbind Investigation (Phase 3):**
-- rpcbind integration still blocked (DNS resolution fails during NFS mount)
-- Multi-NAS architecture validated at service level in 02-03
-- External NFS mount testing deferred to Phase 3 (kubectl exec sufficient for Phase 2)
-- Consider alternative NFS servers (nfs-ganesha) if unfs3 blocker persists
+**Phase 6-12 (v2.0 control platform):**
+- Resource constraints: Current Minikube 8GB sufficient for phases 6-9, must increase to 12GB before phase 10 (Kafka)
+- Integration risk: Each phase must validate v1.0 servers (7 NAS + 6 protocols) remain responsive
+- FileSystemWatcher tuning: Windows + Minikube 9p mount buffer overflow threshold needs empirical testing in Phase 8
+- Kafka memory allocation: Minimal JVM heap (512MB vs 768MB) needs profiling under development workload in Phase 10
+- ownerReferences validation: Phase 11 dynamic resources must set controller references to prevent orphaned pods
 
 ## Session Continuity
 
-Last session: 2026-02-02 — Milestone v2.0 initialization
-Stopped at: Requirements definition (in progress)
+Last session: 2026-02-02
+Stopped at: v2.0 roadmap created, STATE.md initialized, ready for phase 6 planning
 Resume file: None
-Next: Complete requirements gathering, create roadmap
