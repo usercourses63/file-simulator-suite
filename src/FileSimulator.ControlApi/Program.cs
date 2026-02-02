@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.SignalR;
 using Serilog;
 using Serilog.Events;
+using FileSimulator.ControlApi.Hubs;
+using FileSimulator.ControlApi.Services;
+using FileSimulator.ControlApi.Models;
 
 // Configure Serilog before creating the builder
 Log.Logger = new LoggerConfiguration()
@@ -41,6 +44,16 @@ try
         });
     });
 
+    // Configuration
+    builder.Services.Configure<KubernetesOptions>(
+        builder.Configuration.GetSection("Kubernetes"));
+
+    // Services
+    builder.Services.AddSingleton<IKubernetesDiscoveryService, KubernetesDiscoveryService>();
+    builder.Services.AddSingleton<IHealthCheckService, HealthCheckService>();
+    builder.Services.AddSingleton<ServerStatusBroadcaster>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<ServerStatusBroadcaster>());
+
     var app = builder.Build();
 
     // Middleware pipeline
@@ -62,7 +75,10 @@ try
         {
             "/health",
             "/hubs/status",
-            "/api/version"
+            "/api/version",
+            "/api/servers",
+            "/api/status",
+            "/api/servers/{name}"
         }
     });
 
@@ -73,6 +89,37 @@ try
         runtime = Environment.Version.ToString(),
         framework = "ASP.NET Core 9.0"
     });
+
+    // API: List all discovered servers
+    app.MapGet("/api/servers", async (IKubernetesDiscoveryService discovery, CancellationToken ct) =>
+    {
+        var servers = await discovery.DiscoverServersAsync(ct);
+        return Results.Ok(servers);
+    })
+    .WithName("GetServers");
+
+    // API: Get current status (from broadcaster cache)
+    app.MapGet("/api/status", (ServerStatusBroadcaster broadcaster) =>
+    {
+        var status = broadcaster.GetLatestStatus();
+        return status != null
+            ? Results.Ok(status)
+            : Results.NotFound("Status not yet available");
+    })
+    .WithName("GetStatus");
+
+    // API: Get specific server
+    app.MapGet("/api/servers/{name}", async (
+        string name,
+        IKubernetesDiscoveryService discovery,
+        CancellationToken ct) =>
+    {
+        var server = await discovery.GetServerAsync(name, ct);
+        return server != null
+            ? Results.Ok(server)
+            : Results.NotFound($"Server '{name}' not found");
+    })
+    .WithName("GetServer");
 
     // Graceful shutdown handling for Kubernetes
     var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
@@ -97,37 +144,4 @@ catch (Exception ex)
 finally
 {
     Log.CloseAndFlush();
-}
-
-/// <summary>
-/// SignalR hub for broadcasting server status updates to connected clients.
-/// Phase 7 dashboard will connect to this hub for real-time status monitoring.
-/// </summary>
-public class ServerStatusHub : Hub
-{
-    private readonly ILogger<ServerStatusHub> _logger;
-
-    public ServerStatusHub(ILogger<ServerStatusHub> logger)
-    {
-        _logger = logger;
-    }
-
-    public override async Task OnConnectedAsync()
-    {
-        await base.OnConnectedAsync();
-        _logger.LogInformation("Client connected: {ConnectionId}", Context.ConnectionId);
-    }
-
-    public override async Task OnDisconnectedAsync(Exception? exception)
-    {
-        if (exception != null)
-        {
-            _logger.LogWarning(exception, "Client disconnected with error: {ConnectionId}", Context.ConnectionId);
-        }
-        else
-        {
-            _logger.LogInformation("Client disconnected: {ConnectionId}", Context.ConnectionId);
-        }
-        await base.OnDisconnectedAsync(exception);
-    }
 }
