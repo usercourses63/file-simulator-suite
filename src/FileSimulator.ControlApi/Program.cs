@@ -25,6 +25,7 @@ try
     builder.WebHost.UseKestrel(options =>
     {
         options.AddServerHeader = false; // Security: don't expose server version
+        options.Limits.MaxRequestBodySize = 104857600; // 100 MB for file uploads
     });
 
     // Add SignalR with JSON protocol
@@ -32,6 +33,9 @@ try
 
     // Add health checks
     builder.Services.AddHealthChecks();
+
+    // Add controllers for file operations
+    builder.Services.AddControllers();
 
     // Add CORS for dashboard development
     builder.Services.AddCors(options =>
@@ -68,6 +72,9 @@ try
     // Map SignalR hubs
     app.MapHub<ServerStatusHub>("/hubs/status");
     app.MapHub<FileEventsHub>("/hubs/fileevents");
+
+    // Map REST API controllers
+    app.MapControllers();
 
     // API root endpoint
     app.MapGet("/", () => new
