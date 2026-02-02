@@ -1,1537 +1,1153 @@
-# Architecture Patterns: Multi-Instance NFS Deployment
+# Architecture Research
 
-**Domain:** Kubernetes NFS Server Multi-Instance Deployment
-**Researched:** 2026-01-29
-**Context:** Expanding single NAS deployment to 7 independent NAS servers with separate storage paths
+**Domain:** Real-time monitoring and control platform for Kubernetes infrastructure
+**Researched:** 2026-02-02
 **Confidence:** HIGH
 
----
-
-## Executive Summary
-
-Deploying multiple NFS servers in Kubernetes requires careful orchestration of three interconnected systems: Helm templating for resource generation, PersistentVolume/PVC management for storage isolation, and DNS service naming for discovery. The project's existing multi-instance patterns (FTP/SFTP) provide proven templates, but NFS introduces additional complexity due to storage binding requirements and the NFS emptyDir fix constraint.
-
-**Key Finding:** The existing `ftp-multi.yaml` and `sftp-multi.yaml` patterns are directly applicable to NAS deployment, with the critical addition of per-instance PV/PVC creation to achieve storage isolation.
-
-**Recommended Approach:** Helm range loop pattern with per-instance PV/PVC creation, following the project's established naming conventions.
-
----
-
-## Current State Analysis
-
-### Existing Single-NAS Architecture
-
-**Current deployment pattern:**
-- **Deployment:** `file-sim-file-simulator-nas`
-- **Service DNS:** `file-sim-file-simulator-nas.file-simulator.svc.cluster.local:2049`
-- **Storage:** Shared PVC (`file-sim-file-simulator-pvc`) mounted at `/data`
-- **NodePort:** 32149
-- **Critical constraint:** NFS emptyDir fix required (cannot export hostPath volumes)
-
-### Storage Architecture (Single Instance)
-
-```yaml
-PersistentVolume: file-sim-file-simulator-pv
-  └─ hostPath: /mnt/simulator-data
-     └─ Windows: C:\simulator-data
-
-PersistentVolumeClaim: file-sim-file-simulator-pvc
-  └─ Mounts to: All protocol pods
-
-NAS Deployment:
-  volumes:
-    - name: data (PVC mount)
-      mountPath: /data          # Cannot export (hostPath limitation)
-    - name: nfs-data (emptyDir)
-      mountPath: /exports        # NFS exports this
-```
-
-**Limitation:** Current architecture uses a single shared PVC for all protocols. The NFS emptyDir fix prevents direct export of Windows-mounted hostPath storage.
-
----
-
-## Target Architecture: 7 Independent NAS Servers
-
-### Requirements
-
-1. **7 NAS deployments** with distinct names: `nas-input-1`, `nas-input-2`, `nas-output-1`, etc.
-2. **7 services** with predictable DNS: `file-sim-file-simulator-nas-input-1.file-simulator.svc.cluster.local:2049`
-3. **7 separate PVCs** each mapping to different Windows subdirectory
-4. **7 unique NodePorts** for external access
-5. **Storage isolation** between NAS instances (no shared data)
-
-### Windows Storage Mapping
+## System Overview
 
 ```
-C:\simulator-data\
-  ├── nas-input-1\     → PV: nas-input-1-pv  → PVC: nas-input-1-pvc
-  ├── nas-input-2\     → PV: nas-input-2-pv  → PVC: nas-input-2-pvc
-  ├── nas-output-1\    → PV: nas-output-1-pv → PVC: nas-output-1-pvc
-  ├── nas-output-2\    → PV: nas-output-2-pv → PVC: nas-output-2-pvc
-  ├── nas-config\      → PV: nas-config-pv   → PVC: nas-config-pvc
-  ├── nas-temp\        → PV: nas-temp-pv     → PVC: nas-temp-pvc
-  └── nas-archive\     → PV: nas-archive-pv  → PVC: nas-archive-pvc
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    Frontend Layer (React SPA)                            │
+├─────────────────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐ │
+│  │  Dashboard   │  │  File Ops    │  │  Server Mgmt │  │  Config     │ │
+│  │  (Metrics)   │  │  (Upload)    │  │  (Add/Del)   │  │  (Import)   │ │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └──────┬──────┘ │
+│         │                 │                 │                 │         │
+│         └─────────────────┴─────────────────┴─────────────────┘         │
+│                              │                                           │
+│                    REST API + SignalR WebSocket                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                    Backend Layer (ASP.NET Core)                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐               │
+│  │   API         │  │   SignalR Hub │  │   Background  │               │
+│  │   Controllers │  │   (Real-time) │  │   Workers     │               │
+│  └───────┬───────┘  └───────┬───────┘  └───────┬───────┘               │
+│          │                  │                  │                         │
+│          └──────────────────┴──────────────────┘                         │
+│                              │                                           │
+│         ┌────────────────────┼────────────────────┐                     │
+│         │                    │                    │                     │
+│  ┌──────▼──────┐  ┌──────────▼────────┐  ┌──────▼──────┐              │
+│  │ K8s API     │  │  File Watcher     │  │  Health     │              │
+│  │ Client      │  │  (Windows Dir)    │  │  Checker    │              │
+│  │ (Dynamic)   │  │                   │  │  Service    │              │
+│  └──────┬──────┘  └──────────┬────────┘  └──────┬──────┘              │
+├─────────┼─────────────────────┼─────────────────┼──────────────────────┤
+│         │                     │                 │                       │
+│  ┌──────▼──────┐       ┌──────▼──────┐   ┌─────▼──────┐               │
+│  │ Time-Series │       │   Kafka     │   │   Redis    │               │
+│  │ DB (SQLite/ │       │   Broker    │   │  Backplane │               │
+│  │ Prometheus) │       │             │   │  (SignalR) │               │
+│  └─────────────┘       └──────┬──────┘   └────────────┘               │
+├────────────────────────────────┼────────────────────────────────────────┤
+│                    Integration Layer                                     │
+├────────────────────────────────┼────────────────────────────────────────┤
+│  Kubernetes API Server         │                                         │
+│         │                      │                                         │
+│  ┌──────▼────────────────────────────────────────────────────┐          │
+│  │     Existing Protocol Servers (Helm Chart)                 │          │
+│  ├────────────────────────────────────────────────────────────┤          │
+│  │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐  │          │
+│  │  │ FTP  │ │ SFTP │ │ HTTP │ │ S3   │ │ SMB  │ │ NAS  │  │          │
+│  │  │ x1-N │ │ x1-N │ │ WebDV│ │ MinIO│ │ Samba│ │ x1-7 │  │          │
+│  │  └──┬───┘ └──┬───┘ └──┬───┘ └──┬───┘ └──┬───┘ └──┬───┘  │          │
+│  │     └────────┴────────┴────────┴────────┴────────┘       │          │
+│  │                Shared PVC (hostPath)                       │          │
+│  └────────────────────────────────────────────────────────────┘          │
+└─────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+                Windows Host: C:\simulator-data
 ```
 
----
+## Component Responsibilities
 
-## Recommended Architecture Pattern
+| Component | Responsibility | Typical Implementation |
+|-----------|----------------|------------------------|
+| **React Dashboard** | User interface for monitoring and control | React 18+ with Vite, Material-UI/Ant Design |
+| **SignalR Hub** | Real-time bi-directional communication | ASP.NET Core SignalR with Redis backplane |
+| **API Controllers** | REST endpoints for CRUD operations | ASP.NET Core Minimal API or Controllers |
+| **Kubernetes Client** | Dynamic resource management (CRUD pods) | KubernetesClient NuGet (official C# client) |
+| **Health Checker** | Protocol connectivity and status monitoring | Background service with Quartz.NET scheduling |
+| **File Watcher** | Detect Windows directory changes | FileSystemWatcher with debouncing |
+| **Time-Series DB** | Historical metrics storage | SQLite (dev) or Prometheus (production) |
+| **Kafka Broker** | Event streaming and pub/sub | Strimzi (single broker, KRaft mode) |
+| **Redis Backplane** | SignalR scale-out across pods | Redis (in-memory, minimal persistence) |
+| **Protocol Servers** | Existing FTP/SFTP/NAS/HTTP/S3/SMB services | Docker images via Helm chart (already deployed) |
 
-### Pattern: Helm Range Loop with Per-Instance Storage
-
-This pattern follows the project's established multi-instance approach (validated in `ftp-multi.yaml` and `sftp-multi.yaml`) with storage isolation extensions.
-
-**Components:**
-1. **Values configuration** defining NAS instance array
-2. **Storage template** creating PV/PVC pairs per instance
-3. **NAS deployment template** iterating over instances
-4. **Service template** creating per-instance DNS endpoints
-
-### Component 1: Values Configuration
-
-**File:** `values.yaml` or `values-multi-nas.yaml`
-
-```yaml
-nasServers:
-  - name: nas-input-1
-    enabled: true
-    nodePort: 32150
-    hostPath: /mnt/simulator-data/nas-input-1
-    storageSize: 5Gi
-
-  - name: nas-input-2
-    enabled: true
-    nodePort: 32151
-    hostPath: /mnt/simulator-data/nas-input-2
-    storageSize: 5Gi
-
-  - name: nas-output-1
-    enabled: true
-    nodePort: 32152
-    hostPath: /mnt/simulator-data/nas-output-1
-    storageSize: 5Gi
-
-  - name: nas-output-2
-    enabled: true
-    nodePort: 32153
-    hostPath: /mnt/simulator-data/nas-output-2
-    storageSize: 5Gi
-
-  - name: nas-config
-    enabled: true
-    nodePort: 32154
-    hostPath: /mnt/simulator-data/nas-config
-    storageSize: 2Gi
-
-  - name: nas-temp
-    enabled: true
-    nodePort: 32155
-    hostPath: /mnt/simulator-data/nas-temp
-    storageSize: 10Gi
-
-  - name: nas-archive
-    enabled: true
-    nodePort: 32156
-    hostPath: /mnt/simulator-data/nas-archive
-    storageSize: 20Gi
-
-# NFS server image (shared across all instances)
-nas:
-  image:
-    repository: erichough/nfs-server
-    tag: latest
-    pullPolicy: IfNotPresent
-  resources:
-    requests:
-      memory: "64Mi"
-      cpu: "50m"
-    limits:
-      memory: "256Mi"
-      cpu: "200m"
-```
-
-**Key design decisions:**
-- **Per-instance `hostPath`**: Each NAS maps to separate Windows directory
-- **Per-instance `nodePort`**: Sequential allocation (32150-32156) within Kubernetes NodePort range
-- **Per-instance `storageSize`**: Flexible sizing based on purpose (temp/archive larger)
-- **Shared image config**: All NAS instances use same container image
-- **`enabled` flag**: Allows selective deployment (e.g., deploy 3 of 7 initially)
-
-### Component 2: Storage Template
-
-**File:** `templates/nas-storage-multi.yaml`
-
-```yaml
-{{- if .Values.nasServers }}
-{{- range $index, $nas := .Values.nasServers }}
-{{- if $nas.enabled }}
----
-# PersistentVolume for {{ $nas.name }}
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: {{ include "file-simulator.fullname" $ }}-{{ $nas.name }}-pv
-  labels:
-    {{- include "file-simulator.labels" $ | nindent 4 }}
-    app.kubernetes.io/component: {{ $nas.name }}
-    simulator.protocol: nas
-    simulator.instance: "{{ $index }}"
-spec:
-  capacity:
-    storage: {{ $nas.storageSize }}
-  volumeMode: Filesystem
-  accessModes:
-    - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: ""
-  hostPath:
-    path: {{ $nas.hostPath }}
-    type: DirectoryOrCreate
----
-# PersistentVolumeClaim for {{ $nas.name }}
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: {{ include "file-simulator.fullname" $ }}-{{ $nas.name }}-pvc
-  namespace: {{ include "file-simulator.namespace" $ }}
-  labels:
-    {{- include "file-simulator.labels" $ | nindent 4 }}
-    app.kubernetes.io/component: {{ $nas.name }}
-    simulator.protocol: nas
-    simulator.instance: "{{ $index }}"
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: ""
-  volumeName: {{ include "file-simulator.fullname" $ }}-{{ $nas.name }}-pv
-  resources:
-    requests:
-      storage: {{ $nas.storageSize }}
-{{- end }}
-{{- end }}
-{{- end }}
-```
-
-**Pattern explanation:**
-- **`{{- range $index, $nas := .Values.nasServers }}`**: Iterate over NAS instance array
-- **`{{ include "file-simulator.fullname" $ }}-{{ $nas.name }}-pv`**: Generate unique PV name (e.g., `file-sim-file-simulator-nas-input-1-pv`)
-- **`volumeName` binding**: PVC explicitly binds to PV by name (prevents dynamic provisioning)
-- **`storageClassName: ""`**: Static binding (no StorageClass controller involved)
-- **`YAML separators (---)`**: Required between resources to prevent Helm deployment issues
-
-### Component 3: NAS Deployment Template
-
-**File:** `templates/nas-multi.yaml`
-
-```yaml
-{{- if .Values.nasServers }}
-{{- range $index, $nas := .Values.nasServers }}
-{{- if $nas.enabled }}
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: {{ include "file-simulator.fullname" $ }}-{{ $nas.name }}
-  namespace: {{ include "file-simulator.namespace" $ }}
-  labels:
-    {{- include "file-simulator.labels" $ | nindent 4 }}
-    app.kubernetes.io/component: {{ $nas.name }}
-    simulator.protocol: nas
-    simulator.instance: "{{ $index }}"
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      {{- include "file-simulator.selectorLabels" $ | nindent 6 }}
-      app.kubernetes.io/component: {{ $nas.name }}
-  template:
-    metadata:
-      labels:
-        {{- include "file-simulator.selectorLabels" $ | nindent 8 }}
-        app.kubernetes.io/component: {{ $nas.name }}
-    spec:
-      {{- if $.Values.serviceAccount.create }}
-      serviceAccountName: {{ include "file-simulator.serviceAccountName" $ }}
-      {{- end }}
-      containers:
-        - name: nfs-server
-          image: "{{ $.Values.nas.image.repository }}:{{ $.Values.nas.image.tag }}"
-          imagePullPolicy: {{ $.Values.nas.image.pullPolicy }}
-          ports:
-            - name: nfs
-              containerPort: 2049
-              protocol: TCP
-            - name: nfs-udp
-              containerPort: 2049
-              protocol: UDP
-            - name: mountd
-              containerPort: 32765
-              protocol: TCP
-            - name: mountd-udp
-              containerPort: 32765
-              protocol: UDP
-            - name: statd
-              containerPort: 32766
-              protocol: TCP
-            - name: statd-udp
-              containerPort: 32766
-              protocol: UDP
-            - name: lockd
-              containerPort: 32767
-              protocol: TCP
-            - name: lockd-udp
-              containerPort: 32767
-              protocol: UDP
-            - name: rpcbind
-              containerPort: 111
-              protocol: TCP
-            - name: rpcbind-udp
-              containerPort: 111
-              protocol: UDP
-          env:
-            - name: NFS_EXPORT_0
-              value: "/data *(rw,sync,no_subtree_check,no_root_squash,fsid=0)"
-            - name: NFS_DISABLE_VERSION_3
-              value: "false"
-            - name: NFS_LOG_LEVEL
-              value: "DEBUG"
-          volumeMounts:
-            # CRITICAL: emptyDir for NFS exports (hostPath cannot be exported)
-            - name: nfs-data
-              mountPath: /data
-            # Shared PVC for cross-protocol access (optional)
-            - name: shared-data
-              mountPath: /shared
-          securityContext:
-            privileged: true
-            capabilities:
-              add:
-                - SYS_ADMIN
-                - DAC_READ_SEARCH
-          livenessProbe:
-            tcpSocket:
-              port: nfs
-            initialDelaySeconds: 30
-            periodSeconds: 10
-          readinessProbe:
-            tcpSocket:
-              port: nfs
-            initialDelaySeconds: 10
-            periodSeconds: 5
-          resources:
-            {{- toYaml $.Values.nas.resources | nindent 12 }}
-      volumes:
-        # CRITICAL: emptyDir for NFS export (see NFS fix documentation)
-        - name: nfs-data
-          emptyDir: {}
-        # Per-instance PVC for Windows storage access
-        - name: shared-data
-          persistentVolumeClaim:
-            claimName: {{ include "file-simulator.fullname" $ }}-{{ $nas.name }}-pvc
-      {{- with $.Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-{{- end }}
-{{- end }}
-{{- end }}
-```
-
-**Critical design notes:**
-
-1. **emptyDir volume (`nfs-data`)**: Required for NFS exports due to hostPath limitation. NFS cannot export Windows-mounted hostPath volumes.
-
-2. **PVC volume (`shared-data`)**: Mounts per-instance PVC to `/shared` for:
-   - Cross-protocol file access
-   - Windows → Kubernetes file transfer
-   - Backup/restore operations
-
-3. **Scope management (`$` vs `.`)**:
-   - `$`: Root context (release/chart values)
-   - `.`: Current iteration context (current `$nas` object)
-   - Use `$.Values.nas.image` (root) not `.Values.nas.image` (fails in loop)
-
-4. **Port configuration**: All 10 NFS ports (TCP/UDP pairs) defined for full NFSv3/v4 compatibility
-
-### Component 4: Service Template
-
-**File:** `templates/nas-multi.yaml` (continued)
-
-```yaml
-{{- if .Values.nasServers }}
-{{- range $index, $nas := .Values.nasServers }}
-{{- if $nas.enabled }}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "file-simulator.fullname" $ }}-{{ $nas.name }}
-  namespace: {{ include "file-simulator.namespace" $ }}
-  labels:
-    {{- include "file-simulator.labels" $ | nindent 4 }}
-    app.kubernetes.io/component: {{ $nas.name }}
-    simulator.protocol: nas
-spec:
-  type: NodePort
-  ports:
-    - port: 2049
-      targetPort: nfs
-      protocol: TCP
-      name: nfs
-      nodePort: {{ $nas.nodePort }}
-    - port: 32765
-      targetPort: mountd
-      protocol: TCP
-      name: mountd
-    - port: 32766
-      targetPort: statd
-      protocol: TCP
-      name: statd
-    - port: 32767
-      targetPort: lockd
-      protocol: TCP
-      name: lockd
-    - port: 111
-      targetPort: rpcbind
-      protocol: TCP
-      name: rpcbind
-  selector:
-    {{- include "file-simulator.selectorLabels" $ | nindent 4 }}
-    app.kubernetes.io/component: {{ $nas.name }}
-{{- end }}
-{{- end }}
-{{- end }}
-```
-
-**Service naming resolution:**
-
-| Instance | Service Name | DNS FQDN | NodePort |
-|----------|--------------|----------|----------|
-| nas-input-1 | `file-sim-file-simulator-nas-input-1` | `file-sim-file-simulator-nas-input-1.file-simulator.svc.cluster.local` | 32150 |
-| nas-input-2 | `file-sim-file-simulator-nas-input-2` | `file-sim-file-simulator-nas-input-2.file-simulator.svc.cluster.local` | 32151 |
-| nas-output-1 | `file-sim-file-simulator-nas-output-1` | `file-sim-file-simulator-nas-output-1.file-simulator.svc.cluster.local` | 32152 |
-
-**DNS naming pattern:** `{release}-{chart}-{instance-name}.{namespace}.svc.cluster.local`
-
----
-
-## Alternative Architecture Patterns Considered
-
-### Alternative 1: Single NFS Server with Multiple Exports
-
-**Approach:** Deploy one NFS server pod with multiple export paths configured via environment variables.
-
-```yaml
-env:
-  - name: NFS_EXPORT_0
-    value: "/input1 *(rw,sync,no_subtree_check)"
-  - name: NFS_EXPORT_1
-    value: "/input2 *(rw,sync,no_subtree_check)"
-  # ... 7 exports total
-```
-
-**Storage approach:**
-- Single PVC with subdirectories (subPath mounts)
-- One service endpoint, clients specify different mount paths
-
-**Pros:**
-- Fewer Kubernetes resources (1 deployment vs 7)
-- Single service endpoint simplifies discovery
-- Lower resource overhead
-
-**Cons:**
-- **Single point of failure**: One pod crash affects all "NAS servers"
-- **Complex mount syntax**: Clients must know subdirectory structure
-- **Harder to scale**: Cannot scale individual NAS instances
-- **Storage isolation unclear**: All subdirectories in one PVC
-- **Does not match production model**: Production likely has separate NAS devices
-
-**Verdict:** REJECTED. Does not meet requirement for "7 independent NAS servers." Production fidelity requires separate service endpoints.
-
-### Alternative 2: StatefulSet with Dynamic PVC Provisioning
-
-**Approach:** Use StatefulSet with volumeClaimTemplates for automatic PVC creation.
-
-```yaml
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: nas-server
-spec:
-  replicas: 7
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes: ["ReadWriteMany"]
-        resources:
-          requests:
-            storage: 5Gi
-```
-
-**Pros:**
-- Automatic PVC creation per replica
-- Kubernetes manages PVC lifecycle
-- Stable pod identities (nas-server-0, nas-server-1, ...)
-
-**Cons:**
-- **Cannot control hostPath per PVC**: volumeClaimTemplates use StorageClass provisioner, but hostPath is static (no dynamic provisioner)
-- **Naming convention mismatch**: Generates `nas-server-0` not `nas-input-1` (semantic names required)
-- **Cannot vary storage size**: All PVCs get same size (requirement: nas-archive needs 20Gi, nas-config needs 2Gi)
-- **Cannot disable individual instances**: replicas=7 deploys all or none (requirement: enabled flag per instance)
-
-**Verdict:** REJECTED. StatefulSet is designed for homogeneous replicas. Requirements need heterogeneous instances with distinct configurations.
-
-### Alternative 3: Separate Helm Releases per NAS
-
-**Approach:** Deploy 7 separate Helm releases using single-instance chart.
-
-```bash
-helm install nas-input-1 ./helm-chart/file-simulator \
-  --set nas.enabled=true \
-  --set nas.service.nodePort=32150
-
-helm install nas-input-2 ./helm-chart/file-simulator \
-  --set nas.enabled=true \
-  --set nas.service.nodePort=32151
-
-# ... 5 more helm install commands
-```
-
-**Pros:**
-- Uses existing single-instance templates (no code changes)
-- Each NAS is completely isolated (separate release lifecycle)
-- Easy to upgrade/rollback individual NAS instances
-
-**Cons:**
-- **Operational complexity**: 7 helm commands to deploy/upgrade/delete
-- **Configuration drift risk**: Each release has separate values, hard to keep synchronized
-- **Namespace pollution**: 7 releases create 7x resources (7 ServiceAccounts, 7 shared PVCs if not careful)
-- **No atomic deployment**: Deploying all 7 is not a single transaction
-- **Harder to template**: Cannot loop over NAS instances in CI/CD pipelines
-
-**Verdict:** REJECTED for initial implementation. Could be useful for operational scenarios (e.g., rolling restart of one NAS), but multi-instance template is cleaner for standard deployment.
-
----
-
-## Storage Architecture Deep Dive
-
-### Challenge: NFS Cannot Export hostPath Volumes
-
-**Root cause:** The `erichough/nfs-server` container expects to export directories within the container filesystem. When a hostPath volume is mounted, the underlying filesystem is NTFS (Windows), which NFS server cannot export due to:
-- Extended attribute incompatibility
-- Permission model mismatch
-- Filesystem feature differences
-
-**Current workaround (single NAS):**
-```yaml
-volumes:
-  - name: nfs-data
-    emptyDir: {}          # NFS exports this
-  - name: shared-data
-    persistentVolumeClaim:
-      claimName: shared-pvc  # Access to Windows files
-```
-
-**Implication for multi-NAS:**
-- Each NAS instance MUST use emptyDir for NFS exports
-- Each NAS instance CAN mount per-instance PVC for Windows access
-- Files must be copied from Windows PVC to emptyDir to be NFS-exported
-
-### Data Flow Pattern
+## Recommended Project Structure
 
 ```
-Windows Host: C:\simulator-data\nas-input-1\
-       ↓ (Minikube mount)
-Kubernetes hostPath: /mnt/simulator-data/nas-input-1
-       ↓ (PV/PVC)
-NAS Pod Volume: /shared (PVC mount)
-       ↓ (Copy/sync process)
-NAS Pod Volume: /data (emptyDir)
-       ↓ (NFS export)
-Kubernetes Clients: mount nas-input-1:/ → /data
+src/
+├── FileSimulator.Dashboard/          # React SPA
+│   ├── src/
+│   │   ├── components/               # UI components
+│   │   │   ├── dashboard/            # Metrics & charts
+│   │   │   ├── file-browser/         # File operations
+│   │   │   ├── server-management/    # Add/remove servers
+│   │   │   └── shared/               # Reusable components
+│   │   ├── hooks/                    # Custom React hooks
+│   │   │   ├── useSignalR.ts         # WebSocket connection
+│   │   │   ├── useMetrics.ts         # Time-series data
+│   │   │   └── useFileWatcher.ts     # Real-time file events
+│   │   ├── services/                 # API clients
+│   │   │   ├── apiClient.ts          # REST API wrapper
+│   │   │   └── signalRService.ts     # SignalR connection manager
+│   │   ├── store/                    # State management
+│   │   │   ├── useServerStore.ts     # Zustand store for servers
+│   │   │   ├── useMetricsStore.ts    # Zustand store for metrics
+│   │   │   └── useEventStore.ts      # Zustand store for events
+│   │   └── App.tsx                   # Root component
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── Dockerfile                    # Multi-stage build
+│
+├── FileSimulator.ControlPlane/       # ASP.NET Core Backend
+│   ├── Controllers/
+│   │   ├── ServersController.cs      # CRUD for protocol servers
+│   │   ├── FilesController.cs        # File operations
+│   │   ├── MetricsController.cs      # Historical metrics
+│   │   └── ConfigController.cs       # Import/export config
+│   ├── Hubs/
+│   │   └── MonitoringHub.cs          # SignalR hub
+│   ├── Services/
+│   │   ├── IKubernetesService.cs     # Kubernetes API abstraction
+│   │   ├── KubernetesService.cs      # Create/delete pods dynamically
+│   │   ├── IHealthCheckService.cs    # Protocol health checks
+│   │   ├── HealthCheckService.cs     # Poll all servers
+│   │   ├── IFileWatcherService.cs    # Windows directory monitoring
+│   │   ├── FileWatcherService.cs     # FileSystemWatcher wrapper
+│   │   ├── IMetricsService.cs        # Time-series operations
+│   │   └── MetricsService.cs         # Write/query metrics
+│   ├── BackgroundServices/
+│   │   ├── HealthMonitorWorker.cs    # Background health checks
+│   │   └── MetricsCollectorWorker.cs # Periodic metrics collection
+│   ├── Models/
+│   │   ├── ServerDefinition.cs       # Protocol server config
+│   │   ├── HealthStatus.cs           # Health check result
+│   │   ├── FileEvent.cs              # File change event
+│   │   └── Metric.cs                 # Time-series data point
+│   ├── Data/
+│   │   ├── MetricsDbContext.cs       # EF Core context
+│   │   └── Migrations/               # Database migrations
+│   ├── Program.cs                    # Application entry point
+│   ├── appsettings.json              # Configuration
+│   └── Dockerfile                    # Container image
+│
+├── FileSimulator.Client/             # Existing .NET client library
+│   └── [Existing file protocol services]
+│
+└── helm-chart/
+    └── file-simulator/               # Existing Helm chart
+        ├── charts/                   # Subchart for new components
+        │   ├── control-plane/        # Backend + Dashboard
+        │   │   ├── templates/
+        │   │   │   ├── backend-deployment.yaml
+        │   │   │   ├── backend-service.yaml
+        │   │   │   ├── dashboard-deployment.yaml
+        │   │   │   ├── dashboard-service.yaml
+        │   │   │   ├── redis-deployment.yaml
+        │   │   │   ├── kafka-deployment.yaml
+        │   │   │   └── ingress.yaml
+        │   │   ├── Chart.yaml
+        │   │   └── values.yaml
+        │   └── [Future subcharts]
+        ├── templates/                # Existing protocol servers
+        │   ├── ftp.yaml
+        │   ├── sftp.yaml
+        │   ├── nas.yaml
+        │   └── [Other existing templates]
+        ├── Chart.yaml                # Umbrella chart metadata
+        └── values.yaml               # Global configuration
 ```
 
-**Copy mechanisms (pick one):**
+### Structure Rationale
 
-1. **InitContainer approach:** Copy files on pod startup
-```yaml
-initContainers:
-  - name: sync-data
-    image: busybox
-    command: ['sh', '-c', 'cp -r /shared/* /data/']
-    volumeMounts:
-      - name: shared-data
-        mountPath: /shared
-      - name: nfs-data
-        mountPath: /data
-```
+- **Umbrella Chart Pattern**: Single Helm chart contains all components; enables atomic deployments and rollbacks
+- **Subchart Isolation**: Control plane components (dashboard, backend, Kafka, Redis) in dedicated subchart; can be enabled/disabled via `controlPlane.enabled` flag
+- **Co-located Frontend/Backend**: Both in same Kubernetes namespace for simplified networking and shared ConfigMaps
+- **Zustand for State**: Lightweight, performant, no provider wrapping needed; ideal for real-time dashboard updates
+- **Separation of Concerns**: React hooks isolate SignalR logic from UI components; services abstract API communication
 
-2. **Sidecar approach:** Continuous sync with inotify
-```yaml
-containers:
-  - name: file-sync
-    image: alpine
-    command: ['sh', '-c', 'while true; do rsync -av /shared/ /data/; sleep 10; done']
-    volumeMounts:
-      - name: shared-data
-        mountPath: /shared
-      - name: nfs-data
-        mountPath: /data
-```
+## Architectural Patterns
 
-3. **Application-level approach:** Microservices write directly to NFS-mounted emptyDir
-   - Pro: No copy overhead
-   - Con: Loses Windows access (files not in C:\simulator-data)
+### Pattern 1: SignalR Hub with Redis Backplane
 
-**Recommendation for Phase 1:** InitContainer approach (simplest, good for testing)
-**Recommendation for Production:** Sidecar with rsync (keeps Windows in sync)
+**What:** Real-time bi-directional communication between backend and multiple browser clients, scaled across multiple backend pods using Redis as message broker.
 
-### Storage Isolation Verification
+**When to use:** Real-time dashboards with multiple concurrent users and horizontally scaled backend (2+ pods).
 
-**Per-instance PV/PVC ensures:**
-- NAS instance `nas-input-1` cannot access `nas-output-1` files
-- Windows directories remain separate
-- Storage quotas enforced per instance (storageSize in PVC)
+**Trade-offs:**
+- **Pros**: Supports multiple backend pods, no sticky sessions needed with WebSocket-only mode, low latency (<100ms)
+- **Cons**: Requires Redis infrastructure, adds complexity for single-pod deployments, Redis memory consumption scales with message throughput
 
-**Validation test:**
-```bash
-# Write to nas-input-1 from Windows
-echo "test" > C:\simulator-data\nas-input-1\test.txt
-
-# Mount nas-input-1 in pod
-kubectl run -it test --image=alpine --rm -- sh
-mount nas-input-1.file-simulator.svc.cluster.local:/ /mnt
-ls /mnt  # Should see test.txt
-
-# Mount nas-input-2 in same pod
-mount nas-input-2.file-simulator.svc.cluster.local:/ /mnt2
-ls /mnt2  # Should NOT see test.txt (different storage)
-```
-
----
-
-## DNS Service Discovery
-
-### Service Naming Convention
-
-Kubernetes service DNS follows RFC 1035 naming: `<service>.<namespace>.svc.<cluster-domain>`
-
-**Project's generated names:**
-- Pattern: `{{ .Release.Name }}-{{ .Chart.Name }}-{{ instance-name }}`
-- Example: `file-sim-file-simulator-nas-input-1`
-
-**Full DNS FQDN:**
-- Pattern: `{{ .Release.Name }}-{{ .Chart.Name }}-{{ instance-name }}.{{ namespace }}.svc.cluster.local`
-- Example: `file-sim-file-simulator-nas-input-1.file-simulator.svc.cluster.local:2049`
-
-### DNS Name Length Constraints
-
-Kubernetes enforces 63-character limit per DNS label (per RFC 1035).
-
-**Character budget:**
-```
-file-sim (8) + - (1) + file-simulator (14) + - (1) + nas-input-1 (11) = 35 characters
-Remaining budget: 63 - 35 = 28 characters for longer instance names
-```
-
-**Safe instance name length:** Up to 28 characters (total service name ≤ 63)
-
-**Validation:**
-```yaml
-nasServers:
-  - name: nas-very-long-instance-name-test  # 32 chars
-    # Total: file-sim-file-simulator-nas-very-long-instance-name-test = 56 chars ✓
-
-  - name: nas-extremely-long-instance-name-that-exceeds-limit  # 52 chars
-    # Total: 77 chars ✗ EXCEEDS LIMIT
-```
-
-**Mitigation:** Template helper to truncate names:
-```yaml
-{{- define "file-simulator.nas-name" -}}
-{{- $fullname := printf "%s-%s" (include "file-simulator.fullname" .) .name }}
-{{- $fullname | trunc 63 | trimSuffix "-" }}
-{{- end }}
-```
-
-### Client Configuration Patterns
-
-**Pattern 1: Hardcoded DNS (not recommended)**
-```yaml
-env:
-  - name: NAS_INPUT_1_HOST
-    value: "file-sim-file-simulator-nas-input-1.file-simulator.svc.cluster.local"
-```
-
-**Pattern 2: ConfigMap with service discovery**
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: nas-endpoints
-data:
-  nas-servers.json: |
+**Example:**
+```csharp
+// Startup.cs - Configure SignalR with Redis backplane
+services.AddSignalR()
+    .AddStackExchangeRedis(options =>
     {
-      "input": [
-        "file-sim-file-simulator-nas-input-1.file-simulator.svc.cluster.local:2049",
-        "file-sim-file-simulator-nas-input-2.file-simulator.svc.cluster.local:2049"
-      ],
-      "output": [
-        "file-sim-file-simulator-nas-output-1.file-simulator.svc.cluster.local:2049",
-        "file-sim-file-simulator-nas-output-2.file-simulator.svc.cluster.local:2049"
-      ]
+        options.Configuration.EndPoints.Add("redis-svc:6379");
+        options.Configuration.ChannelPrefix = RedisChannel.Literal("simulator:");
+    });
+
+// MonitoringHub.cs - Broadcast to all connected clients
+public class MonitoringHub : Hub
+{
+    public async Task BroadcastHealthStatus(HealthStatus status)
+    {
+        // Redis ensures all pods receive this message
+        await Clients.All.SendAsync("HealthStatusChanged", status);
     }
+}
+
+// Health check service triggers broadcast
+public class HealthCheckService : BackgroundService
+{
+    private readonly IHubContext<MonitoringHub> _hubContext;
+
+    protected override async Task ExecuteAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            var statuses = await CheckAllServersAsync(ct);
+            foreach (var status in statuses)
+            {
+                // Broadcast to all connected clients across all pods
+                await _hubContext.Clients.All.SendAsync(
+                    "HealthStatusChanged", status, ct);
+            }
+            await Task.Delay(TimeSpan.FromSeconds(10), ct);
+        }
+    }
+}
 ```
 
-**Pattern 3: Kubernetes Service discovery (DNS SRV records)**
-```bash
-# Query all NAS services with label selector
-kubectl get svc -n file-simulator -l simulator.protocol=nas -o json | \
-  jq -r '.items[] | "\(.metadata.name).\(.metadata.namespace).svc.cluster.local"'
+**Minikube Development Workaround:**
+For single-pod development, Redis backplane is optional. SignalR works without Redis when only one backend pod exists. Enable Redis in production-like testing scenarios.
+
+### Pattern 2: Kubernetes Dynamic Resource Management
+
+**What:** Programmatically create/delete Kubernetes resources (Deployments, Services, PVCs) at runtime using the .NET Kubernetes client library.
+
+**When to use:** Control plane features like "Add FTP Server" button that provisions new infrastructure on demand.
+
+**Trade-offs:**
+- **Pros**: Self-service infrastructure, no manual kubectl commands, validates before applying
+- **Cons**: Requires elevated RBAC permissions, complex error handling, must track created resources for cleanup
+
+**Example:**
+```csharp
+// KubernetesService.cs
+public class KubernetesService : IKubernetesService
+{
+    private readonly IKubernetes _k8sClient;
+    private readonly string _namespace = "file-simulator";
+
+    public KubernetesService()
+    {
+        var config = KubernetesClientConfiguration.InClusterConfig();
+        _k8sClient = new Kubernetes(config);
+    }
+
+    public async Task<string> CreateFtpServerAsync(
+        FtpServerConfig config, CancellationToken ct)
+    {
+        var name = $"ftp-{Guid.NewGuid().ToString()[..8]}";
+
+        // Create Deployment
+        var deployment = new V1Deployment
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = name,
+                Labels = new Dictionary<string, string>
+                {
+                    ["app"] = "file-simulator",
+                    ["protocol"] = "ftp",
+                    ["managed-by"] = "control-plane"
+                }
+            },
+            Spec = new V1DeploymentSpec
+            {
+                Replicas = 1,
+                Selector = new V1LabelSelector
+                {
+                    MatchLabels = new Dictionary<string, string>
+                    {
+                        ["app"] = name
+                    }
+                },
+                Template = new V1PodTemplateSpec
+                {
+                    Metadata = new V1ObjectMeta
+                    {
+                        Labels = new Dictionary<string, string>
+                        {
+                            ["app"] = name
+                        }
+                    },
+                    Spec = new V1PodSpec
+                    {
+                        Containers = new List<V1Container>
+                        {
+                            new V1Container
+                            {
+                                Name = "ftp-server",
+                                Image = "fauria/vsftpd:latest",
+                                Env = new List<V1EnvVar>
+                                {
+                                    new V1EnvVar { Name = "FTP_USER", Value = config.Username },
+                                    new V1EnvVar { Name = "FTP_PASS", Value = config.Password }
+                                },
+                                Ports = new List<V1ContainerPort>
+                                {
+                                    new V1ContainerPort { ContainerPort = 21 }
+                                },
+                                VolumeMounts = new List<V1VolumeMount>
+                                {
+                                    new V1VolumeMount
+                                    {
+                                        Name = "shared-data",
+                                        MountPath = "/home/vsftpd"
+                                    }
+                                }
+                            }
+                        },
+                        Volumes = new List<V1Volume>
+                        {
+                            new V1Volume
+                            {
+                                Name = "shared-data",
+                                PersistentVolumeClaim = new V1PersistentVolumeClaimVolumeSource
+                                {
+                                    ClaimName = "file-sim-file-simulator-pvc"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        await _k8sClient.CreateNamespacedDeploymentAsync(
+            deployment, _namespace, cancellationToken: ct);
+
+        // Create Service (NodePort)
+        var service = new V1Service
+        {
+            Metadata = new V1ObjectMeta { Name = name },
+            Spec = new V1ServiceSpec
+            {
+                Type = "NodePort",
+                Selector = new Dictionary<string, string> { ["app"] = name },
+                Ports = new List<V1ServicePort>
+                {
+                    new V1ServicePort
+                    {
+                        Port = 21,
+                        TargetPort = 21,
+                        NodePort = config.NodePort
+                    }
+                }
+            }
+        };
+
+        await _k8sClient.CreateNamespacedServiceAsync(
+            service, _namespace, cancellationToken: ct);
+
+        return name; // Return server ID for tracking
+    }
+
+    public async Task DeleteServerAsync(string name, CancellationToken ct)
+    {
+        // Delete Service first
+        await _k8sClient.DeleteNamespacedServiceAsync(
+            name, _namespace, cancellationToken: ct);
+
+        // Then Deployment
+        await _k8sClient.DeleteNamespacedDeploymentAsync(
+            name, _namespace, cancellationToken: ct);
+    }
+}
 ```
 
-**Recommendation:** Pattern 2 (ConfigMap) with Helm template generation for DRY principle.
+**RBAC Requirements:**
+The control plane ServiceAccount needs permissions to create/delete Deployments, Services, and ConfigMaps. Include in Helm chart:
 
----
-
-## NodePort Allocation Strategy
-
-### Kubernetes NodePort Range
-
-Default range: 30000-32767 (2768 available ports)
-
-**Current project allocation:**
-- Management: 30180
-- FTP: 30021, 30022 (multi-instance)
-- SFTP: 30122, 30123 (multi-instance)
-- HTTP: 30088
-- S3: 30900, 30901 (API + Console)
-- SMB: LoadBalancer (port 445)
-- NAS: 32149 (single instance)
-
-**Available for multi-NAS:** 32150-32767 (618 ports)
-
-### Allocation Strategy for 7 NAS Instances
-
-**Option 1: Sequential allocation (recommended)**
 ```yaml
-nasServers:
-  - name: nas-input-1
-    nodePort: 32150  # Base + 0
-  - name: nas-input-2
-    nodePort: 32151  # Base + 1
-  - name: nas-output-1
-    nodePort: 32152  # Base + 2
-  # ...
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: control-plane-role
+  namespace: file-simulator
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "create", "update", "delete"]
+- apiGroups: [""]
+  resources: ["services", "configmaps"]
+  verbs: ["get", "list", "create", "update", "delete"]
 ```
 
-**Pros:**
-- Predictable pattern
-- Easy to calculate (base=32150, port=base+index)
-- No gaps in allocation
+### Pattern 3: React Hook for SignalR Connection Management
 
-**Cons:**
-- Adding instances requires updating values (manual port assignment)
-- Port conflicts if multiple chart installations
+**What:** Custom React hook that manages SignalR connection lifecycle (connect, reconnect, disconnect) and provides typed message handlers.
 
-**Option 2: Offset allocation**
-```yaml
-nasServers:
-  - name: nas-input-1
-    nodePort: 32200  # Input block: 32200-32299
-  - name: nas-input-2
-    nodePort: 32201
-  - name: nas-output-1
-    nodePort: 32300  # Output block: 32300-32399
-  - name: nas-output-2
-    nodePort: 32301
+**When to use:** Every React component that needs real-time updates from backend.
+
+**Trade-offs:**
+- **Pros**: Encapsulates connection logic, automatic reconnection, cleanup on unmount
+- **Cons**: Must handle connection state in UI, potential for memory leaks if not properly cleaned up
+
+**Example:**
+```typescript
+// hooks/useSignalR.ts
+import { useEffect, useRef, useState } from 'react';
+import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+
+interface UseSignalROptions {
+  url: string;
+  onHealthStatusChanged?: (status: HealthStatus) => void;
+  onFileEventReceived?: (event: FileEvent) => void;
+  onMetricsUpdated?: (metrics: Metric[]) => void;
+}
+
+export function useSignalR(options: UseSignalROptions) {
+  const { url, onHealthStatusChanged, onFileEventReceived, onMetricsUpdated } = options;
+  const [connectionState, setConnectionState] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  const connectionRef = useRef<HubConnection | null>(null);
+
+  useEffect(() => {
+    // Build connection
+    const connection = new HubConnectionBuilder()
+      .withUrl(url)
+      .withAutomaticReconnect() // Exponential backoff: 0s, 2s, 10s, 30s
+      .configureLogging(LogLevel.Information)
+      .build();
+
+    // Register event handlers
+    if (onHealthStatusChanged) {
+      connection.on('HealthStatusChanged', onHealthStatusChanged);
+    }
+    if (onFileEventReceived) {
+      connection.on('FileEventReceived', onFileEventReceived);
+    }
+    if (onMetricsUpdated) {
+      connection.on('MetricsUpdated', onMetricsUpdated);
+    }
+
+    // State change handlers
+    connection.onreconnecting(() => setConnectionState('connecting'));
+    connection.onreconnected(() => setConnectionState('connected'));
+    connection.onclose(() => setConnectionState('disconnected'));
+
+    // Start connection
+    setConnectionState('connecting');
+    connection.start()
+      .then(() => setConnectionState('connected'))
+      .catch(err => {
+        console.error('SignalR connection failed:', err);
+        setConnectionState('disconnected');
+      });
+
+    connectionRef.current = connection;
+
+    // Cleanup on unmount
+    return () => {
+      connection.stop();
+      connectionRef.current = null;
+    };
+  }, [url]); // Only reconnect if URL changes
+
+  return { connectionState, connection: connectionRef.current };
+}
+
+// Usage in component
+function Dashboard() {
+  const { connectionState, connection } = useSignalR({
+    url: '/api/monitoring',
+    onHealthStatusChanged: (status) => {
+      console.log('Health status changed:', status);
+      updateServerStore(status); // Update Zustand store
+    },
+    onFileEventReceived: (event) => {
+      console.log('File event:', event);
+      addToEventLog(event);
+    }
+  });
+
+  return (
+    <div>
+      <ConnectionBadge state={connectionState} />
+      {/* Dashboard content */}
+    </div>
+  );
+}
 ```
 
-**Pros:**
-- Semantic grouping (inputs separate from outputs)
-- Easier to add instances within block (room for growth)
+### Pattern 4: Time-Series Metrics with Batched Writes
 
-**Cons:**
-- Wastes port space (gaps between blocks)
-- More complex documentation
+**What:** Collect metrics frequently (every 1-10 seconds) but batch writes to database to reduce I/O overhead and improve performance.
 
-**Option 3: Dynamic allocation (Kubernetes 1.27+)**
-```yaml
-service:
-  type: NodePort
-  ports:
-    - port: 2049
-      # nodePort omitted - Kubernetes assigns automatically
+**When to use:** High-frequency metrics collection (CPU, memory, connection counts) where individual writes would overwhelm the database.
+
+**Trade-offs:**
+- **Pros**: Reduces database load by 10-100x, improves write throughput, lower latency for queries
+- **Cons**: Metrics delayed by batch window (acceptable for monitoring), data loss risk if crash before flush (mitigated by small batch windows)
+
+**Example:**
+```csharp
+// MetricsService.cs
+public class MetricsService : BackgroundService
+{
+    private readonly ConcurrentQueue<Metric> _buffer = new();
+    private readonly MetricsDbContext _dbContext;
+    private readonly ILogger<MetricsService> _logger;
+    private const int BatchSize = 100;
+    private const int FlushIntervalSeconds = 30;
+
+    protected override async Task ExecuteAsync(CancellationToken ct)
+    {
+        var timer = new PeriodicTimer(TimeSpan.FromSeconds(FlushIntervalSeconds));
+
+        while (await timer.WaitForNextTickAsync(ct))
+        {
+            await FlushMetricsAsync(ct);
+        }
+    }
+
+    public void RecordMetric(string serverName, string metricName, double value)
+    {
+        _buffer.Enqueue(new Metric
+        {
+            Timestamp = DateTime.UtcNow,
+            ServerName = serverName,
+            MetricName = metricName,
+            Value = value
+        });
+
+        // Flush immediately if buffer full
+        if (_buffer.Count >= BatchSize)
+        {
+            _ = FlushMetricsAsync(CancellationToken.None);
+        }
+    }
+
+    private async Task FlushMetricsAsync(CancellationToken ct)
+    {
+        var batch = new List<Metric>();
+
+        // Drain buffer
+        while (_buffer.TryDequeue(out var metric) && batch.Count < BatchSize)
+        {
+            batch.Add(metric);
+        }
+
+        if (batch.Count == 0) return;
+
+        try
+        {
+            await _dbContext.Metrics.AddRangeAsync(batch, ct);
+            await _dbContext.SaveChangesAsync(ct);
+
+            _logger.LogDebug("Flushed {Count} metrics to database", batch.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to flush metrics");
+
+            // Re-queue on failure
+            foreach (var metric in batch)
+            {
+                _buffer.Enqueue(metric);
+            }
+        }
+    }
+}
 ```
 
-**Pros:**
-- No manual port management
-- No conflicts
-- Uses Kubernetes StaticSubrange feature (collision avoidance)
+**For Prometheus Alternative:**
+If using Prometheus instead of SQLite/SQL Server, expose metrics via `/metrics` endpoint and let Prometheus scrape:
 
-**Cons:**
-- Unpredictable port assignments (client config harder)
-- Requires Kubernetes 1.27+ (Minikube may not support)
-- External access documentation difficult (ports change on redeploy)
+```csharp
+// Configure Prometheus metrics exporter
+services.AddPrometheusMetrics(options =>
+{
+    options.Port = 9090;
+    options.Path = "/metrics";
+});
 
-**Recommendation:** Option 1 (Sequential) for Minikube/development, Option 3 (Dynamic) for production if Kubernetes 1.27+ available.
+// Record metrics
+public class HealthCheckService
+{
+    private static readonly Gauge ServerHealthGauge = Metrics.CreateGauge(
+        "file_simulator_server_health",
+        "Health status of protocol servers (0=down, 1=up)",
+        new GaugeConfiguration
+        {
+            LabelNames = new[] { "server_name", "protocol" }
+        });
 
-### Windows Firewall Considerations
+    private async Task CheckServerHealthAsync(ServerDefinition server)
+    {
+        var isHealthy = await PingServerAsync(server);
+        ServerHealthGauge.WithLabels(server.Name, server.Protocol)
+            .Set(isHealthy ? 1 : 0);
+    }
+}
+```
 
-If accessing NFS from Windows host (e.g., via `mount -o nolock 192.168.59.100:32150 Z:`):
+### Pattern 5: File Watcher with Debouncing
 
-**Required firewall rules:**
+**What:** Monitor Windows directories for file changes and emit events, but debounce rapid changes (e.g., large file writes triggering multiple events) to avoid event floods.
+
+**When to use:** Real-time file event streaming to dashboard when files are written to Windows directories.
+
+**Trade-offs:**
+- **Pros**: Reduces event spam (1000 events → 1 debounced event), improves UI responsiveness, lower SignalR bandwidth
+- **Cons**: Events delayed by debounce window (typically 500ms-2s), multiple rapid changes may be collapsed into single event
+
+**Example:**
+```csharp
+// FileWatcherService.cs
+public class FileWatcherService : BackgroundService
+{
+    private readonly IHubContext<MonitoringHub> _hubContext;
+    private readonly ConcurrentDictionary<string, Timer> _debounceTimers = new();
+    private readonly TimeSpan _debounceDelay = TimeSpan.FromSeconds(1);
+
+    protected override Task ExecuteAsync(CancellationToken ct)
+    {
+        var watcher = new FileSystemWatcher(@"C:\simulator-data")
+        {
+            NotifyFilter = NotifyFilters.FileName | NotifyFilters.Size,
+            IncludeSubdirectories = true,
+            EnableRaisingEvents = true
+        };
+
+        watcher.Created += (sender, e) => OnFileChanged("created", e.FullPath);
+        watcher.Changed += (sender, e) => OnFileChanged("modified", e.FullPath);
+        watcher.Deleted += (sender, e) => OnFileChanged("deleted", e.FullPath);
+
+        return Task.CompletedTask;
+    }
+
+    private void OnFileChanged(string changeType, string filePath)
+    {
+        // Cancel existing timer for this file
+        if (_debounceTimers.TryGetValue(filePath, out var existingTimer))
+        {
+            existingTimer.Dispose();
+        }
+
+        // Create new debounce timer
+        var timer = new Timer(_ =>
+        {
+            // Emit event after debounce delay
+            var fileEvent = new FileEvent
+            {
+                Timestamp = DateTime.UtcNow,
+                ChangeType = changeType,
+                FilePath = filePath,
+                FileName = Path.GetFileName(filePath)
+            };
+
+            _hubContext.Clients.All.SendAsync("FileEventReceived", fileEvent);
+
+            // Cleanup timer
+            _debounceTimers.TryRemove(filePath, out _);
+        }, null, _debounceDelay, Timeout.InfiniteTimeSpan);
+
+        _debounceTimers[filePath] = timer;
+    }
+}
+```
+
+## Data Flow
+
+### Real-Time Health Monitoring Flow
+
+```
+[Background Worker]
+    ↓ Every 10 seconds
+[Health Check Service] → [Poll FTP/SFTP/NAS/HTTP/S3/SMB]
+    ↓ Health status result
+[SignalR Hub] → [Redis Backplane] → [All Backend Pods]
+    ↓ Broadcast to connected clients
+[React Hook (useSignalR)] → [Zustand Store Update]
+    ↓ State change triggers re-render
+[Dashboard Component] → [Display Health Badges]
+```
+
+### File Event Streaming Flow
+
+```
+[Windows Directory] → File created/modified/deleted
+    ↓
+[FileSystemWatcher] → [Debounce Timer (1s)]
+    ↓
+[FileWatcherService] → [SignalR Hub]
+    ↓
+[Redis Backplane] → [All Backend Pods]
+    ↓
+[React Hook] → [Event Log Store (Zustand)]
+    ↓
+[File Events Panel] → Display recent changes
+```
+
+### Dynamic Server Creation Flow
+
+```
+[React UI] → User clicks "Add FTP Server"
+    ↓
+[API Controller] → POST /api/servers
+    ↓ Validate config
+[KubernetesService] → Create Deployment + Service
+    ↓ Kubernetes API calls
+[K8s API Server] → Deploy Pod + Expose NodePort
+    ↓ Wait for Pod Ready
+[Health Check Service] → Detect new server
+    ↓ Initial health check
+[SignalR Hub] → Broadcast "ServerAdded" event
+    ↓
+[React Hook] → Add to Server List (Zustand)
+    ↓
+[Dashboard] → Show new server with health status
+```
+
+### Metrics Query Flow
+
+```
+[React Dashboard] → Request metrics for last 24h
+    ↓ GET /api/metrics?server=ftp-1&period=24h
+[API Controller] → [MetricsService.QueryAsync()]
+    ↓ EF Core query
+[SQLite/SQL Server] → Aggregate by 5-minute buckets
+    ↓ Return time-series data
+[API Controller] → JSON response
+    ↓
+[React Component] → Render Chart (Recharts/Chart.js)
+```
+
+### Key Data Flows
+
+1. **Startup Initialization:** Backend discovers existing protocol servers via Kubernetes API, registers each for health checks, broadcasts initial state to dashboard
+2. **Continuous Monitoring:** Background worker polls all servers every 10s, emits health status changes via SignalR, stores metrics in database
+3. **Real-Time Events:** FileSystemWatcher detects Windows directory changes, debounces events, streams to all connected dashboards
+4. **User Actions:** Dashboard sends REST commands (add/remove server, upload file), backend updates Kubernetes/filesystem, broadcasts state changes
+5. **Historical Analysis:** Dashboard queries time-series database, receives aggregated metrics, renders charts for trend analysis
+
+## Scaling Considerations
+
+| Scale | Architecture Adjustments |
+|-------|--------------------------|
+| Single-node Minikube (current) | Single backend pod, no Redis backplane needed, SQLite for metrics, single Kafka broker (Strimzi KRaft mode), direct SignalR without sticky sessions |
+| Multi-node Dev (2-3 pods) | Add Redis for SignalR backplane, configure sticky sessions (nginx ingress affinity), keep SQLite or upgrade to PostgreSQL, single Kafka broker sufficient |
+| Production (10+ pods) | Redis Cluster (3+ nodes) for high availability, PostgreSQL or InfluxDB for metrics, Kafka cluster (3+ brokers) with replication factor 3, Prometheus + Grafana for observability, Azure SignalR Service alternative to Redis backplane |
+
+### Scaling Priorities
+
+1. **First bottleneck:** SignalR connections across multiple backend pods
+   - **Symptom:** Users see stale data, events not received by all clients
+   - **Solution:** Add Redis backplane, ensure all pods connect to same Redis instance, monitor Redis memory usage
+
+2. **Second bottleneck:** Database writes for high-frequency metrics
+   - **Symptom:** SQLite locks under load (>100 writes/sec), query latency increases
+   - **Solution:** Implement batched writes (Pattern 4), migrate to PostgreSQL or InfluxDB, use indexed timestamp column, partition by date
+
+3. **Third bottleneck:** Health check polling at scale (50+ servers)
+   - **Symptom:** Health checks take >10s to complete, delayed status updates
+   - **Solution:** Parallelize health checks with SemaphoreSlim(10) concurrency limit, cache results for 5s, offload to separate worker pool
+
+## Anti-Patterns
+
+### Anti-Pattern 1: Polling API for Real-Time Updates
+
+**What people do:** React dashboard polls REST API every 2-5 seconds to fetch latest health status.
+
+**Why it's wrong:**
+- Wastes bandwidth (full payload every request even if no changes)
+- Increases backend load (N concurrent users = N × queries/sec)
+- Delays updates by polling interval
+- Scales poorly (100 users × 2 requests/sec = 200 req/sec doing nothing)
+
+**Do this instead:** Use SignalR WebSockets for server-push architecture. Backend emits events only when state changes. Dashboard receives updates in real-time (<100ms latency). Scales to 10,000+ concurrent connections on single pod.
+
+### Anti-Pattern 2: Storing Kubernetes Resources in Database
+
+**What people do:** Create database table for protocol servers, track state in SQL, sync periodically with Kubernetes.
+
+**Why it's wrong:**
+- Dual source of truth (database vs Kubernetes)
+- Sync bugs inevitable (database says server exists, Kubernetes disagrees)
+- Manual reconciliation required after failures
+- Out-of-band changes (kubectl commands) not reflected in database
+
+**Do this instead:** Kubernetes API is the source of truth. Query Kubernetes directly for server list. Use labels for filtering (`protocol=ftp`, `managed-by=control-plane`). Store only transient data (metrics, events) in database. On startup, reconcile in-memory state from Kubernetes.
+
+### Anti-Pattern 3: Nested Helm Charts with Tight Coupling
+
+**What people do:** Create separate Helm releases for protocol servers, control plane, Kafka, Redis. Each has own namespace and ServiceAccount.
+
+**Why it's wrong:**
+- Cross-namespace networking complexity (NetworkPolicies, DNS discovery)
+- RBAC challenges (control plane can't manage servers in different namespace)
+- Atomic deployments impossible (protocol server upgrade independent of control plane)
+- Configuration drift (each chart has separate values.yaml)
+
+**Do this instead:** Use umbrella chart pattern with subcharts. Single Helm release deploys entire stack. Shared namespace for simplified networking. Control plane subchart can be disabled for existing deployments. Single `values.yaml` with nested structure. Atomic rollbacks via `helm rollback`.
+
+### Anti-Pattern 4: Global SignalR Broadcasting
+
+**What people do:** Every event broadcasts to all connected clients: `Clients.All.SendAsync("HealthStatusChanged", status)`.
+
+**Why it's wrong:**
+- User monitoring 5 servers receives events for all 50 servers in cluster
+- Bandwidth waste (90% of events irrelevant to user)
+- UI performance degrades with event volume
+- Privacy concerns (users see servers they don't own)
+
+**Do this instead:** Use SignalR groups for targeted broadcasting:
+
+```csharp
+// When client connects, join groups for monitored servers
+public async Task MonitorServers(string[] serverNames)
+{
+    foreach (var name in serverNames)
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, $"server:{name}");
+    }
+}
+
+// Broadcast only to interested clients
+await Clients.Group($"server:{serverName}")
+    .SendAsync("HealthStatusChanged", status);
+```
+
+### Anti-Pattern 5: No Connection State Handling in React
+
+**What people do:** Assume SignalR connection is always connected. Render dashboard immediately without checking connection state.
+
+**Why it's wrong:**
+- Network interruptions cause silent failures (events stop arriving)
+- No user feedback during reconnection attempts
+- Race conditions (component mounts before connection ready)
+- User doesn't know why dashboard is stale
+
+**Do this instead:** Expose connection state in UI, disable actions while disconnected, show reconnection attempts:
+
+```typescript
+function Dashboard() {
+  const { connectionState } = useSignalR({ url: '/api/monitoring' });
+
+  if (connectionState === 'connecting') {
+    return <Spinner>Connecting to real-time updates...</Spinner>;
+  }
+
+  if (connectionState === 'disconnected') {
+    return <Alert severity="error">
+      Connection lost. Attempting to reconnect...
+    </Alert>;
+  }
+
+  // Render dashboard only when connected
+  return <DashboardContent />;
+}
+```
+
+## Integration Points
+
+### Integration with Existing Helm Chart
+
+| Integration Point | Pattern | Notes |
+|-------------------|---------|-------|
+| **Shared PVC** | Control plane mounts existing `file-sim-file-simulator-pvc` at `/mnt/simulator-data` | Backend needs read/write access for file operations |
+| **Protocol Discovery** | Control plane queries Kubernetes API for pods with label `app.kubernetes.io/part-of=file-simulator-suite` | Existing protocol servers must have this label |
+| **ConfigMap Updates** | When adding server, update existing `file-sim-file-simulator-config` ConfigMap with new service endpoint | Client applications auto-discover new servers |
+| **Service Labels** | Control plane adds label `managed-by=control-plane` to dynamically created servers | Distinguishes user-created from Helm-deployed servers |
+| **NodePort Allocation** | Backend tracks used NodePorts (30000-32767), assigns next available when creating server | Prevents port conflicts |
+
+### External Services
+
+| Service | Integration Pattern | Notes |
+|---------|---------------------|-------|
+| **Kubernetes API** | In-cluster config via ServiceAccount, RBAC role grants deployment/service CRUD | Requires `control-plane-role` ClusterRole binding |
+| **Redis** | Standard connection string, deployed in same namespace via subchart | Optional for single-pod development |
+| **Kafka** | Strimzi operator, KRaft mode (no ZooKeeper), single broker deployment | Enable via `controlPlane.kafka.enabled` |
+| **SQLite** | Embedded in backend pod, mounted on PVC for persistence | Upgrade to PostgreSQL for production |
+| **Prometheus** | Optional, metrics endpoint at `/metrics` for scraping | Alternative to SQLite for time-series data |
+
+### Internal Boundaries
+
+| Boundary | Communication | Notes |
+|----------|---------------|-------|
+| **Dashboard ↔ Backend API** | REST over HTTP, standard JSON | CORS configured for Minikube NodePort access from Windows |
+| **Dashboard ↔ SignalR Hub** | WebSocket (negotiation via /hub/monitoring endpoint) | Automatic reconnect with exponential backoff |
+| **Backend ↔ Protocol Servers** | Health checks via TCP socket, protocol-specific handshakes (FTP 220, SFTP SSH-2.0) | Each protocol has dedicated health checker |
+| **Backend ↔ Kubernetes API** | gRPC (Kubernetes client library abstracts transport) | Uses HTTP/2 with TLS (in-cluster) |
+| **Backend ↔ Windows Filesystem** | FileSystemWatcher via hostPath PVC mount | Requires Windows host path mounted in Minikube |
+| **Kafka ↔ Backend** | Kafka protocol (producer/consumer via Confluent.Kafka library) | Backend produces file events, consumes for alerting |
+
+## Deployment Strategy
+
+### Single Helm Chart (Umbrella Pattern)
+
+**Recommended approach:** Extend existing `helm-chart/file-simulator` to include control plane as optional subchart.
+
+**Advantages:**
+- Atomic deployments: `helm upgrade` deploys entire stack
+- Unified configuration: Single `values.yaml` with nested structure
+- Backward compatible: Existing deployments disable control plane via `controlPlane.enabled: false`
+- Simplified rollbacks: `helm rollback file-sim` reverts entire system
+- Shared resources: Both layers use same PVC, namespace, ServiceAccount
+
+**Structure:**
+```
+helm-chart/file-simulator/
+├── Chart.yaml                    # Umbrella chart (v2.0.0)
+├── values.yaml                   # Global + protocol server config
+├── templates/                    # Existing protocol servers
+│   ├── ftp.yaml
+│   ├── nas.yaml
+│   └── [Other existing templates]
+└── charts/
+    └── control-plane/            # New subchart
+        ├── Chart.yaml            # v1.0.0
+        ├── values.yaml           # Dashboard, backend, Kafka, Redis config
+        └── templates/
+            ├── backend-deployment.yaml
+            ├── backend-service.yaml
+            ├── dashboard-deployment.yaml
+            ├── dashboard-service.yaml
+            ├── redis-deployment.yaml
+            ├── kafka-statefulset.yaml
+            └── rbac.yaml         # ServiceAccount + Role for K8s API access
+```
+
+**Deployment command:**
 ```powershell
-# Allow NFS NodePort range
-New-NetFirewallRule -DisplayName "Kubernetes NFS NodePort Range" `
-  -Direction Inbound -Action Allow -Protocol TCP -LocalPort 32150-32200
-
-# Allow NFSv3/v4 RPC ports (if exposed as NodePort)
-New-NetFirewallRule -DisplayName "Kubernetes NFS RPC Ports" `
-  -Direction Inbound -Action Allow -Protocol TCP -LocalPort 32765-32767,111
+# Enable control plane in existing deployment
+helm upgrade file-sim ./helm-chart/file-simulator `
+    --kube-context=file-simulator `
+    --namespace file-simulator `
+    --set controlPlane.enabled=true `
+    --set controlPlane.dashboard.nodePort=30080 `
+    --set controlPlane.backend.nodePort=30081
 ```
 
----
-
-## Build Order and Incremental Deployment
-
-### Phase 1: Template Infrastructure (Non-Disruptive)
-
-**Goal:** Create multi-instance templates without affecting existing single-instance deployment.
-
-**Tasks:**
-1. Create `templates/nas-storage-multi.yaml` (PV/PVC generation)
-2. Create `templates/nas-multi.yaml` (Deployment/Service generation)
-3. Add `nasServers: []` to `values.yaml` (empty array, disabled by default)
-4. Create `values-multi-nas.yaml` with 7 NAS instance definitions
-
-**Validation:**
-```bash
-# Verify templates render correctly
-helm template file-sim ./helm-chart/file-simulator \
-  --namespace file-simulator \
-  --debug
-
-# Should still render single NAS (nasServers array empty)
-
-# Test multi-NAS rendering
-helm template file-sim ./helm-chart/file-simulator \
-  -f ./helm-chart/file-simulator/values-multi-nas.yaml \
-  --namespace file-simulator \
-  --debug | grep "kind: Deployment"
-
-# Should render 7 NAS deployments
-```
-
-**Safety:** Single-instance NAS remains operational. New templates are dormant (empty array).
-
-### Phase 2: Single Multi-Instance Deployment Test
-
-**Goal:** Deploy ONE multi-instance NAS to validate pattern before scaling to 7.
-
-**Values override:**
+**Values.yaml structure:**
 ```yaml
-# values-test-multi-nas.yaml
-nas:
-  enabled: false  # Disable single-instance NAS
+# Existing global config
+global:
+  storage:
+    hostPath: /mnt/simulator-data
+    size: 10Gi
 
-nasServers:
-  - name: nas-test-1
-    enabled: true
-    nodePort: 32150
-    hostPath: /mnt/simulator-data/nas-test-1
-    storageSize: 1Gi
-```
-
-**Deployment:**
-```bash
-# Create test directory on Windows
-mkdir C:\simulator-data\nas-test-1
-
-# Deploy with test values
-helm upgrade --install file-sim ./helm-chart/file-simulator \
-  --kube-context=file-simulator \
-  -f ./helm-chart/file-simulator/values-test-multi-nas.yaml \
-  --namespace file-simulator
-
-# Verify deployment
-kubectl --context=file-simulator get pods -n file-simulator -l app.kubernetes.io/component=nas-test-1
-
-# Test NFS mount from client pod
-kubectl run -it nfs-client --image=alpine --rm -- sh
-apk add nfs-utils
-mount -t nfs4 -o vers=4.0 file-sim-file-simulator-nas-test-1.file-simulator.svc.cluster.local:/ /mnt
-echo "test" > /mnt/test.txt
-ls /mnt
-```
-
-**Validation criteria:**
-- ✓ Pod starts successfully
-- ✓ PV/PVC bound correctly
-- ✓ Service DNS resolves
-- ✓ NFS mount succeeds from client pod
-- ✓ File write/read operations work
-
-### Phase 3: Expand to 3 NAS Instances
-
-**Goal:** Validate multi-instance scaling and resource naming collision avoidance.
-
-**Values:**
-```yaml
-nas:
-  enabled: false
-
-nasServers:
-  - name: nas-input-1
-    enabled: true
-    nodePort: 32150
-    hostPath: /mnt/simulator-data/nas-input-1
-    storageSize: 5Gi
-
-  - name: nas-output-1
-    enabled: true
-    nodePort: 32151
-    hostPath: /mnt/simulator-data/nas-output-1
-    storageSize: 5Gi
-
-  - name: nas-temp
-    enabled: true
-    nodePort: 32152
-    hostPath: /mnt/simulator-data/nas-temp
-    storageSize: 10Gi
-```
-
-**Deployment:**
-```bash
-# Create directories
-mkdir C:\simulator-data\nas-input-1
-mkdir C:\simulator-data\nas-output-1
-mkdir C:\simulator-data\nas-temp
-
-# Deploy 3 instances
-helm upgrade --install file-sim ./helm-chart/file-simulator \
-  --kube-context=file-simulator \
-  -f ./helm-chart/file-simulator/values-multi-nas.yaml \
-  --set nasServers[3].enabled=false \
-  --set nasServers[4].enabled=false \
-  --set nasServers[5].enabled=false \
-  --set nasServers[6].enabled=false \
-  --namespace file-simulator
-```
-
-**Validation:**
-- ✓ All 3 pods running
-- ✓ No resource name collisions
-- ✓ Each service has unique DNS name
-- ✓ Each NAS has isolated storage (cross-mount test)
-
-### Phase 4: Full 7-Instance Deployment
-
-**Goal:** Deploy production configuration with all 7 NAS instances.
-
-**Deployment:**
-```bash
-# Create all directories
-mkdir C:\simulator-data\nas-input-1
-mkdir C:\simulator-data\nas-input-2
-mkdir C:\simulator-data\nas-output-1
-mkdir C:\simulator-data\nas-output-2
-mkdir C:\simulator-data\nas-config
-mkdir C:\simulator-data\nas-temp
-mkdir C:\simulator-data\nas-archive
-
-# Deploy all 7
-helm upgrade --install file-sim ./helm-chart/file-simulator \
-  --kube-context=file-simulator \
-  -f ./helm-chart/file-simulator/values-multi-nas.yaml \
-  --namespace file-simulator
-
-# Monitor rollout
-kubectl --context=file-simulator rollout status deployment \
-  -n file-simulator -l simulator.protocol=nas --watch
-
-# Validate all services
-kubectl --context=file-simulator get svc -n file-simulator \
-  -l simulator.protocol=nas -o wide
-```
-
-**Validation:**
-- ✓ 7 pods running (READY 1/1)
-- ✓ 7 services created with unique NodePorts
-- ✓ DNS resolution for all 7 services
-- ✓ Storage isolation (mount all 7, verify no cross-contamination)
-- ✓ Resource utilization within cluster capacity
-
-### Phase 5: Integration with Existing Protocols
-
-**Goal:** Update FTP/SFTP/HTTP/S3/SMB to use multi-NAS endpoints.
-
-**Example (FTP connecting to nas-input-1):**
-```yaml
+# Existing protocol servers
 ftp:
   enabled: true
-  volumeMounts:
-    - name: nas-input-1
-      mountPath: /home/vsftpd/input
-  volumes:
-    - name: nas-input-1
-      nfs:
-        server: file-sim-file-simulator-nas-input-1.file-simulator.svc.cluster.local
-        path: /
+  # ... existing config
+
+nas:
+  enabled: true
+  # ... existing config
+
+# NEW: Control plane configuration
+controlPlane:
+  enabled: false  # Disabled by default for backward compatibility
+
+  dashboard:
+    image:
+      repository: your-registry/file-simulator-dashboard
+      tag: 2.0.0
+    service:
+      type: NodePort
+      port: 80
+      nodePort: 30080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+
+  backend:
+    image:
+      repository: your-registry/file-simulator-control-plane
+      tag: 2.0.0
+    service:
+      type: NodePort
+      port: 5000
+      nodePort: 30081
+    signalr:
+      useRedis: false  # Enable for multi-pod
+    metrics:
+      database: sqlite  # or prometheus
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "200m"
+      limits:
+        memory: "1Gi"
+        cpu: "1000m"
+
+  redis:
+    enabled: false  # Enable when backend.replicas > 1
+    image:
+      repository: redis
+      tag: 7-alpine
+
+  kafka:
+    enabled: false  # Enable for event streaming features
+    broker:
+      replicas: 1
+      storage: 5Gi
 ```
 
-**Incremental approach:**
-1. Update one protocol (e.g., FTP) to use one NAS
-2. Test file operations
-3. Expand to remaining protocols
-4. Update client library connection strings
+### Alternative: Multiple Releases (Not Recommended)
 
----
+If umbrella chart proves too complex, deploy as separate releases:
 
-## Helm Template Implementation Patterns
-
-### Pattern: Scope Management in Range Loops
-
-**Problem:** Inside `{{- range }}`, `.Values` refers to current iteration item, not root values.
-
-**Solution:** Use `$` for root context.
-
-```yaml
-{{- range $index, $nas := .Values.nasServers }}
-  # WRONG: .Values.nas.image (undefined - no .Values in iteration scope)
-  image: "{{ .Values.nas.image.repository }}"
-
-  # CORRECT: $.Values.nas.image ($ = root context)
-  image: "{{ $.Values.nas.image.repository }}"
-
-  # CORRECT: Helper functions always use root context
-  name: {{ include "file-simulator.fullname" $ }}-{{ $nas.name }}
-{{- end }}
-```
-
-### Pattern: YAML Document Separators
-
-**Problem:** Helm may only deploy last resource if `---` separators missing.
-
-**Solution:** Always use `---` between resources in multi-resource templates.
-
-```yaml
-{{- range .Values.nasServers }}
----  # CRITICAL: Separator before each resource
-apiVersion: v1
-kind: Service
-# ...
-{{- end }}
-```
-
-### Pattern: Conditional Instance Deployment
-
-**Requirement:** Support `enabled: false` to skip instances without removing from values.
-
-**Implementation:**
-```yaml
-{{- range $index, $nas := .Values.nasServers }}
-{{- if $nas.enabled }}  # Only deploy if enabled
----
-apiVersion: apps/v1
-kind: Deployment
-# ...
-{{- end }}  # Close if
-{{- end }}  # Close range
-```
-
-### Pattern: Label Consistency
-
-**Labels for filtering/selection:**
-```yaml
-labels:
-  app.kubernetes.io/component: {{ $nas.name }}  # Unique per instance
-  simulator.protocol: nas                        # Common to all NAS
-  simulator.instance: "{{ $index }}"            # Numeric index
-```
-
-**Use cases:**
-- Select all NAS: `kubectl get pods -l simulator.protocol=nas`
-- Select specific NAS: `kubectl get pods -l app.kubernetes.io/component=nas-input-1`
-- Select by index: `kubectl get pods -l simulator.instance=0`
-
-### Pattern: Resource Name Truncation
-
-**Kubernetes 63-character name limit:**
-```yaml
-{{- define "file-simulator.nas-fullname" -}}
-{{- $base := include "file-simulator.fullname" . -}}
-{{- $full := printf "%s-%s" $base .instance -}}
-{{- $full | trunc 63 | trimSuffix "-" -}}
-{{- end }}
-```
-
-**Usage:**
-```yaml
-metadata:
-  name: {{ include "file-simulator.nas-fullname" (dict "instance" $nas.name "Chart" $.Chart "Release" $.Release "Values" $.Values) }}
-```
-
----
-
-## Comparison: Single vs Multi-Instance Deployment
-
-| Aspect | Single Instance (Current) | Multi-Instance (Target) |
-|--------|---------------------------|-------------------------|
-| **Deployments** | 1 (`nas`) | 7 (`nas-input-1`, `nas-input-2`, ...) |
-| **Services** | 1 DNS name | 7 DNS names |
-| **Storage** | 1 PVC (shared with all protocols) | 7 PVCs (isolated per NAS) |
-| **Windows Mapping** | C:\simulator-data (entire tree) | C:\simulator-data\nas-input-1 (per-instance subdirs) |
-| **NodePorts** | 32149 (single port) | 32150-32156 (7 ports) |
-| **Resource Usage** | 1x pod resources | 7x pod resources (~450Mi memory, 350m CPU) |
-| **Fault Isolation** | Failure affects all NFS access | Failure affects one NAS (others remain operational) |
-| **Scaling** | Vertical (increase pod resources) | Horizontal (add more NAS instances) |
-| **Configuration** | Simple (single set of values) | Complex (array of 7 configs) |
-| **Client Discovery** | Hardcoded service name | Dynamic (iterate nasServers array or ConfigMap) |
-| **Deployment Complexity** | One helm command | One helm command (same, but longer values file) |
-
----
-
-## Risk Analysis and Mitigations
-
-### Risk 1: Resource Exhaustion
-
-**Scenario:** 7 NAS pods exceed Minikube cluster capacity.
-
-**Impact:** Pods stuck in Pending state, cluster unstable.
-
-**Probability:** MEDIUM (current cluster: 8GB RAM, 4 CPU)
-
-**Mitigation:**
-- **Current resource allocation per NAS:** 64Mi request, 256Mi limit, 50m CPU request, 200m CPU limit
-- **Total for 7 NAS instances:** 448Mi request, 1.75Gi limit, 350m CPU request, 1.4 CPU limit
-- **Remaining capacity:** 8GB - 2.85Gi (current) - 1.75Gi (NAS) = 3.4Gi available ✓
-- **Action:** Monitor with `kubectl top pods -n file-simulator` during rollout
-- **Fallback:** Reduce NAS pod limits to 128Mi, or increase Minikube memory to 12GB
-
-### Risk 2: NodePort Exhaustion
-
-**Scenario:** 7 NAS instances require 7 NodePorts, potential conflicts with other services.
-
-**Impact:** Service creation fails, NAS inaccessible from outside cluster.
-
-**Probability:** LOW (2768 total NodePorts available, project uses ~20)
-
-**Mitigation:**
-- **Reserved range:** 32150-32200 (50 ports reserved for NAS expansion)
-- **Documentation:** Update NodePort allocation table in project README
-- **Validation:** Pre-deployment check script to verify NodePort availability
-- **Fallback:** Use dynamic NodePort allocation (omit nodePort field)
-
-### Risk 3: DNS Name Length Exceeds 63 Characters
-
-**Scenario:** Instance name too long, combined with release/chart name exceeds limit.
-
-**Impact:** Service creation fails with validation error.
-
-**Probability:** LOW (current names well under limit)
-
-**Mitigation:**
-- **Character budget:** 63 - 35 (base) = 28 chars available for instance name
-- **Validation:** Helm template helper to truncate and warn
-- **Naming convention:** Enforce short instance names (max 20 chars recommended)
-- **Example safe names:** `nas-input-1` (11 chars), `nas-out-1` (10 chars)
-
-### Risk 4: Storage Mount Path Not Created
-
-**Scenario:** Windows directory `C:\simulator-data\nas-input-1` doesn't exist before deployment.
-
-**Impact:** PV hostPath creation fails (even with DirectoryOrCreate), pod stuck in ContainerCreating.
-
-**Probability:** HIGH (manual directory creation required)
-
-**Mitigation:**
-- **Pre-deployment script:** PowerShell script to create all required directories
 ```powershell
-$nasInstances = @('nas-input-1', 'nas-input-2', 'nas-output-1', 'nas-output-2', 'nas-config', 'nas-temp', 'nas-archive')
-foreach ($nas in $nasInstances) {
-  $path = "C:\simulator-data\$nas"
-  if (-not (Test-Path $path)) {
-    New-Item -ItemType Directory -Path $path -Force
-    Write-Host "Created: $path"
-  }
-}
-```
-- **Documentation:** Add to deployment runbook
-- **Validation:** Check all directories exist before `helm upgrade`
+# Deploy protocol servers (existing)
+helm upgrade --install file-sim-protocols ./helm-chart/file-simulator `
+    --kube-context=file-simulator `
+    --namespace file-simulator
 
-### Risk 5: NFS emptyDir Data Loss
-
-**Scenario:** NAS pod restarts, emptyDir volume erased, NFS-exported files lost.
-
-**Impact:** Clients lose access to files until pod restarts and data re-synced from PVC.
-
-**Probability:** MEDIUM (pod restarts on node failure, OOMKill, or update)
-
-**Mitigation:**
-- **InitContainer sync:** Copy from PVC to emptyDir on pod startup (see Storage Architecture)
-- **Sidecar sync:** Continuous rsync from PVC to emptyDir (eventual consistency)
-- **Client retry logic:** Clients must handle transient NFS failures
-- **Monitoring:** Alert on pod restarts, automated data sync verification
-- **Alternative:** Investigate NFS export from PVC (requires different NFS server image that supports NTFS/FUSE)
-
-### Risk 6: Helm Range Loop Deployment Bug
-
-**Scenario:** Helm only deploys last resource from range loop (historical issue).
-
-**Impact:** Only `nas-archive` (last instance) deploys, other 6 instances missing.
-
-**Probability:** LOW (fixed in modern Helm versions, but documented as past issue)
-
-**Mitigation:**
-- **YAML separators:** Ensure `---` between all resources in range loop
-- **Post-deployment validation:** Count deployed resources (`kubectl get deploy -l simulator.protocol=nas | wc -l` should be 7)
-- **Helm version:** Use Helm 3.8+ (project uses Helm 3.x)
-
----
-
-## Monitoring and Observability
-
-### Health Check Strategy
-
-**Per-NAS health indicators:**
-1. **Pod status:** Running, Ready 1/1
-2. **TCP probe:** NFS port 2049 responding
-3. **Mount test:** Client pod can mount NFS share
-4. **File operation test:** Create/read/delete file via NFS
-
-**Monitoring script:**
-```bash
-#!/bin/bash
-# check-nas-health.sh
-
-NAS_INSTANCES=("nas-input-1" "nas-input-2" "nas-output-1" "nas-output-2" "nas-config" "nas-temp" "nas-archive")
-NAMESPACE="file-simulator"
-
-for nas in "${NAS_INSTANCES[@]}"; do
-  echo "Checking $nas..."
-
-  # Pod status
-  POD_STATUS=$(kubectl get pod -n $NAMESPACE -l app.kubernetes.io/component=$nas -o jsonpath='{.items[0].status.phase}')
-  echo "  Pod Status: $POD_STATUS"
-
-  # TCP probe
-  POD_NAME=$(kubectl get pod -n $NAMESPACE -l app.kubernetes.io/component=$nas -o jsonpath='{.items[0].metadata.name}')
-  kubectl exec -n $NAMESPACE $POD_NAME -- nc -zv localhost 2049 2>&1 | grep -q "succeeded" && echo "  NFS Port: OK" || echo "  NFS Port: FAIL"
-
-  # Mount test (from test pod)
-  kubectl run nfs-test-$nas --image=alpine --rm -i --restart=Never -- sh -c "
-    apk add --quiet nfs-utils && \
-    mount -t nfs4 -o vers=4.0 file-sim-file-simulator-$nas.file-simulator.svc.cluster.local:/ /mnt && \
-    echo '  Mount Test: OK' || echo '  Mount Test: FAIL'
-  " 2>/dev/null
-
-  echo ""
-done
+# Deploy control plane (new)
+helm upgrade --install file-sim-control ./helm-chart/control-plane `
+    --kube-context=file-simulator `
+    --namespace file-simulator `
+    --set backend.protocolsNamespace=file-simulator
 ```
 
-### Resource Utilization Tracking
+**Disadvantages:**
+- Two releases to manage
+- Rollbacks must be coordinated manually
+- Configuration split across two values.yaml files
+- No atomic upgrades
 
-**Key metrics per NAS:**
-- Memory usage (vs 256Mi limit)
-- CPU usage (vs 200m limit)
-- Network I/O (NFS transfer rates)
-- Storage usage (emptyDir size)
+## Build Order Considerations
 
-**Prometheus metrics (if enabled):**
-```yaml
-# ServiceMonitor for NAS instances
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: nas-servers
-  namespace: file-simulator
-spec:
-  selector:
-    matchLabels:
-      simulator.protocol: nas
-  endpoints:
-    - port: metrics
-      interval: 30s
-```
+Based on dependencies, recommended implementation sequence:
 
-### Troubleshooting Checklist
+### Phase 1: Foundation (Week 1-2)
+- Backend API project structure (ASP.NET Core)
+- Kubernetes client integration (KubernetesClient NuGet)
+- Basic REST endpoints (list servers, health check)
+- Docker image + Helm subchart
+- RBAC configuration
+- Deploy and verify K8s API access
 
-**Symptom: Pod stuck in Pending**
-- Check: `kubectl describe pod -n file-simulator <pod-name>`
-- Likely cause: Insufficient cluster resources or PVC not bound
-- Action: Verify PV exists (`kubectl get pv`), check node capacity (`kubectl top nodes`)
+### Phase 2: Monitoring (Week 2-3)
+- Health check service (background worker)
+- SignalR hub setup (without Redis first)
+- React dashboard skeleton (Vite + Material-UI)
+- SignalR client integration (useSignalR hook)
+- Real-time health status display
+- Connection state handling
 
-**Symptom: Pod CrashLoopBackOff**
-- Check: `kubectl logs -n file-simulator <pod-name>`
-- Likely cause: NFS export failure (hostPath issue) or missing emptyDir volume
-- Action: Verify emptyDir volume in deployment spec, check NFS_EXPORT_0 env var
+### Phase 3: Metrics (Week 3-4)
+- SQLite database + EF Core models
+- Metrics collection service (batched writes)
+- Time-series query API
+- React chart components (Recharts)
+- Historical trends dashboard page
 
-**Symptom: NFS mount fails from client**
-- Check: `showmount -e <nas-service-dns-name>` from client pod
-- Likely cause: NFS not exporting directory or firewall blocking
-- Action: Verify NFS_EXPORT_0 matches mount path, check network policies
+### Phase 4: File Operations (Week 4-5)
+- FileSystemWatcher service (debounced)
+- File event streaming via SignalR
+- File browser UI component
+- Upload/download API endpoints
+- Delete file operations
 
-**Symptom: File written to Windows not visible in NFS**
-- Likely cause: No sync process from PVC to emptyDir
-- Action: Implement InitContainer or sidecar sync (see Storage Architecture)
+### Phase 5: Dynamic Management (Week 5-6)
+- Server creation API (dynamic Deployments)
+- Server deletion with cleanup
+- Configuration templates (FTP, SFTP, NAS)
+- Add server UI flow
+- Remove server UI flow
 
-**Symptom: Service DNS not resolving**
-- Check: `nslookup file-sim-file-simulator-nas-input-1.file-simulator.svc.cluster.local` from client pod
-- Likely cause: Service not created or selector mismatch
-- Action: Verify service exists (`kubectl get svc -n file-simulator`), check label selectors match deployment
+### Phase 6: Kafka Integration (Week 6-7)
+- Strimzi deployment in subchart
+- Kafka producer for file events
+- Topic management API
+- Kafka dashboard page
+- Consumer group visualization
 
----
+### Phase 7: Production Readiness (Week 7-8)
+- Redis backplane (multi-pod support)
+- Alerting rules configuration
+- Configuration import/export
+- Error boundaries in React
+- Comprehensive logging
+- End-to-end testing
 
-## Client Library Integration
-
-### NfsFileService Configuration
-
-**Current (single instance):**
-```csharp
-public class NfsServerOptions
-{
-    public string Host { get; set; } = "localhost";
-    public int Port { get; set; } = 2049;
-    public string MountPath { get; set; } = "/";
-}
-```
-
-**Multi-instance approach (option 1: array):**
-```csharp
-public class NfsServerOptions
-{
-    public NfsEndpoint[] Endpoints { get; set; } = Array.Empty<NfsEndpoint>();
-}
-
-public class NfsEndpoint
-{
-    public string Name { get; set; }  // "nas-input-1"
-    public string Host { get; set; }  // DNS name
-    public int Port { get; set; } = 2049;
-    public string MountPath { get; set; } = "/";
-}
-```
-
-**Configuration (appsettings.json):**
-```json
-{
-  "FileSimulator": {
-    "Nfs": {
-      "Endpoints": [
-        {
-          "Name": "nas-input-1",
-          "Host": "file-sim-file-simulator-nas-input-1.file-simulator.svc.cluster.local",
-          "Port": 2049,
-          "MountPath": "/"
-        },
-        {
-          "Name": "nas-output-1",
-          "Host": "file-sim-file-simulator-nas-output-1.file-simulator.svc.cluster.local",
-          "Port": 2049,
-          "MountPath": "/"
-        }
-      ]
-    }
-  }
-}
-```
-
-**Service registration:**
-```csharp
-services.Configure<NfsServerOptions>(configuration.GetSection("FileSimulator:Nfs"));
-
-// Register one NfsFileService per endpoint
-foreach (var endpoint in nfsOptions.Endpoints)
-{
-    services.AddKeyedSingleton<INfsFileService, NfsFileService>(endpoint.Name, sp =>
-        new NfsFileService(Options.Create(endpoint), sp.GetRequiredService<ILogger<NfsFileService>>()));
-}
-```
-
-**Usage:**
-```csharp
-public class FileProcessor
-{
-    private readonly IKeyedServiceProvider _serviceProvider;
-
-    public async Task ProcessInputFileAsync(string fileName)
-    {
-        // Get specific NAS instance
-        var nasInput1 = _serviceProvider.GetRequiredKeyedService<INfsFileService>("nas-input-1");
-        var files = await nasInput1.DiscoverFilesAsync("/", "*.txt", CancellationToken.None);
-
-        foreach (var file in files)
-        {
-            var content = await nasInput1.ReadFileAsync(file.FullPath, CancellationToken.None);
-            // Process...
-
-            // Write to output NAS
-            var nasOutput1 = _serviceProvider.GetRequiredKeyedService<INfsFileService>("nas-output-1");
-            await nasOutput1.WriteFileAsync($"/processed-{file.Name}", content, CancellationToken.None);
-        }
-    }
-}
-```
-
-**Alternative approach (option 2: named options):**
-```csharp
-services.Configure<NfsServerOptions>("nas-input-1", config.GetSection("Nfs:Endpoints:0"));
-services.Configure<NfsServerOptions>("nas-output-1", config.GetSection("Nfs:Endpoints:1"));
-
-// Register with named options
-services.AddSingleton<INfsFileService>(sp => new NfsFileService(
-    sp.GetRequiredService<IOptionsMonitor<NfsServerOptions>>().Get("nas-input-1"),
-    sp.GetRequiredService<ILogger<NfsFileService>>()
-));
-```
-
----
-
-## Production Considerations
-
-### High Availability
-
-**Current design:** Single replica per NAS instance (replicas: 1)
-
-**HA enhancement:**
-```yaml
-spec:
-  replicas: 2  # Multiple replicas
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
-```
-
-**Challenge:** NFS requires stable server identity. Multiple replicas create multiple NFS servers, not HA cluster.
-
-**True HA solutions:**
-1. **NFS Ganesha in HA mode:** Requires shared storage backend (Ceph, GlusterFS)
-2. **Persistent IP with pod anti-affinity:** Ensures one active replica per node
-3. **External NFS load balancer:** Distribute client requests across replicas
-
-**Recommendation:** For Minikube/dev environment, single replica sufficient. Production should use external enterprise NFS solution (NetApp, Dell EMC).
-
-### Security Hardening
-
-**Current NFS export:** `*(rw,sync,no_subtree_check,no_root_squash)` (allows all clients, root access)
-
-**Hardened export:**
-```yaml
-env:
-  - name: NFS_EXPORT_0
-    value: "/data 10.244.0.0/16(rw,sync,no_subtree_check,root_squash,all_squash,anonuid=1000,anongid=1000)"
-    # 10.244.0.0/16 = Kubernetes pod CIDR (restrict to cluster pods only)
-    # root_squash = Map root to anonymous user (prevent root access)
-    # all_squash = Map all users to anonymous user (prevent UID spoofing)
-    # anonuid/anongid = Specific user ID for anonymous user
-```
-
-**Additional security:**
-- **NetworkPolicy:** Restrict NFS pod traffic to specific namespaces/pods
-- **PodSecurityPolicy:** Remove `privileged: true` if possible (NFS server may require)
-- **Secret management:** Store NFS export config in Secret, not ConfigMap
-
-### Backup and Disaster Recovery
-
-**Backup strategy:**
-1. **Windows-level backup:** C:\simulator-data\nas-* directories backed up via Windows Backup or Veeam
-2. **Kubernetes-level backup:** PVC snapshots (requires CSI driver with snapshot support)
-3. **Application-level backup:** Microservices copy files to S3 (nas-archive instance)
-
-**Recovery procedure:**
-1. Restore Windows directories from backup
-2. Restart Minikube mount (`minikube start --mount`)
-3. Redeploy NAS instances (`helm upgrade --install`)
-4. Validate data integrity (hash comparison)
-
-### Performance Tuning
-
-**Current bottlenecks:**
-- **hostPath I/O:** Windows NTFS performance limits
-- **emptyDir sync:** InitContainer copy on every pod restart
-- **Network:** NodePort introduces NAT overhead
-
-**Optimizations:**
-1. **Use SSD for Windows storage:** C:\simulator-data on SSD drive
-2. **Sidecar sync instead of InitContainer:** Incremental sync (rsync) vs full copy
-3. **NFSv4 mount options:** `vers=4.1,rsize=1048576,wsize=1048576` (larger buffer sizes)
-4. **Async exports:** `async` instead of `sync` (faster writes, but risk of data loss on crash)
-
----
-
-## Summary and Recommendations
-
-### Recommended Architecture
-
-**Pattern:** Helm range loop with per-instance PV/PVC (following existing ftp-multi.yaml pattern)
-
-**Key components:**
-1. Values array defining 7 NAS instances with unique names, NodePorts, hostPaths
-2. Storage template creating PV/PVC pairs per instance
-3. Deployment template with emptyDir for NFS exports + PVC for Windows access
-4. Service template exposing each NAS with predictable DNS names
-
-### Build Order
-
-1. **Phase 1:** Create templates (non-disruptive)
-2. **Phase 2:** Deploy single test instance (validate pattern)
-3. **Phase 3:** Expand to 3 instances (validate scaling)
-4. **Phase 4:** Full 7-instance deployment
-5. **Phase 5:** Integrate with existing protocols (FTP/SFTP mount NAS shares)
-
-### Critical Success Factors
-
-- ✓ **YAML separators (`---`)**: Required between all resources in range loop
-- ✓ **Scope management (`$` vs `.`)**: Always use `$` for root context in loops
-- ✓ **emptyDir volumes**: Required for NFS exports (hostPath cannot be exported)
-- ✓ **Per-instance PVC**: Ensures storage isolation between NAS instances
-- ✓ **Windows directory pre-creation**: Must exist before PV hostPath binding
-- ✓ **NodePort allocation**: Sequential 32150-32156 to avoid conflicts
-
-### Open Questions for Phase-Specific Research
-
-1. **Windows → emptyDir sync mechanism:** InitContainer (simple) vs Sidecar (continuous) vs Application-level (no sync)?
-2. **Client discovery pattern:** Hardcoded DNS vs ConfigMap vs Kubernetes service discovery API?
-3. **Resource limits:** Do 7 NAS instances fit in 8GB Minikube cluster or need memory increase?
-4. **NFS mount options:** Which NFSv4 options provide best performance in Minikube?
-
----
+**Rationale for ordering:**
+- Foundation first enables iterative testing (kubectl commands work before UI exists)
+- Monitoring provides immediate value (see existing servers without any new functionality)
+- Metrics build on monitoring (same health data, different storage)
+- File operations independent of server management (can be developed in parallel)
+- Dynamic management most complex (requires stable K8s client integration)
+- Kafka last (adds minimal value until other features complete)
 
 ## Sources
 
-### Official Kubernetes Documentation
-- [Persistent Volumes | Kubernetes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
-- [Service | Kubernetes](https://kubernetes.io/docs/concepts/services-networking/service/)
-- [Kubernetes 1.27: NodePort Dynamic and Static Allocation](https://kubernetes.io/blog/2023/05/11/nodeport-dynamic-and-static-allocation/)
+### SignalR and Real-Time Communication
+- [Scalable & real-time messaging (chat) systems with SignalR, React, .NET and Kubernetes](https://mahdi-karimipour.medium.com/scalable-real-time-messaging-chat-systems-with-signalr-react-net-and-kubernetes-2a0a812f7ffb)
+- [Building a Scalable Real-Time Dashboard with React, WebSocket, Docker, Kubernetes, and AWS](https://medium.com/@virajvbahulkar/building-a-scalable-real-time-dashboard-with-react-websocket-docker-kubernetes-and-aws-21c8e2421436)
+- [How to Use WebSockets in React for Real-Time Applications (January 2026)](https://oneuptime.com/blog/post/2026-01-15-websockets-react-real-time-applications/view)
+- [Real-Time Data Transfer with WebSockets and SignalR in .NET Core and React](https://dotnetfullstackdev.medium.com/real-time-data-transfer-with-websockets-and-signalr-in-net-core-409b0d50719b)
+- [ASP.NET Core SignalR production hosting and scaling (Microsoft Learn)](https://learn.microsoft.com/en-us/aspnet/core/signalr/scale?view=aspnetcore-9.0)
+- [Optimising SignalR on Kubernetes at G-Research](https://www.gresearch.com/news/signalr-on-kubernetes/)
+- [Scaling SignalR Core Web Applications With Kubernetes](https://medium.com/swlh/scaling-signalr-core-web-applications-with-kubernetes-fca32d787c7d)
 
-### Helm Best Practices
-- [General Conventions | Helm](https://helm.sh/docs/chart_best_practices/conventions/)
-- [Flow Control | Helm](https://helm.sh/docs/chart_template_guide/control_structures/)
+### SignalR Redis Backplane
+- [Redis backplane for ASP.NET Core SignalR scale-out (Microsoft Learn)](https://learn.microsoft.com/en-us/aspnet/core/signalr/redis-backplane?view=aspnetcore-10.0)
+- [Scaling Horizontally: Kubernetes, Sticky Sessions, and Redis](https://dev.to/deepak_mishra_35863517037/scaling-horizontally-kubernetes-sticky-sessions-and-redis-578o)
+- [Practical ASP.NET Core SignalR: Scaling](https://codeopinion.com/practical-asp-net-core-signalr-scaling/)
 
-### Multi-Instance Deployment Patterns
-- [Creating multiple deployments with different configurations using Helm | Medium](https://medium.com/@pasternaktal/creating-multiple-deployments-with-different-configurations-using-helm-4992f9f735fd)
-- [Loops in Helm Charts | Medium](https://mustafaak4096.medium.com/loops-in-helm-charts-259e1b9e8422)
-- [Helm Loops Explained: A Practical Helm Hack](https://alexandre-vazquez.com/helm-loops-helm-chart-tricks-1/)
+### Time-Series Databases
+- [Prometheus vs. InfluxDB: A Monitoring Comparison](https://logz.io/blog/prometheus-influxdb/)
+- [Compare InfluxDB vs Prometheus (InfluxData)](https://www.influxdata.com/comparison/influxdb-vs-prometheus/)
+- [Prometheus vs InfluxDB: Side-by-Side Comparison (Last9)](https://last9.io/blog/prometheus-vs-influxdb/)
+- [Prometheus vs InfluxDB (SigNoz)](https://signoz.io/blog/prometheus-vs-influxdb/)
 
-### NFS in Kubernetes
-- [Deploying NFS Server in Kubernetes | GitHub](https://github.com/appscode/third-party-tools/blob/master/storage/nfs/README.md)
-- [Integrating multiple NFS Server · Issue #153](https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner/issues/153)
-- [How To Configure NFS For Kubernetes Persistent Storage | ComputingForGeeks](https://computingforgeeks.com/configure-nfs-as-kubernetes-persistent-volume-storage/)
+### Kafka on Kubernetes
+- [Strimzi - Apache Kafka on Kubernetes](https://strimzi.io/)
+- [Strimzi Quickstarts](https://strimzi.io/quickstarts/)
+- [Running Kafka on a Single Node in K8s Cluster](https://medium.com/@buildbot.tech/running-kafka-on-a-single-node-in-k8s-cluster-b5c68f7fd92d)
+- [Deploying Kafka With Kubernetes: A Complete Guide](https://dzone.com/articles/how-to-deploy-apache-kafka-with-kubernetes)
 
-### Storage Patterns
-- [Connect Multiple Pods to the same PVC with different mount path | Medium](https://sneegdhk.medium.com/connect-multiple-pods-to-the-same-pvc-with-different-mount-path-kubernetes-021e1f4e8946)
-- [Kubernetes Persistent Volume: Examples & Best Practices | Loft](https://www.loft.sh/blog/kubernetes-persistent-volumes-examples-and-best-practices)
+### Kubernetes Client Libraries (.NET)
+- [KubernetesClient NuGet Package](https://www.nuget.org/packages/KubernetesClient/)
+- [kubernetes-client/csharp (GitHub - Official C# client)](https://github.com/kubernetes-client/csharp)
+- [KubeOps.KubernetesClient 10.2.0 (NuGet)](https://www.nuget.org/packages/KubeOps.KubernetesClient/)
+- [Creating Dynamic Kubernetes Jobs with the C# Client](https://medium.com/@sezer.darendeli/creating-dynamic-kubernetes-jobs-with-the-c-client-2c2087cc73d5)
 
-### NodePort and Networking
-- [Kubernetes NodePorts - Static and Dynamic Assignments | Layer5](https://layer5.io/blog/kubernetes/kubernetes-nodeports-static-and-dynamic-assignments)
-- [Why Kubernetes NodePort Services Range From 30000 – 32767 | Baeldung](https://www.baeldung.com/ops/kubernetes-nodeport-range)
-- [NodePort :: The Kubernetes Networking Guide](https://www.tkng.io/services/nodeport/)
+### React State Management
+- [State Management in 2026: Redux, Context API, and Modern Patterns](https://www.nucamp.co/blog/state-management-in-2026-redux-context-api-and-modern-patterns)
+- [React State Management 2025: Redux, Context, Recoil & Zustand](https://www.zignuts.com/blog/react-state-management-2025)
+- [Real-time State Management in React Using WebSockets](https://moldstud.com/articles/p-real-time-state-management-in-react-using-websockets-boost-your-apps-performance)
+- [5 React State Management Tools Developers Actually Use in 2025](https://www.syncfusion.com/blogs/post/react-state-management-libraries)
+- [Zustand + React Query: A New Approach to State Management](https://medium.com/@freeyeon96/zustand-react-query-new-state-management-7aad6090af56)
+
+### Monitoring Architecture
+- [System Design Realtime Monitoring System: A Complete Walkthrough](https://systemdesignschool.io/problems/realtime-monitoring-system/solution)
+- [How to Build a Real-Time Dashboard: A Step-by-Step Guide for Engineers](https://estuary.dev/blog/how-to-build-a-real-time-dashboard/)
+- [Best Cloud Observability Tools 2026](https://cloudchipr.com/blog/best-cloud-observability-tools-2026)
+
+### Helm Chart Patterns
+- [How to Simplify Your Kubernetes Helm Deployments](https://codefresh.io/blog/simplify-kubernetes-helm-deployments/)
+- [Refactoring with Umbrella Pattern in Helm](https://medium.com/@fdsh/refactoring-with-umbrella-pattern-in-helm-515997a91c89)
+- [Helm best practices (Codefresh Docs)](https://codefresh.io/docs/docs/ci-cd-guides/helm-best-practices/)
+- [Helm 3 Umbrella Charts & Standalone Chart Image Tags](https://itnext.io/helm-3-umbrella-charts-standalone-chart-image-tags-an-alternative-approach-78a218d74e2d)
 
 ---
-
-**Document Version:** 1.0
-**Last Updated:** 2026-01-29
-**Next Review:** After Phase 2 completion (single multi-instance deployment test)
+*Architecture research for: File Simulator Suite v2.0 Simulator Control Platform*
+*Researched: 2026-02-02*

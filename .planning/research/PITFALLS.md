@@ -1,558 +1,751 @@
-# Domain Pitfalls: NFS Server in Kubernetes with Windows-Mounted Filesystems
+# Domain Pitfalls: Adding Control Platform to Kubernetes File Simulator
 
-**Domain:** Containerized NFS servers exporting Windows-mounted directories in Kubernetes
-**Researched:** 2026-01-29
-**Context:** Multi-NAS deployment (7 servers) on Minikube/Hyper-V with Windows hostPath mounts
+**Domain:** Real-time monitoring and control platform for existing Kubernetes multi-protocol file simulator
+**Researched:** 2026-02-02
+**Milestone:** v2.0 Simulator Control Platform
+**Context:** Adding React dashboard, WebSocket streaming, Kubernetes API orchestration, Kafka, and file watching to stable v1.0 simulator
+**Confidence:** HIGH
+
+## Executive Summary
+
+This document catalogs critical mistakes when **adding a monitoring/control platform to an existing, working Kubernetes application**. Unlike greenfield development, the primary risk is **breaking what already works** while introducing complex new capabilities (real-time dashboards, dynamic resource management, Kafka integration, Windows file watching).
+
+**Key risk categories:**
+1. **Integration risks** - New platform breaking existing protocol servers
+2. **Resource exhaustion** - Minikube memory/CPU constraints
+3. **WebSocket complexity** - Connection management, state synchronization, race conditions
+4. **Kubernetes RBAC** - Permissions for dynamic resource creation
+5. **Windows file watching** - Performance issues, event floods
+6. **Kafka overhead** - JVM memory in constrained environments
+
+---
 
 ## Critical Pitfalls
 
-Mistakes that cause rewrites, complete failures, or production parity breaks.
+Mistakes that cause rewrites, complete failures, or break existing working functionality.
 
-### Pitfall 1: NFS Cannot Export CIFS/9p/Overlay Filesystems
+### Pitfall 1: WebSocket Connection Storms During Reconnection
 
-**What goes wrong:** NFS server container crashes with "exportfs: /data does not support NFS export" when the mount point is a CIFS share, 9p filesystem (Minikube mount), or overlayfs (Docker container layers).
+**What goes wrong:** When WebSocket disconnects and multiple clients reconnect simultaneously, each client triggers full state synchronization, overwhelming the backend with duplicate queries and causing cascading failures that bring down both the control platform AND the existing protocol servers.
 
 **Why it happens:**
-- **Root cause:** NFS export requires the underlying filesystem to provide filehandles for each file and support filehandle-based lookups. CIFS, 9p, and overlayfs do not provide these capabilities.
-- **Technical detail:** The Linux kernel NFS module cannot create export tables on remote/virtual filesystems. This is a fundamental kernel limitation, not a configuration issue.
-- **Specific to containers:** CoreOS and many container runtimes use overlayfs for container storage, which cannot be exported via NFS.
+- **Root cause:** Naive reconnection logic fetches complete state (all servers, files, metrics) on every reconnect without coordination
+- **Amplification:** N clients × M servers × K metrics = exponential query load
+- **Resource competition:** Control platform queries steal CPU/memory from existing FTP/SFTP/NFS servers sharing the same Minikube cluster
+- **Kubernetes API overload:** Mass reconnection floods Kubernetes API with pod/service queries, triggering API server rate limiting that affects ALL cluster operations
 
 **Consequences:**
-- NFS server pod fails to start or crashes immediately
-- `exportfs -r` command fails during container initialization
-- Complete inability to export Windows hostPath volumes directly
-- Loss of Windows-as-source-of-truth architecture
+- Existing protocol servers become unresponsive during dashboard reconnections
+- FTP/SFTP connections timeout or drop
+- NFS mounts show "Stale file handle" errors
+- Kubernetes API rate limiting blocks legitimate operations
+- Dashboard shows "Loading..." forever, never recovers
+- Cascading failure: control platform failure breaks existing stable infrastructure
 
-**Prevention:**
-1. **DO NOT** mount Windows directories directly as NFS export path
-2. **DO NOT** use hostPath volumes directly mounted from Minikube's 9p mount
-3. **DO** use intermediate local storage (emptyDir) within the container
-4. **DO** implement file synchronization between hostPath and emptyDir
-5. **VERIFY** filesystem type with `df -T` before attempting NFS export
+**How to avoid:**
+1. **IMPLEMENT** exponential backoff with jitter for reconnection attempts
+2. **DESIGN** incremental state sync: send only changes since last connection, not full state
+3. **ADD** connection admission control: limit concurrent WebSocket connections (e.g., max 50)
+4. **CACHE** Kubernetes API responses with 5-10s TTL; don't query on every WebSocket message
+5. **SEPARATE** resource limits: control platform in separate namespace with isolated CPU/memory quotas
+6. **TEST** reconnection storms explicitly: disconnect 10 clients, reconnect simultaneously, verify backend remains stable
 
-**Detection:**
-- Container CrashLoopBackOff immediately after deployment
-- Logs show: "exportfs: /data does not support NFS export"
-- Logs show: "exportfs: Cannot stat /data: Stale file handle"
-- Pod events show repeated restart attempts
+**Warning signs:**
+- Backend logs show spike in API queries during reconnection
+- CPU usage spikes when dashboard reconnects
+- Existing protocol servers log connection timeouts
+- Prometheus metrics show Kubernetes API latency increase
+- Multiple clients get different states simultaneously (cache inconsistency)
+
+**Phase to address:** Phase 1 (Backend API & WebSocket Infrastructure) - implement connection management patterns before building features on top
+
+**Recovery cost:** HIGH - requires architectural redesign of state synchronization; impacts all real-time features
 
 **Sources:**
-- [SUSE: exportfs returns error "does not support NFS export"](https://www.suse.com/support/kb/doc/?id=000021721)
-- [Linux NFS: NFS re-export](https://wiki.linux-nfs.org/wiki/index.php/NFS_re-export)
-- [Arch Linux: Can't export overlayfs with NFS](https://bbs.archlinux.org/viewtopic.php?id=192585)
+- [WebSockets on production with Node.js](https://medium.com/voodoo-engineering/websockets-on-production-with-node-js-bdc82d07bb9f)
+- [How I scaled a legacy NodeJS application handling over 40k active Long-lived WebSocket connections](https://khelechy.medium.com/how-i-scaled-a-legacy-nodejs-application-handling-over-40k-active-long-lived-websocket-connections-aa11b43e0db0)
+- [Handling Race Conditions in Real-Time Apps](https://dev.to/mattlewandowski93/handling-race-conditions-in-real-time-apps-49c8)
 
 ---
 
-### Pitfall 2: emptyDir Data Loss on Pod Restart
+### Pitfall 2: Missing ownerReferences Causes Orphaned Kubernetes Resources
 
-**What goes wrong:** Using emptyDir as workaround for export limitation loses all data when pod restarts, breaking "Windows as source of truth" requirement and causing test file loss.
+**What goes wrong:** When control platform dynamically creates FTP/SFTP/NAS servers at runtime without setting ownerReferences, deleting the control plane leaves zombie pods, services, and PVCs consuming resources and causing confusion ("Why are there 12 FTP servers when I only configured 3?").
 
 **Why it happens:**
-- **Root cause:** emptyDir is ephemeral storage tied to pod lifetime. When pod terminates (crash, eviction, scaling, upgrade), emptyDir is permanently deleted.
-- **Kubernetes design:** emptyDir is explicitly designed for temporary storage within a pod's lifecycle, not for persistent data.
-- **Container restart != pod restart:** Container restarts within the same pod preserve emptyDir, but pod restarts do not.
+- **Root cause:** Kubernetes operators/controllers must explicitly set `metadata.ownerReferences` to establish parent-child relationships; it's not automatic
+- **Missing cleanup:** Without ownerReferences, Kubernetes garbage collector doesn't know that child resources should be deleted when parent is removed
+- **Namespace restrictions:** ownerReferences cannot cross namespace boundaries; cluster-scoped owners required for cluster-scoped resources
+- **Forgotten during iteration:** Developer creates resources successfully in Phase 3, but cleanup code never written; issue discovered months later
 
 **Consequences:**
-- Test files placed by testers on Windows not visible after NFS server pod restart
-- Files written via NFS mount disappear on pod recreation
-- Development environment behavior diverges from production (data persistence)
-- Loss of production parity: prod NAS survives restarts, dev simulator doesn't
-- Confusion and frustration: "Why did my test files disappear?"
+- Minikube runs out of resources (8GB memory exhausted by zombie pods)
+- Helm uninstall doesn't clean up dynamically-created resources
+- Port conflicts: new servers can't bind to ports occupied by orphaned services
+- Namespace deletion hangs for hours (Kubernetes waiting for finalizers)
+- Cost accumulation: orphaned LoadBalancer services incur cloud charges in production
+- Configuration drift: actual running resources don't match declared configuration
 
-**Prevention:**
-1. **NEVER** use plain emptyDir for NFS export path without sync mechanism
-2. **DO** implement bidirectional sync between hostPath and emptyDir (e.g., rsync sidecar)
-3. **DO** use StatefulSet with persistent volumes for NFS server pods
-4. **DO** document emptyDir limitations prominently if used temporarily
-5. **TEST** pod restart scenarios explicitly during development
+**How to avoid:**
+1. **ALWAYS** call `controllerutil.SetControllerReference(owner, resource, scheme)` before creating Kubernetes resources
+2. **VALIDATE** ownerReferences in integration tests: create resource, delete owner, verify child cleaned up
+3. **IMPLEMENT** finalizers for custom cleanup logic beyond standard cascading delete
+4. **USE** `propagationPolicy: Foreground` for deletion to ensure children deleted before parent
+5. **LABEL** all dynamically-created resources with `app.kubernetes.io/managed-by=file-simulator-control-plane`
+6. **AUDIT** regularly: `kubectl get all --all-namespaces -l app.kubernetes.io/managed-by=file-simulator-control-plane` and verify against expected state
+7. **DOCUMENT** cleanup procedures for manual recovery when automation fails
 
-**Detection:**
-- Files disappear after `kubectl delete pod` or pod eviction
-- NFS clients see "Stale file handle" errors after server pod restarts
-- New files on Windows not visible via NFS after pod recreation
-- Files written via NFS mount don't appear in Windows directories
+**Example configuration:**
+```go
+// CORRECT - Sets owner reference
+import "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+func (r *ControlPlaneReconciler) createFTPServer(ctx context.Context, spec ServerSpec) error {
+    pod := &corev1.Pod{
+        ObjectMeta: metav1.ObjectMeta{
+            Name: spec.Name,
+            Namespace: spec.Namespace,
+        },
+        Spec: spec.PodSpec,
+    }
+
+    // This is CRITICAL - establishes parent-child relationship
+    if err := controllerutil.SetControllerReference(r.ControlPlane, pod, r.Scheme); err != nil {
+        return err
+    }
+
+    return r.Client.Create(ctx, pod)
+}
+```
+
+**Warning signs:**
+- `kubectl get all` shows resources not in Helm chart
+- Namespace deletion stuck in "Terminating" state
+- Resource count grows over time without corresponding configuration changes
+- Helm list shows release deleted but resources still exist
+- PVC count exceeds expected number
+
+**Phase to address:** Phase 3 (Dynamic Server Management) - before implementing ANY dynamic resource creation
+
+**Recovery cost:** MEDIUM - Requires manual identification and deletion of orphaned resources, then code changes to prevent recurrence
 
 **Sources:**
-- [Kubernetes: Volumes - emptyDir](https://kubernetes.io/docs/concepts/storage/volumes/)
-- [Understanding Kubernetes Volumes: emptyDir, hostPath, NFS](https://getting-started-with-kubernetes.hashnode.dev/understanding-kubernetes-volumes-using-emptydir-hostpath-and-nfs-for-persistent-storage)
+- [Orphaned Resources in Kubernetes](https://www.stackstate.com/blog/orphaned-resources-in-kubernetes-detection-impact-and-prevention-tips/)
+- [Garbage Collection - Kubernetes](https://kubernetes.io/docs/concepts/architecture/garbage-collection/)
+- [Owner References - Kubernetes Training](https://www.nakamasato.com/kubernetes-training/kubernetes-features/owner-references/)
+- [Ordered cleanup with OwnerReference](https://kubebyexample.com/learning-paths/operator-framework/operator-sdk-go/ordered-cleanup-ownerreference)
 
 ---
 
-### Pitfall 3: Multiple NFS Servers with Conflicting FSIDs
+### Pitfall 3: Windows FileSystemWatcher Buffer Overflow with High-Volume Directories
 
-**What goes wrong:** When deploying 7 independent NAS servers, using duplicate fsid values or omitting fsid causes mysterious performance degradation, mount failures, or complete NFS server hangs over hours or days.
+**What goes wrong:** FileSystemWatcher monitoring C:\simulator-data with 1000+ files loses events when buffer overflows, causing the dashboard to show stale/incorrect file states while Windows testers see different reality, eroding trust in the monitoring platform.
 
 **Why it happens:**
-- **Root cause:** NFS uses fsid (filesystem ID) to uniquely identify exported filesystems. Duplicate fsids confuse clients about which export they're accessing.
-- **Silent failure:** Configuration appears to work initially, but degradation is gradual and hard to debug.
-- **Export table confusion:** When two exports have the same fsid, only the first export actually gets mounted regardless of which was requested.
+- **Root cause:** FileSystemWatcher uses a fixed-size kernel buffer (default 8KB) to queue file change events; buffer overflows when event rate exceeds processing rate
+- **High-volume scenario:** Test suite creates 500 files in 2 seconds → 500 events queued → buffer overflow → InternalBufferOverflowException
+- **Missed events:** When buffer overflows, FileSystemWatcher reports only "something changed" without specifics, then requires full directory rescan
+- **Event duplication:** Windows generates multiple events per file operation (created, attributes changed, modified), multiplying event volume
+- **Network share overhead:** Watching Windows directories mounted in Minikube via 9p/CIFS adds latency to event processing
 
 **Consequences:**
-- NFS servers slowly grind to a halt (hours to days after deployment)
-- Clients mount wrong export (mount nas-input-1 but get nas-input-2's data)
-- Intermittent "Stale file handle" errors
-- Performance degradation that's hard to diagnose
-- Production parity broken: multiple NAS servers don't work independently
+- Dashboard shows File A exists, but it was actually deleted 5 minutes ago
+- File upload appears to succeed on Windows but dashboard never shows it
+- InternalBufferOverflowException crashes file watcher sidecar, requiring pod restart
+- Race condition: user uploads file, checks dashboard immediately, file not shown, reports bug
+- Performance degradation: full directory rescans every time buffer overflows
+- Lost audit trail: file events missing from Kafka stream used for compliance reporting
 
-**Prevention:**
-1. **ASSIGN** unique fsid values to each NAS server (e.g., nas-input-1 uses fsid=1, nas-input-2 uses fsid=2, etc.)
-2. **DOCUMENT** fsid allocation in Helm chart comments or values.yaml
-3. **AVOID** fsid=0 (reserved for NFSv4 root filesystem) unless creating root export
-4. **TEMPLATE** fsid values in Helm chart based on instance name/number
-5. **TEST** all 7 NAS servers simultaneously, not one at a time
+**How to avoid:**
+1. **INCREASE** buffer size to maximum (64KB for local, network share limit): `watcher.InternalBufferSize = 65536`
+2. **BATCH** events with 100-200ms debounce: collect duplicates, process once
+3. **QUEUE** events to Channel or ConcurrentQueue: keep handlers fast (< 1ms), process async
+4. **FILTER** before watching: use NotifyFilter to ignore irrelevant events (LastAccess, Security)
+5. **PARTITION** watching: watch subdirectories separately instead of single root directory
+6. **IMPLEMENT** overflow recovery: on InternalBufferOverflowException, trigger incremental directory diff
+7. **ALERT** on overflow: emit metric to Prometheus when buffer overflows occur
+8. **TEST** with realistic load: script that creates 1000 files in 10 seconds, verify all events captured
+
+**Example configuration:**
+```csharp
+// CORRECT - Handles high-volume scenarios
+var watcher = new FileSystemWatcher(@"C:\simulator-data")
+{
+    InternalBufferSize = 65536, // Maximum buffer size
+    NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size, // Ignore attributes, security
+    IncludeSubdirectories = true
+};
+
+// Use concurrent queue for async processing
+var eventQueue = new Channel<FileSystemEventArgs>(1000);
+
+watcher.Changed += (s, e) => eventQueue.Writer.TryWrite(e);
+watcher.Created += (s, e) => eventQueue.Writer.TryWrite(e);
+watcher.Deleted += (s, e) => eventQueue.Writer.TryWrite(e);
+
+// Handle buffer overflow gracefully
+watcher.Error += (s, e) => {
+    if (e.GetException() is InternalBufferOverflowException) {
+        logger.LogWarning("FileSystemWatcher buffer overflow - triggering directory rescan");
+        TriggerIncrementalRescan();
+    }
+};
+
+// Process queue with batching and debounce
+await foreach (var batch in eventQueue.Reader.ReadBatchAsync(batchSize: 50, timeout: 200ms)) {
+    var uniqueFiles = batch.DistinctBy(e => e.FullPath);
+    await ProcessFileEvents(uniqueFiles);
+}
+```
+
+**Warning signs:**
+- Logs show InternalBufferOverflowException
+- Event count metrics show sudden drops (missed events)
+- File state in database doesn't match Windows directory listing
+- Users report "my file uploaded but dashboard doesn't show it"
+- CPU spikes on file watcher pod during test runs
+
+**Phase to address:** Phase 2 (File Event Streaming) - before deploying to testers
+
+**Recovery cost:** MEDIUM - Can usually increase buffer size and add batching without architectural changes
+
+**Sources:**
+- [FileSystemWatcher not working when large amount of files are changed](https://learn.microsoft.com/en-us/archive/msdn-technet-forums/60b12c2e-9dc8-4de4-be2d-bf8345bdaaee)
+- [Tamed FileSystemWatcher](https://petermeinl.wordpress.com/2015/05/18/tamed-filesystemwatcher/)
+- [FileSystemWatcher Class - .NET](https://learn.microsoft.com/en-us/dotnet/fundamentals/runtime-libraries/system-io-filesystemwatcher)
+
+---
+
+### Pitfall 4: Kafka Consumes Excessive Memory in Minikube, Starving Existing Services
+
+**What goes wrong:** Single-broker Kafka in KRaft mode configured with default JVM heap (1GB) plus off-heap memory consumes 1.5-2GB RAM, pushing Minikube over 8GB limit and causing OOM kills of existing FTP/SFTP/NAS servers that were stable in v1.0.
+
+**Why it happens:**
+- **Root cause:** Kafka's default configuration optimized for production (large heap, multiple partitions, replication) far exceeds needs of development file simulator
+- **JVM overhead:** Java heap (1GB) + metaspace (256MB) + direct buffers (512MB) + OS page cache = ~2GB actual usage
+- **Memory limit trap:** Setting container `memory: 768Mi` but JVM `-Xmx1g` causes OOMKilled (container limit < JVM heap)
+- **Replication factor mistake:** Setting `offsets.topic.replication.factor=3` in single-broker cluster causes startup failure
+- **Resource competition:** v1.0 uses ~2.8GB (706Mi requests, 2.85Gi limits); adding Kafka's 2GB breaks everything
+
+**Consequences:**
+- Minikube node runs out of memory: existing pods evicted randomly
+- FTP server killed mid-transfer, corrupting files
+- NFS server dies during mount operation, causing kernel panic on client
+- Kafka itself OOMKilled in tight loop, never fully starting
+- Kubernetes scheduler thrashing: evict pod A to schedule pod B, evict B to schedule A
+- Development environment unusable: "worked yesterday, broken today" after adding Kafka
+
+**How to avoid:**
+1. **MINIMAL** JVM heap for single-broker dev: `-Xmx512m -Xms512m`
+2. **MATCH** container limits to JVM heap: `memory.limit = 768Mi` for `-Xmx512m`
+3. **SINGLE** partition/replica for dev topics: `num.partitions=1`, `default.replication.factor=1`
+4. **CONFIGURE** offsets topic: `offsets.topic.replication.factor=1` (not 3)
+5. **DISABLE** unnecessary features: `auto.create.topics.enable=false`, compression
+6. **INCREASE** Minikube memory to 12GB if adding Kafka: `minikube start --memory=12288`
+7. **PROFILE** actual usage: `kubectl top pod` to measure real consumption vs. configured limits
+8. **SEPARATE** namespace with ResourceQuota: limit control-plane namespace to 4GB, file-simulator to 6GB
 
 **Example configuration:**
 ```yaml
-# nas-input-1
-NFS_EXPORT_0: "/data *(rw,sync,no_subtree_check,fsid=1)"
-
-# nas-input-2
-NFS_EXPORT_0: "/data *(rw,sync,no_subtree_check,fsid=2)"
-
-# nas-backup
-NFS_EXPORT_0: "/data *(rw,sync,no_subtree_check,fsid=10)"
-
-# nas-output-1
-NFS_EXPORT_0: "/data *(rw,sync,no_subtree_check,fsid=20)"
+# Minimal Kafka for Minikube - development ONLY
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+spec:
+  template:
+    spec:
+      containers:
+      - name: kafka
+        image: apache/kafka:3.8.1
+        env:
+        - name: KAFKA_HEAP_OPTS
+          value: "-Xmx512m -Xms512m -XX:MaxMetaspaceSize=128m"
+        - name: KAFKA_JVM_PERFORMANCE_OPTS
+          value: "-XX:+UseG1GC -XX:MaxGCPauseMillis=20"
+        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+          value: "1"  # CRITICAL for single broker
+        - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+          value: "1"
+        - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+          value: "1"
+        - name: KAFKA_NUM_PARTITIONS
+          value: "1"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "768Mi"  # Slightly more than heap for overhead
+            cpu: "500m"
 ```
 
-**Detection:**
-- NFS server becomes unresponsive over time
-- Mount attempts succeed but access wrong filesystem
-- Logs show multiple exports with same fsid
-- `showmount -e` shows exports but mounts fail or mount wrong path
-- Cross-mounting: mounting server A gives server B's files
+**Warning signs:**
+- Kafka pod in CrashLoopBackOff with OOMKilled status
+- Existing protocol server pods evicted during Kafka startup
+- `kubectl top node` shows memory usage > 90%
+- Kafka logs show "OutOfMemoryError: Java heap space"
+- FTP/SFTP connections start failing after Kafka deployment
+
+**Phase to address:** Phase 4 (Kafka Integration) - configure minimal resource profile BEFORE deploying
+
+**Recovery cost:** LOW - Configuration change, but requires Minikube restart with more memory
 
 **Sources:**
-- [Earl C. Ruby III: Setting up NFS FSID for multiple networks](https://earlruby.org/2022/01/setting-up-nfs-fsid-for-multiple-networks/)
-- [Red Hat: How do I configure the fsid option in /etc/exports?](https://access.redhat.com/solutions/548083)
-- [SUSE: NFS mounting incorrect NFS export](https://www.suse.com/support/kb/doc/?id=000017897)
+- [Solving Java Out of Memory Issues in Kafka-Powered Microservices](https://medium.com/@msbreuer/solving-java-out-of-memory-issues-in-kafka-powered-microservices-c6911882c174)
+- [Kafka pod is constantly created and destroyed](https://github.com/banzaicloud/koperator/issues/112)
+- [Configure CPU and Memory for Confluent Platform in Kubernetes](https://docs.confluent.io/operator/current/co-resources.html)
+- [Running Kafka in Kubernetes with KRaft mode](https://rafael-natali.medium.com/running-kafka-in-kubernetes-with-kraft-mode-549d22ab31b0)
 
 ---
 
-### Pitfall 4: hostPath Pod Rescheduling to Different Node
+### Pitfall 5: React WebSocket State Update Race Conditions
 
-**What goes wrong:** When using hostPath volumes, if a pod is rescheduled to a different Kubernetes node, it loses access to the Windows-mounted directory because hostPath is node-specific.
+**What goes wrong:** Dashboard displays incorrect server state (shows FTP server as "running" when actually stopped) due to race condition: user clicks "Stop Server", API processes request, WebSocket broadcasts "stopping" event, but React component's subsequent state update overwrites with stale "running" state from previous fetch.
 
 **Why it happens:**
-- **Root cause:** hostPath volumes mount directories from the node's filesystem. Each node has its own filesystem tree; Windows mount only exists on the Minikube node where it was configured.
-- **Kubernetes scheduling:** Pods can be rescheduled to any node in the cluster (eviction, node drain, scaling).
-- **Minikube specificity:** Single-node Minikube hides this issue, but multi-node clusters expose it immediately.
+- **Root cause:** Asynchronous state updates in React combined with out-of-order WebSocket messages create race between pessimistic UI update and authoritative backend state
+- **Fetch-first pattern trap:** Component fetches state on mount, then subscribes to WebSocket; events that occurred between fetch and subscription are lost
+- **Event reordering:** Network delays cause "server stopped" event to arrive before "server stopping" event
+- **State update batching:** React batches setState calls; later update overwrites earlier update instead of merging
+- **Multiple sources of truth:** REST API, WebSocket stream, and local component state diverge
 
 **Consequences:**
-- Pod starts on different node with empty hostPath directory
-- NFS exports appear empty to clients
-- Test files inaccessible until pod returns to original node
-- Production environment (multi-node OCP) behaves differently than dev
-- Manual intervention required to force pod back to correct node
+- User clicks "Start FTP server", sees "Starting..." for 2 seconds, then UI reverts to "Stopped" (actual server running)
+- Stop button appears but server already stopped → 404 error when clicked
+- File upload progress bar shows 100% but backend still processing
+- Dashboard shows 7 NAS servers when 3 were deleted (zombie UI state)
+- User loses trust in monitoring platform: "dashboard is always wrong"
 
-**Prevention:**
-1. **USE** node affinity to pin pods to the node with Windows mount
-2. **CONFIGURE** `nodeSelector` or `nodeAffinity` in pod spec:
-   ```yaml
-   nodeSelector:
-     kubernetes.io/hostname: minikube
-   ```
-3. **USE** PodAffinity with `topologyKey: kubernetes.io/hostname` for multi-pod scenarios
-4. **DOCUMENT** node affinity requirements in deployment documentation
-5. **TEST** pod rescheduling scenarios (delete pod, drain node if multi-node)
+**How to avoid:**
+1. **FETCH** state, then subscribe to WebSocket, then **refetch** to catch gap events (3-step pattern)
+2. **USE** functional state updates: `setState(prev => merge(prev, update))` not `setState(update)`
+3. **SEQUENCE** events with monotonic version numbers or timestamps; discard out-of-order updates
+4. **SINGLE** source of truth: WebSocket stream is authoritative, REST API only for initial load
+5. **IMPLEMENT** event cache/queue: buffer WebSocket messages during initial fetch, replay after
+6. **OPTIMISTIC** UI updates with rollback: update UI immediately, revert if backend rejects
+7. **TEST** race scenarios explicitly: mock delayed WebSocket messages, verify UI consistency
 
-**Detection:**
-- NFS exports suddenly empty after pod restart
-- Pod running on different node than before (check `kubectl get pod -o wide`)
-- Windows directory exists but pod cannot see it
-- Mount path exists but shows no files
+**Example implementation:**
+```typescript
+// CORRECT - Handles race conditions with event cache and refetch
+function useServerState(serverId: string) {
+  const [state, setState] = useState<ServerState | null>(null);
+  const eventCache = useRef<ServerEvent[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    // Step 1: Initial fetch
+    const initialState = await fetchServerState(serverId);
+    if (!mounted) return;
+
+    // Step 2: Subscribe to WebSocket
+    const unsubscribe = wsSubscribe(`server.${serverId}`, (event) => {
+      if (!state) {
+        // Cache events until initial state loaded
+        eventCache.current.push(event);
+      } else {
+        // Apply event with functional update to avoid race
+        setState(prev => applyEvent(prev, event));
+      }
+    });
+
+    // Step 3: Refetch to catch gap events
+    const gapState = await fetchServerState(serverId);
+    if (!mounted) return;
+
+    setState(gapState);
+
+    // Replay cached events
+    eventCache.current.forEach(event => {
+      setState(prev => applyEvent(prev, event));
+    });
+    eventCache.current = [];
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, [serverId]);
+
+  return state;
+}
+```
+
+**Warning signs:**
+- Sentry/LogRocket shows UI state not matching backend state
+- Users report "button clicked but nothing happened"
+- E2E tests flaky: sometimes pass, sometimes fail with wrong state
+- Console shows "setState called after unmount" warnings
+- Redux DevTools shows action dispatched but state unchanged
+
+**Phase to address:** Phase 1 (Backend API & WebSocket) - establish patterns before building complex features
+
+**Recovery cost:** HIGH - Requires refactoring state management across entire dashboard
 
 **Sources:**
-- [Kubernetes: Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/)
-- [Kubernetes HostPath and Pod Scheduling](https://arun944.hashnode.dev/kubernetes-volumes-hostpath)
-- [DEV Community: Difference between emptyDir and hostPath](https://dev.to/techworld_with_nana/difference-between-emptydir-and-hostpath-volume-types-in-kubernetes-286g)
+- [Real-time State Management in React Using WebSockets](https://moldstud.com/articles/p-real-time-state-management-in-react-using-websockets-boost-your-apps-performance)
+- [Handling Race Conditions in Real-Time Apps](https://dev.to/mattlewandowski93/handling-race-conditions-in-real-time-apps-49c8)
+- [Handling State Update Race Conditions in React](https://medium.com/cyberark-engineering/handling-state-update-race-conditions-in-react-8e6c95b74c17)
+- [Using WebSockets with React Query](https://tkdodo.eu/blog/using-web-sockets-with-react-query)
+
+---
+
+### Pitfall 6: Missing RBAC Permissions for Dynamic Resource Creation
+
+**What goes wrong:** Control plane ServiceAccount can query existing pods/services but cannot create new ones, causing "forbidden: User 'system:serviceaccount:file-simulator:control-plane' cannot create resource 'pods'" error when user clicks "Add FTP Server" in dashboard, with cryptic error message and no UI feedback.
+
+**Why it happens:**
+- **Root cause:** Kubernetes RBAC follows principle of least privilege; ServiceAccount has NO permissions by default except to query its own token
+- **Read vs write separation:** Many examples show read-only permissions (get, list, watch) but omit write permissions (create, update, delete) needed for control plane
+- **Namespace scoping mistake:** Role grants permissions in one namespace but control plane tries to create resources in different namespace
+- **Forgotten verbs:** Developer adds "create" but forgets "update" needed to patch existing resources or "deletecollection" for bulk operations
+- **Resource subresources:** "pods" permission doesn't grant "pods/log" or "pods/exec" which monitoring might need
+
+**Consequences:**
+- "Add Server" button silently fails; user sees spinner forever
+- Cryptic 403 errors in browser console with no user-facing message
+- Dashboard shows "Creating..." indefinitely; server never appears
+- Partial state: Service created but Deployment failed → orphaned service
+- Security audit fails: attempting to use cluster-admin in production for "simplicity"
+
+**How to avoid:**
+1. **CREATE** Role with explicit verbs for ALL operations:
+   ```yaml
+   apiVersion: rbac.authorization.k8s.io/v1
+   kind: Role
+   metadata:
+     name: control-plane-manager
+     namespace: file-simulator
+   rules:
+   - apiGroups: [""]
+     resources: ["pods", "services", "persistentvolumeclaims", "configmaps"]
+     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+   - apiGroups: ["apps"]
+     resources: ["deployments", "statefulsets"]
+     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+   - apiGroups: [""]
+     resources: ["pods/log", "pods/status"]
+     verbs: ["get"]
+   ```
+2. **BIND** Role to ServiceAccount with RoleBinding (NOT ClusterRoleBinding unless truly cluster-scoped)
+3. **TEST** RBAC with `kubectl auth can-i --as=system:serviceaccount:file-simulator:control-plane create pods`
+4. **USE** `kubectl auth reconcile -f rbac.yaml` to validate RBAC manifests before applying
+5. **AUDIT** actual permissions with `kubectl describe role control-plane-manager`
+6. **IMPLEMENT** graceful error handling: catch 403, show user-friendly message with remediation steps
+7. **DOCUMENT** RBAC requirements prominently in installation guide for OpenShift/restricted clusters
+
+**Warning signs:**
+- Browser console shows "Error 403: Forbidden"
+- Backend logs show "User cannot create resource 'pods' in namespace 'file-simulator'"
+- `kubectl describe rolebinding` shows ServiceAccount not bound to any Role
+- Dashboard operations work in admin context but fail with ServiceAccount
+- Works in Minikube (permissive) but fails in OpenShift (strict RBAC/SCCs)
+
+**Phase to address:** Phase 3 (Dynamic Server Management) - before implementing any create/update/delete operations
+
+**Recovery cost:** LOW - Add missing RBAC rules, but hard to debug without clear error messages
+
+**Sources:**
+- [Using RBAC Authorization](https://kubernetes.io/docs/reference/access-authn-authz/rbac/)
+- [Kubernetes ServiceAccount and RBAC: Creating Pods with Controlled Permissions](https://www.jeeviacademy.com/kubernetes-serviceaccount-and-rbac-creating-pods-with-controlled-permissions/)
+- [Kubernetes RBAC: the Complete Best Practices Guide](https://www.armosec.io/blog/a-guide-for-using-kubernetes-rbac/)
+- [Implementing Kubernetes RBAC: Best Practices and Examples](https://trilio.io/kubernetes-best-practices/kubernetes-rbac/)
 
 ---
 
 ## Moderate Pitfalls
 
-Mistakes that cause delays, debugging sessions, or technical debt.
+Mistakes that cause delays, debugging sessions, or technical debt but don't break existing functionality.
 
-### Pitfall 5: NFS Server Requires Privileged Security Context
+### Pitfall 7: WebSocket Connection Leaks on Component Unmount
 
-**What goes wrong:** NFS server pods fail to start or function without `privileged: true` or `CAP_SYS_ADMIN` capability, but granting these breaks security policies in restricted environments (OCP with SCCs, PSPs).
+**What goes wrong:** Dashboard user navigates between pages (Servers → Files → Metrics → Servers), each navigation creates new WebSocket connection but doesn't close old one, accumulating 50+ connections over 10 minutes and eventually hitting server's connection limit (100), blocking new users.
 
 **Why it happens:**
-- **Root cause:** NFS server needs to perform mount operations inside the container (mounting nfsd pseudo-filesystem, lockd, etc.). Linux requires CAP_SYS_ADMIN for mount operations.
-- **Security trade-off:** CAP_SYS_ADMIN is one of the most powerful capabilities; security policies often prohibit it.
-- **Container limitation:** Unlike running NFS on bare metal, containerized NFS must mount filesystems within a restricted environment.
+- **Root cause:** React component subscribes to WebSocket in useEffect but doesn't return cleanup function
+- **Development hot reload:** Webpack HMR triggers unmount/remount without cleanup, leaking connections
+- **Page navigation:** React Router unmounts old page component but WebSocket stays connected
+- **Framework abstraction:** Socket.io/SignalR automatic reconnection hides connection leak
 
-**Consequences:**
-- NFS server pod crashes with permission denied errors
-- Security team rejects deployment due to privileged containers
-- Cannot deploy to production OpenShift with default SCCs
-- Workaround (allowPrivilegedContainer) increases security risk
+**How to avoid:**
+```typescript
+// CORRECT - Cleanup function prevents leak
+useEffect(() => {
+  const socket = io('/api/ws');
 
-**Prevention:**
-1. **REQUEST** security policy exception early in project (don't discover at deployment time)
-2. **DOCUMENT** security requirements and justification for privileged container
-3. **CREATE** dedicated SecurityContextConstraint (OpenShift) or PodSecurityPolicy (Kubernetes)
-4. **MINIMIZE** privilege scope: use `CAP_SYS_ADMIN` instead of full `privileged: true` if possible
-5. **CONSIDER** running NFS outside cluster if security policies are too restrictive
+  socket.on('server-update', handleUpdate);
 
-**Example configuration:**
-```yaml
-securityContext:
-  privileged: false
-  capabilities:
-    add:
-      - SYS_ADMIN
-      - DAC_READ_SEARCH
+  return () => {
+    socket.off('server-update', handleUpdate); // Remove listener
+    socket.disconnect(); // Close connection
+  };
+}, []);
 ```
 
-**Detection:**
-- Container logs show: "mount: /proc/fs/nfsd: permission denied"
-- Pod events show: "Error: container has runAsNonRoot and image will run as root"
-- Security admission controller rejects pod creation
-- `kubectl describe pod` shows "PodSecurityPolicy: unable to admit pod"
+**Warning signs:**
+- Backend logs show connection count increasing without bound
+- `netstat` shows ESTABLISHED connections to :8080 from same client IP
+- Memory usage on backend increases linearly with time
+- New users see "Connection refused" after dashboard used for hours
 
-**Sources:**
-- [Kubernetes: Security Context Best Practices](https://www.wiz.io/academy/kubernetes-security-context-best-practices)
-- [ehough/docker-nfs-server GitHub](https://github.com/ehough/docker-nfs-server)
-- [kubesec.io: CAP_SYS_ADMIN](https://kubesec.io/basics/containers-securitycontext-capabilities-add-index-sys-admin/)
+**Phase to address:** Phase 1 (Backend API & WebSocket Infrastructure)
 
 ---
 
-### Pitfall 6: Static Port Requirements for Minikube + Windows
+### Pitfall 8: Kubernetes API Client Rate Limiting
 
-**What goes wrong:** NFS protocol uses dynamic RPC ports by default. When accessing NFS from Windows host through NodePort, dynamic ports cause connection timeouts because only explicit NodePorts are accessible.
+**What goes wrong:** Dashboard polls Kubernetes API every 1 second for pod status across 7 NAS servers, hitting API server's 50 QPS rate limit, causing 429 errors and dashboard showing "Error loading servers" intermittently.
 
-**Why it happens:**
-- **Root cause:** NFS uses RPC (Remote Procedure Call) which traditionally allocates random ports for mountd, statd, lockd services.
-- **Minikube networking:** Only explicitly defined NodePort services are accessible from Windows host. Dynamic ports aren't exposed.
-- **Windows firewall:** Even if ports were exposed, Windows firewall would block undefined ports.
+**How to avoid:**
+1. **USE** Kubernetes watch API instead of polling: `client.CoreV1().Pods(namespace).Watch(ctx, opts)`
+2. **CACHE** responses with 5-10s TTL; serve cached data to dashboard
+3. **BATCH** queries: get all pods in one call, not 7 individual queries
+4. **INCREASE** API server rate limits if needed (Minikube: `--extra-config=apiserver.max-requests-inflight=100`)
 
-**Consequences:**
-- Mount commands hang or timeout
-- `mount.nfs: Connection timed out` errors
-- Works inside cluster but not from Windows host
-- Intermittent failures: sometimes works, sometimes doesn't
+**Warning signs:**
+- Dashboard shows "Error loading" intermittently
+- Backend logs show "rate: Wait(n=1) would exceed context deadline"
+- Kubernetes API server logs show "request has been rate limited"
 
-**Prevention:**
-1. **CONFIGURE** NFS server to use static ports:
-   ```env
-   NFSD_PORT=2049
-   MOUNTD_PORT=32765
-   STATD_PORT=32766
-   LOCKD_PORT=32767
-   ```
-2. **EXPOSE** all NFS ports as NodePorts in Service:
-   ```yaml
-   ports:
-     - port: 2049    # NFS
-     - port: 32765   # mountd
-     - port: 32766   # statd
-     - port: 32767   # lockd
-     - port: 111     # rpcbind
-   ```
-3. **TEST** from Windows host: `showmount -e <minikube-ip>`
-4. **DOCUMENT** port requirements for testers/developers
-
-**Detection:**
-- Mount hangs indefinitely
-- `rpcinfo -p <server>` shows dynamic ports
-- `tcpdump` shows connection attempts to non-exposed ports
-- Works with `kubectl port-forward` but not NodePort
-
-**Sources:**
-- [GitHub: minikube nfs mount / bad option](https://github.com/kubernetes/minikube/issues/8514)
-- [Deploying Dynamic NFS Provisioning in Kubernetes](https://www.exxactcorp.com/blog/Troubleshooting/deploying-dynamic-nfs-provisioning-in-kubernetes)
+**Phase to address:** Phase 1 (Backend API & WebSocket Infrastructure) - implement watch API from start
 
 ---
 
-### Pitfall 7: Minikube 9P Mount Performance Degradation
+### Pitfall 9: File Watcher Sidecar Dies Silently, Events Stop Flowing
 
-**What goes wrong:** When using `minikube mount` with 9p filesystem for Windows-to-Minikube directory sharing, performance degrades significantly with directories containing >600 files, causing NFS operations to timeout or hang.
+**What goes wrong:** FileSystemWatcher sidecar container crashes due to unhandled exception but pod stays in "Running" state (main container healthy), causing silent failure where file events stop flowing to Kafka but dashboard shows no error.
 
-**Why it happens:**
-- **Root cause:** 9p protocol (Plan 9 filesystem) is not optimized for high file counts. Minikube uses 9p for cross-platform directory mounting.
-- **Hyper-V limitation:** Hyper-V driver uses 9p internally, compounding performance issues.
-- **Metadata operations:** NFS heavily uses metadata operations (stat, readdir) which are slow over 9p.
+**How to avoid:**
+1. **ADD** liveness probe for file watcher sidecar: HTTP endpoint that verifies watcher still active
+2. **SET** `restartPolicy: Always` for sidecar containers (native sidecar in K8s 1.29+)
+3. **EMIT** heartbeat metric every 10s to Prometheus; alert if missing
+4. **LOG** to stdout/stderr properly; avoid swallowing exceptions
+5. **IMPLEMENT** global exception handler with retry logic
 
-**Consequences:**
-- NFS directory listings take 10+ seconds
-- File operations timeout
-- Developer experience degrades as test file count grows
-- Cannot scale to realistic test datasets (thousands of files)
+**Warning signs:**
+- File events stopped arriving in Kafka but no alerts
+- `kubectl logs file-watcher-sidecar` shows exception stack trace, then silence
+- Dashboard file browser stale; Windows directory has new files but UI doesn't
+- Prometheus shows `file_watcher_events_total` counter stopped incrementing
 
-**Prevention:**
-1. **LIMIT** file count in mounted directories (use subdirectories)
-2. **STRUCTURE** test data hierarchically (split into subdirectories)
-3. **CONSIDER** Docker driver instead of Hyper-V if WSL2 available (better performance)
-4. **DOCUMENT** performance characteristics and file count limits
-5. **IMPLEMENT** file count monitoring/alerting in test suites
-
-**Detection:**
-- Slow `ls` commands inside Minikube VM
-- NFS operations timeout
-- Mounting NFS share takes >30 seconds
-- `df -T` shows 9p filesystem type on mount point
-
-**Sources:**
-- [Minikube: Mounting filesystems](https://minikube.sigs.k8s.io/docs/handbook/mount/)
-- [GitHub: Minikube mount does not work (Windows 10 / Hyper-V)](https://github.com/kubernetes/minikube/issues/13535)
-- [TheLinuxCode: Kubernetes Minikube 2026 Playbook](https://thelinuxcode.com/kubernetes-minikube-a-pragmatic-2026-playbook/)
+**Phase to address:** Phase 2 (File Event Streaming) - add health checks immediately
 
 ---
 
-### Pitfall 8: exportfs State Not Persistent Across Container Restarts
+### Pitfall 10: Configuration Drift Between Helm Values and Control Plane State
 
-**What goes wrong:** Changes made to NFS exports via `exportfs` command inside running container are lost on container restart unless persisted to `/etc/exports` or configuration.
+**What goes wrong:** User adds 3 FTP servers via dashboard UI (dynamic creation), then runs `helm upgrade` with old values.yaml specifying 1 FTP server, Helm deletes 2 servers without warning, losing user's configuration.
 
-**Why it happens:**
-- **Root cause:** `exportfs` updates in-memory kernel export table and `/var/lib/nfs/etab` file, but these are ephemeral in containers.
-- **Container design:** Containers start fresh from image; runtime changes are lost.
-- **NFS design:** `exportfs` was designed for persistent VMs/bare metal, not ephemeral containers.
+**How to avoid:**
+1. **SEPARATE** static (Helm-managed) and dynamic (control-plane-managed) resources with labels
+2. **ANNOTATE** dynamic resources with `helm.sh/resource-policy: keep` to prevent Helm deletion
+3. **EXPORT** control plane state to values.yaml before Helm operations
+4. **WARN** in UI: "This server was created dynamically. To persist, export configuration."
+5. **DOCUMENT** interaction between Helm and control plane explicitly
 
-**Consequences:**
-- Manual export changes lost on pod restart
-- Debugging confusion: "It worked yesterday, now it's broken"
-- Export configuration drift between environments
-- Manual intervention required after every restart
+**Warning signs:**
+- Servers disappear after Helm upgrade
+- `helm diff` shows deletions not expected
+- Users report "my configuration keeps getting reset"
 
-**Prevention:**
-1. **CONFIGURE** exports via environment variables (e.g., `NFS_EXPORT_0`) that persist in pod spec
-2. **NEVER** manually run `exportfs` inside running containers (won't persist)
-3. **USE** ConfigMap for complex export configurations mounted at `/etc/exports.d/`
-4. **VERIFY** exports are defined in persistent configuration, not runtime commands
-5. **AUTOMATE** export configuration in container entrypoint script
-
-**Detection:**
-- Exports work, then disappear after pod restart
-- `showmount -e` shows no exports after restart
-- Container logs show exports configured, but external checks fail
-- Manual `exportfs -r` required after every restart
-
-**Sources:**
-- [TrinixSoft: NFS Server Maintenance - Reloading exports](https://blog.trinixcs.com/index.php/2019/05/17/nfs-server-maintenance-reloading-the-etc-exports-without-restarting-the-server/)
-- [exportfs man page](https://linux.die.net/man/8/exportfs)
+**Phase to address:** Phase 3 (Dynamic Server Management) - design label/annotation strategy from start
 
 ---
 
-### Pitfall 9: NFS Version Compatibility (NFSv3 vs NFSv4)
+### Pitfall 11: Kafka Topic Retention Fills Minikube Disk
 
-**What goes wrong:** Windows NFS client behavior differs between NFSv3 and NFSv4. WinNFSd (Windows NFS server) only supports NFSv3. Mismatched versions cause mount failures or permission issues.
+**What goes wrong:** Kafka file-events topic configured with infinite retention (`retention.ms=-1`) accumulates 50GB of events over weeks, filling Minikube's 20GB disk, causing all pods to evict due to disk pressure.
 
-**Why it happens:**
-- **Root cause:** NFSv3 and NFSv4 are different protocols with different authentication, locking, and mount semantics.
-- **Windows specificity:** Windows NFS client historically better supports NFSv3. NFSv4 support improved but has quirks.
-- **Default configuration:** Most NFS server containers default to NFSv4; Windows clients may need NFSv3.
+**How to avoid:**
+1. **SET** retention for dev: `retention.ms=86400000` (1 day) or `retention.bytes=1073741824` (1GB)
+2. **ENABLE** log compaction for state topics: `cleanup.policy=compact`
+3. **MONITOR** disk usage: `kubectl top node`, alert at 80%
+4. **DOCUMENT** retention policy in deployment guide
 
-**Consequences:**
-- Mount succeeds but files not accessible
-- Permission denied errors even with `no_root_squash`
-- UID/GID mapping issues
-- Windows client hangs on mount
+**Warning signs:**
+- `kubectl get nodes` shows `DiskPressure=True`
+- Pods evicted with "Insufficient disk space"
+- `df -h` inside Minikube shows 95% usage
 
-**Prevention:**
-1. **SPECIFY** NFS version explicitly in client mount options:
-   ```powershell
-   # Windows: force NFSv3
-   mount -o vers=3 \\192.168.1.100\data Z:
-   ```
-2. **ENABLE** both NFSv3 and NFSv4 in server configuration (don't disable versions unless necessary)
-3. **TEST** with both protocol versions during development
-4. **DOCUMENT** recommended mount options for Windows clients
-5. **CONFIGURE** server: `NFS_DISABLE_VERSION_3=false` (enable v3)
-
-**Detection:**
-- Mount fails with protocol errors
-- `showmount` works but `mount` fails
-- Works from Linux, fails from Windows
-- Logs show version negotiation failures
-
-**Sources:**
-- [GitHub: Minikube NFS mount to WinNFSd](https://github.com/winnfsd/winnfsd/issues/68)
-- [Minikube: Add functionality for nfs mounts/shares](https://github.com/kubernetes/minikube/issues/2580)
+**Phase to address:** Phase 4 (Kafka Integration) - configure retention before deploying
 
 ---
 
-## Minor Pitfalls
+### Pitfall 12: Control Plane API Breaks Backward Compatibility with Existing Clients
 
-Mistakes that cause annoyance, confusion, or require workarounds but are easily fixable.
+**What goes wrong:** v2.0 control plane adds `/api/servers` endpoint that conflicts with existing `/api/server/:id` endpoint used by .NET microservices from v1.0, breaking deployed applications that consume file events.
 
-### Pitfall 10: DNS Resolution for NFS Servers in Kubernetes
+**How to avoid:**
+1. **VERSION** APIs from start: `/api/v1/servers`, `/api/v2/servers`
+2. **SEPARATE** control plane API (port 8080) from file operations API (port 8081)
+3. **TEST** with v1.0 client scripts to verify no regressions
+4. **DEPRECATE** gracefully: support old endpoints for 2 releases with warnings
 
-**What goes wrong:** NFS clients cannot mount using Kubernetes service DNS names (e.g., `nas-input-1.file-simulator.svc.cluster.local`); must use IP addresses instead.
-
-**Why it happens:**
-- **Root cause:** NFS mount happens at kernel level, which doesn't use Kubernetes DNS resolver (CoreDNS).
-- **Workaround limitation:** Even with `nfs.svc.cluster.local` FQDN, kernel DNS resolution may fail or timeout.
-
-**Consequences:**
-- Must hardcode IP addresses in PV definitions
-- IP changes on service recreation break mounts
-- PV definitions not portable between clusters
-
-**Prevention:**
-1. **USE** StatefulSet with headless service for stable DNS names
-2. **CONFIGURE** PV with service ClusterIP (more stable than pod IP)
-3. **DOCUMENT** that NFS uses IP, not DNS, in architecture docs
-4. **ACCEPT** this limitation: it's NFS + Kubernetes design, not fixable
-
-**Detection:**
-- Mount attempts fail with "Name or service not known"
-- `nslookup` resolves DNS name but mount still fails
-- Must use IP address for mount to succeed
-
-**Sources:**
-- [GitHub: nfs: Failed to resolve server nfs-server.default.svc.cluster.local](https://github.com/kubernetes/minikube/issues/3417)
-- [GitHub: Kubernetes Service not working with NFS between two pods](https://github.com/kubernetes/kubernetes/issues/74266)
+**Phase to address:** Phase 1 (Backend API) - design API structure before implementing features
 
 ---
 
-### Pitfall 11: ReadWriteMany Access Mode Required for Multi-Pod Access
+## Performance Traps
 
-**What goes wrong:** If multiple pods need to access the same NFS export simultaneously, PVC must have `accessMode: ReadWriteMany` (RWX). Using `ReadWriteOnce` (RWO) causes scheduling failures.
+Patterns that work at small scale but fail as usage grows.
 
-**Why it happens:**
-- **Root cause:** Kubernetes enforces access mode restrictions. RWO means "only one node can mount this volume at a time."
-- **NFS capability:** NFS inherently supports concurrent access, but Kubernetes access modes are separate from filesystem capabilities.
-
-**Consequences:**
-- Second pod fails to schedule with "PVC is already in use"
-- Multi-pod applications fail to deploy
-- Confusion: NFS supports concurrent access but Kubernetes blocks it
-
-**Prevention:**
-1. **SET** `accessModes: [ReadWriteMany]` in PersistentVolume definition
-2. **VERIFY** StorageClass supports RWX if using dynamic provisioning
-3. **TEST** multi-pod scenarios during development
-4. **DOCUMENT** access mode requirements in PV/PVC examples
-
-**Example:**
-```yaml
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: nas-input-1-pv
-spec:
-  capacity:
-    storage: 10Gi
-  accessModes:
-    - ReadWriteMany  # Required for NFS
-  nfs:
-    server: 192.168.49.2
-    path: /data
-```
-
-**Detection:**
-- Pod stuck in Pending state
-- Events show: "PersistentVolumeClaim is already in use"
-- Works with one pod, fails with two
-
-**Sources:**
-- [OpenEBS: Provisioning NFS PVCs](https://openebs.io/docs/Solutioning/read-write-many/nfspvc)
-- [Kubernetes: Use NFS Storage](https://docs.mirantis.com/mke/3.4/ops/deploy-apps-k8s/persistent-storage/use-nfs-storage.html)
+| Trap | Symptoms | Prevention | When It Breaks |
+|------|----------|------------|----------------|
+| Full directory scan on every WebSocket connection | Dashboard takes 10s to load with 1000 files | Cache directory listings with 5s TTL; use incremental updates | >500 files in watched directories |
+| N+1 queries for server status | Dashboard makes 7 API calls (one per NAS server) | Batch query: `GET /api/servers` returns all servers | >10 servers |
+| Unbounded WebSocket message queue | Backend OOM after 1 hour of dashboard idle | Cap queue size at 1000 messages; drop old messages | Long-running connections with slow clients |
+| Synchronous Kubernetes API calls in WebSocket handler | WebSocket messages delayed 100ms each | Async API calls; use channels for non-blocking communication | >10 clients connected |
+| Polling Kafka for new messages every 100ms | CPU usage 50% on Kafka pod | Use Kafka consumer with long poll timeout (5s) | Continuous operation |
+| Loading entire file content for preview | File browser crashes loading 10GB file | Stream file content; limit preview to first 1MB | Files >100MB |
 
 ---
 
-### Pitfall 12: no_root_squash Security Implications
+## Integration Gotchas
 
-**What goes wrong:** Using `no_root_squash` export option (required for development) creates security risk if NFS server is accessible outside trusted network.
+Common mistakes when integrating control platform with existing v1.0 infrastructure.
 
-**Why it happens:**
-- **Root cause:** `no_root_squash` allows NFS clients to access files as root, bypassing normal UID/GID restrictions.
-- **Development necessity:** Containers often run as root; without `no_root_squash`, all file operations fail with permission denied.
-- **Security trade-off:** Convenience vs. security.
-
-**Consequences:**
-- Any NFS client can access/modify all files as root
-- Accidental file deletion by test scripts
-- Security audit failures
-- Cannot deploy to production with this configuration
-
-**Prevention:**
-1. **DOCUMENT** that `no_root_squash` is development-only configuration
-2. **RESTRICT** NFS access using firewall rules (only allow cluster network)
-3. **USE** `root_squash` in production (map root to nobody)
-4. **CONFIGURE** container to run as non-root user in production
-5. **EDUCATE** team about security implications
-
-**Production configuration:**
-```bash
-# Development
-/data *(rw,sync,no_subtree_check,no_root_squash,fsid=1)
-
-# Production
-/data trusted-network(rw,sync,no_subtree_check,root_squash,fsid=1)
-```
-
-**Detection:**
-- Security scanner flags privileged NFS exports
-- Files owned by root accumulate on NFS server
-- Accidental deletions or modifications
-
-**Sources:**
-- [Red Hat: The /etc/exports Configuration File](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/5/html/deployment_guide/s1-nfs-server-config-exports)
-- [exports man page](https://linux.die.net/man/5/exports)
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| Health checks | Control plane checks its own health, not existing FTP/SFTP servers | Implement connectivity checks to ALL protocol servers; aggregate health |
+| Metrics collection | Prometheus scrapes control plane metrics only | Scrape existing servers + control plane; use federation if separate namespaces |
+| Logging | Centralized logging filters by control-plane namespace, missing FTP/SFTP logs | Include both `namespace: file-simulator` AND `namespace: control-plane` in queries |
+| Network policies | Adding NetworkPolicy for control plane blocks existing server-to-server communication | Use label selectors carefully; test existing communication paths after adding policies |
+| DNS resolution | Control plane uses service names but external clients use NodePort IPs | Document both access patterns; provide DNS names AND IP:port for external clients |
+| TLS certificates | Control plane gets cert for `control-plane.file-simulator.svc.cluster.local`, existing servers have no TLS | Either add TLS to all services OR accept mixed HTTP/HTTPS with appropriate warnings |
 
 ---
 
-## Phase-Specific Warnings
+## Security Mistakes
 
-| Phase Topic | Likely Pitfall | Mitigation |
-|-------------|---------------|------------|
-| Initial NFS deployment | Pitfall #1: Cannot export Windows hostPath directly | Use emptyDir + sync pattern or accept emptyDir data loss during POC |
-| Single server → 7 servers | Pitfall #3: Duplicate fsid values | Template fsid values based on server index (input-1=1, input-2=2, etc.) |
-| Production deployment | Pitfall #5: Privileged container blocked by SCCs | Request SCC exception early; document security requirements |
-| Windows client testing | Pitfall #9: NFSv3 vs NFSv4 compatibility | Explicitly configure protocol version; enable both on server |
-| Multi-pod applications | Pitfall #11: ReadWriteOnce vs ReadWriteMany | Set accessMode: ReadWriteMany in all PV definitions |
-| Performance tuning | Pitfall #7: 9p filesystem performance limits | Structure test data hierarchically; document file count limits |
-| High availability | Pitfall #4: hostPath node affinity | Use StatefulSet + nodeAffinity or PV/PVC instead of hostPath |
+Domain-specific security issues beyond general web security.
+
+| Mistake | Risk | Prevention |
+|---------|------|------------|
+| WebSocket authentication skipped for "simplicity" | Any network client can connect and control simulator | Require JWT token in WebSocket handshake; validate on every message |
+| RBAC uses cluster-admin for control plane | Control plane compromise = full cluster access | Use namespaced Role with minimal verbs (get, list, create pods/services only) |
+| File operations API has no path traversal protection | `DELETE /api/files?path=../../etc/passwd` deletes host files | Validate paths within C:\simulator-data; reject paths with ".." or absolute paths |
+| Kafka has no authentication | Any pod can produce fake file events | Enable SASL/SCRAM or mTLS; restrict topic access with ACLs |
+| Dashboard served over HTTP in production | Credentials sent in plaintext | Require TLS; use HSTS header; redirect HTTP → HTTPS |
+| Dynamically created servers inherit cluster-admin ServiceAccount | New FTP server can delete other servers | Each server gets dedicated ServiceAccount with minimal permissions |
 
 ---
 
-## Architectural Decision Record: NFS + Windows Mount
+## UX Pitfalls
 
-**Problem:** NFS cannot directly export Windows-mounted CIFS/9p filesystems due to kernel limitations.
+Common user experience mistakes in monitoring/control platforms.
+
+| Pitfall | User Impact | Better Approach |
+|---------|-------------|-----------------|
+| No feedback during long operations | User clicks "Start Kafka" → spinner for 60s → timeout error | Show progress stages: "Pulling image...", "Creating pod...", "Waiting for ready..." |
+| Error messages show Kubernetes internals | "Error: pods 'kafka-0' is forbidden: User cannot create resource" | Translate to user terms: "Insufficient permissions. Contact admin to grant pod creation." |
+| State updates without notifications | Server stops but no indication why | Show notification: "FTP server stopped due to health check failure" with link to logs |
+| No undo for destructive actions | User clicks "Delete All Servers" → 7 servers deleted immediately | Confirmation dialog with server names listed; "Type 'DELETE' to confirm" |
+| Dashboard requires page refresh to see changes | User creates server, must reload page to see it | WebSocket broadcasts creation event; UI updates automatically |
+| No distinction between static and dynamic resources | User confused which servers were created by Helm vs UI | Visual indicator: badge showing "Helm-managed" vs "Dynamic" |
+
+---
+
+## "Looks Done But Isn't" Checklist
+
+Things that appear complete but are missing critical pieces.
+
+- [ ] **WebSocket reconnection:** Connects on first load but doesn't reconnect after network blip — verify automatic reconnection with exponential backoff
+- [ ] **File operations:** Upload works but no progress indicator — verify progress events emitted and displayed
+- [ ] **Server creation:** "Add Server" succeeds but server not accessible — verify Service created, ports exposed, DNS resolution works
+- [ ] **Kafka integration:** Events published but no consumers — verify at least one consumer exists, messages actually processed
+- [ ] **Error handling:** Success path works but errors show generic "Something went wrong" — verify specific error messages for common failures
+- [ ] **Resource cleanup:** Resources created but never deleted — verify ownerReferences set, garbage collection tested
+- [ ] **Health monitoring:** Dashboard shows "healthy" but FTP server unreachable — verify health check actually connects to server, not just checks pod status
+- [ ] **State persistence:** Configuration saved but lost on pod restart — verify data stored in PVC or ConfigMap, not in-memory only
+- [ ] **Multi-tenancy:** Works with 1 user but breaks with 10 concurrent users — verify connection limits, rate limiting, resource quotas
+
+---
+
+## Recovery Strategies
+
+When pitfalls occur despite prevention, how to recover.
+
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| WebSocket connection storm | MEDIUM | 1. Redeploy backend with connection limit. 2. Implement queue-based state sync. 3. Add rate limiting. 4. Test with load tool (artillery.io) |
+| Orphaned resources | LOW | 1. List resources: `kubectl get all -l managed-by=control-plane`. 2. Identify orphans: compare to expected state. 3. Delete manually: `kubectl delete pod orphan-ftp-1`. 4. Add ownerReferences to prevent recurrence |
+| FileSystemWatcher overflow | MEDIUM | 1. Restart file watcher pod. 2. Increase buffer size to 64KB. 3. Add batching with 200ms debounce. 4. Monitor overflow metrics |
+| Kafka OOM | LOW | 1. Reduce heap: `KAFKA_HEAP_OPTS=-Xmx512m`. 2. Set replication factor=1. 3. Restart Kafka pod. 4. Monitor memory with `kubectl top pod` |
+| React state race | HIGH | 1. Identify affected components (state audit). 2. Refactor to functional updates. 3. Implement event cache pattern. 4. Add integration tests for race scenarios |
+| Missing RBAC | LOW | 1. Create Role with missing verbs. 2. Apply: `kubectl apply -f rbac.yaml`. 3. Verify: `kubectl auth can-i create pods --as=system:serviceaccount:...` |
+| Configuration drift | MEDIUM | 1. Export control plane state: `GET /api/config/export`. 2. Update values.yaml. 3. Helm upgrade with merged config. 4. Document workflow |
+| Kafka disk full | MEDIUM | 1. Delete old topics: `kafka-topics.sh --delete --topic old-events`. 2. Set retention policy. 3. Expand Minikube disk or increase cluster size |
+
+---
+
+## Pitfall-to-Phase Mapping
+
+How roadmap phases should address these pitfalls.
+
+| Pitfall | Prevention Phase | Verification Method |
+|---------|------------------|---------------------|
+| #1: WebSocket connection storms | Phase 1 (Backend API) | Load test: 50 clients disconnect/reconnect simultaneously; verify existing servers remain responsive |
+| #2: Orphaned resources | Phase 3 (Dynamic Server Mgmt) | Integration test: create server dynamically, delete parent, verify child deleted within 30s |
+| #3: FileSystemWatcher overflow | Phase 2 (File Event Streaming) | Stress test: create 1000 files in 10s; verify all events captured; no InternalBufferOverflowException |
+| #4: Kafka memory exhaustion | Phase 4 (Kafka Integration) | Monitor `kubectl top pod` before/after Kafka deployment; verify existing servers not evicted |
+| #5: React state races | Phase 1 (Backend API) | E2E test: click "Stop Server" then immediately fetch state; verify state consistent |
+| #6: Missing RBAC | Phase 3 (Dynamic Server Mgmt) | `kubectl auth can-i` for all operations; test with non-admin ServiceAccount |
+| #7: WebSocket leaks | Phase 1 (Backend API) | Navigate between pages 20 times; verify connection count returns to baseline |
+| #8: K8s API rate limiting | Phase 1 (Backend API) | Monitor API request rate; verify <10 QPS; use watch API not polling |
+| #9: Silent sidecar failure | Phase 2 (File Event Streaming) | Kill file watcher process; verify pod restarts within 30s; alert triggered |
+| #10: Config drift (Helm vs UI) | Phase 3 (Dynamic Server Mgmt) | Create server in UI, run helm upgrade, verify server not deleted |
+| #11: Kafka disk retention | Phase 4 (Kafka Integration) | Check topic config: `retention.ms` set; monitor disk usage over 24h |
+| #12: API backward compatibility | Phase 1 (Backend API) | Run v1.0 integration tests against v2.0 API; verify no regressions |
+
+---
+
+## Architectural Decision Record: Control Platform vs Existing Infrastructure
+
+**Problem:** How to add control/monitoring platform without destabilizing v1.0 multi-NAS simulator that works reliably.
 
 **Options Evaluated:**
 
-1. **Direct export of hostPath** ❌
-   - Blocked by kernel limitation (Pitfall #1)
+1. **Monolithic approach:** Add control plane to existing pods ❌
+   - Risk: Breaking existing services
+   - Impact: Single bug affects all protocols
 
-2. **emptyDir without sync** ❌
-   - Data loss on pod restart (Pitfall #2)
-   - Breaks Windows-as-source-of-truth requirement
+2. **Separate namespace:** Deploy control plane in `control-plane` namespace ⚠️
+   - Pros: Isolation, separate resource limits
+   - Cons: RBAC complexity (cross-namespace access), network policies
 
-3. **emptyDir + rsync sidecar** ✅ Recommended
-   - Pros: Works around export limitation, preserves Windows source of truth, survives container restart
-   - Cons: Data loss on pod restart, sync latency, complexity
-   - Use case: Development environment where occasional data loss acceptable
+3. **Separate Minikube profile:** Run control plane in different cluster ❌
+   - Pros: Complete isolation
+   - Cons: Cannot manage servers in different cluster; defeats purpose
 
-4. **StatefulSet + PersistentVolume** ⚠️ Partial solution
-   - Pros: Data persists across pod restarts
-   - Cons: Still cannot mount Windows directories directly; requires separate sync mechanism
+4. **Same namespace, separate deployments:** control-plane deployment + existing servers ✅ **RECOMMENDED**
+   - Pros: RBAC simplified (same namespace), easy service discovery, resource sharing
+   - Cons: Must set resource limits carefully to prevent interference
+   - Mitigation: ResourceQuota per application group using labels
 
-5. **Run NFS outside cluster** ✅ Production alternative
-   - Pros: No container limitations, better performance, real NAS simulation
-   - Cons: Complexity, infrastructure requirements
-
-**Recommendation for File Simulator Suite:**
-- **Development (Minikube):** emptyDir + rsync sidecar + nodeAffinity (accept risk of data loss on pod restart)
-- **Production (OCP):** Run NFS on dedicated RHEL nodes or use real NAS hardware
+**Recommendation:**
+- Same namespace (`file-simulator`) but separate deployments
+- Resource limits: control-plane (2GB), existing servers (4GB), Kafka (2GB) = 8GB total
+- Label-based resource quotas if limits exceeded
+- NetworkPolicy to prevent control-plane from accessing protocol server data directly (enforce API layer)
 
 ---
 
 ## Quick Reference: Troubleshooting Checklist
 
-When NFS server fails to start or function:
+When control platform causes issues with existing infrastructure:
 
-- [ ] **Check filesystem type:** `df -T /data` - is it CIFS/9p/overlayfs? (Pitfall #1)
-- [ ] **Check security context:** Does pod have `CAP_SYS_ADMIN` or `privileged: true`? (Pitfall #5)
-- [ ] **Check fsid uniqueness:** Are any two servers using same fsid? (Pitfall #3)
-- [ ] **Check node affinity:** Is pod on node with Windows mount? `kubectl get pod -o wide` (Pitfall #4)
-- [ ] **Check exports configuration:** Is `NFS_EXPORT_0` env var set correctly?
-- [ ] **Check port accessibility:** Can you telnet to 2049, 32765, 32766, 32767 from client? (Pitfall #6)
-- [ ] **Check NFS version:** Are client and server using compatible versions (v3 vs v4)? (Pitfall #9)
-- [ ] **Check access mode:** Is PVC using `ReadWriteMany` for multi-pod access? (Pitfall #11)
+- [ ] **Check Minikube resources:** `kubectl top node` - is memory >90%? CPU >80%?
+- [ ] **Verify existing services healthy:** Test FTP, SFTP, NFS, HTTP directly (not through dashboard)
+- [ ] **Check WebSocket connections:** `netstat | grep :8080 | wc -l` - is count >100?
+- [ ] **Monitor Kubernetes API rate:** Check apiserver metrics - hitting rate limits?
+- [ ] **Verify RBAC permissions:** `kubectl auth can-i create pods --as=system:serviceaccount:file-simulator:control-plane`
+- [ ] **Check orphaned resources:** `kubectl get all -l app.kubernetes.io/managed-by=control-plane` - unexpected resources?
+- [ ] **File watcher health:** `kubectl logs file-watcher-sidecar` - InternalBufferOverflowException?
+- [ ] **Kafka memory:** `kubectl top pod kafka-0` - is usage >90% of limit?
+- [ ] **Dashboard state consistency:** Compare UI state to `kubectl get pods` - do they match?
+- [ ] **Network policies:** If added, do they block existing server-to-server communication?
 
 ---
 
@@ -560,66 +753,82 @@ When NFS server fails to start or function:
 
 | Pitfall | Confidence | Evidence |
 |---------|------------|----------|
-| #1: Cannot export CIFS/9p/overlay | **HIGH** | Multiple authoritative sources (SUSE, Red Hat, kernel docs), matches observed behavior |
-| #2: emptyDir data loss | **HIGH** | Kubernetes documentation, design specification |
-| #3: fsid conflicts | **HIGH** | Multiple production incident reports, expert blog posts |
-| #4: hostPath node affinity | **HIGH** | Kubernetes design, documented behavior |
-| #5: Privileged security context | **HIGH** | NFS implementation requirement, security documentation |
-| #6: Static port requirements | **MEDIUM** | Community reports, Minikube-specific limitation |
-| #7: 9p performance degradation | **MEDIUM** | Minikube documentation, community experience reports |
-| #8: exportfs state persistence | **HIGH** | NFS documentation, container design patterns |
-| #9: NFS version compatibility | **MEDIUM** | Windows client behavior, community workarounds |
-| #10: DNS resolution | **MEDIUM** | Kubernetes/NFS interaction, documented limitation |
-| #11: RWX access mode | **HIGH** | Kubernetes specification, PVC access mode design |
-| #12: no_root_squash security | **HIGH** | NFS security documentation, best practices |
+| #1: WebSocket connection storms | **HIGH** | Multiple production postmortems from high-scale WebSocket applications; matches described scenario |
+| #2: Orphaned Kubernetes resources | **HIGH** | Official Kubernetes documentation on garbage collection; operator best practices |
+| #3: FileSystemWatcher overflow | **HIGH** | Microsoft official documentation on buffer limits; .NET issue tracker discussions |
+| #4: Kafka memory in Minikube | **HIGH** | Multiple community reports of Kafka OOM in constrained environments; Confluent documentation |
+| #5: React WebSocket state races | **HIGH** | React documentation on state updates; multiple blog posts from production incidents |
+| #6: Missing RBAC permissions | **HIGH** | Kubernetes RBAC specification; common operator pattern |
+| #7: WebSocket connection leaks | **MEDIUM** | React useEffect cleanup pattern; common mistake in community discussions |
+| #8: K8s API rate limiting | **MEDIUM** | Kubernetes API documentation; rate limiting is configurable so thresholds vary |
+| #9: Silent sidecar failure | **MEDIUM** | Kubernetes sidecar patterns; lack of automated health checks is common oversight |
+| #10: Config drift (Helm vs UI) | **MEDIUM** | Helm documentation on resource policies; operator pattern discussions |
+| #11: Kafka retention disk filling | **HIGH** | Kafka configuration documentation; common mistake in dev environments |
+| #12: API backward compatibility | **MEDIUM** | General API design principle; severity depends on client coupling |
 
 ---
 
 ## Gaps and Open Questions
 
-**Verified with authoritative sources:**
-- All critical pitfalls (#1-#4) verified with official documentation or expert sources
-- Moderate pitfalls (#5-#9) have community evidence and technical explanations
-- Minor pitfalls (#10-#12) documented in Kubernetes and NFS specifications
+**Areas of HIGH confidence (v2.0 specific):**
+- All critical pitfalls (#1-#6) verified with authoritative sources or production incident reports
+- Integration risks between new platform and existing v1.0 infrastructure clearly documented
+- Resource constraints in Minikube quantified based on v1.0 baseline measurements
 
-**Remaining uncertainties:**
-- Performance benchmarks for 9p vs other mount types (LOW confidence - need empirical testing)
-- Exact file count threshold for 9p degradation (documented as ">600" but varies by use case)
-- Best practice for rsync sidecar implementation (no authoritative pattern found)
+**Areas requiring validation during implementation:**
+- Exact WebSocket connection limit before performance degradation (varies by backend technology)
+- FileSystemWatcher buffer overflow threshold with Windows + Minikube 9p mount (need empirical testing)
+- Kafka minimum viable resource allocation for single-broker development (512MB heap vs 768MB vs 1GB)
+- React state management patterns with multiple concurrent WebSocket streams (need prototype)
 
-**Recommended validation:**
-- Test fsid conflict scenarios explicitly (verify timing and symptoms)
-- Benchmark 9p performance with realistic file counts for this project
-- Prototype rsync sidecar pattern and measure sync latency/reliability
+**Recommended validation activities:**
+- **Phase 1:** Load test WebSocket reconnection scenarios (simulate 50 clients)
+- **Phase 2:** Stress test FileSystemWatcher with 1000+ files created in 10s burst
+- **Phase 4:** Profile Kafka actual memory usage in Minikube under development workload
+- **Throughout:** Monitor v1.0 protocol servers (FTP, SFTP, NAS) for regressions after each phase
 
 ---
 
 ## Sources
 
-### Critical Pitfall Sources
-- [SUSE: exportfs returns error "does not support NFS export"](https://www.suse.com/support/kb/doc/?id=000021721)
-- [Linux NFS: NFS re-export](https://wiki.linux-nfs.org/wiki/index.php/NFS_re-export)
-- [Arch Linux: Can't export overlayfs with NFS](https://bbs.archlinux.org/viewtopic.php?id=192585)
-- [Kubernetes: Volumes - emptyDir](https://kubernetes.io/docs/concepts/storage/volumes/)
-- [Earl C. Ruby III: Setting up NFS FSID for multiple networks](https://earlruby.org/2022/01/setting-up-nfs-fsid-for-multiple-networks/)
-- [Red Hat: How do I configure the fsid option in /etc/exports?](https://access.redhat.com/solutions/548083)
-- [Kubernetes: Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/)
+### WebSocket & Real-Time Communication
+- [WebSockets on production with Node.js - Voodoo Engineering](https://medium.com/voodoo-engineering/websockets-on-production-with-node-js-bdc82d07bb9f)
+- [How I scaled a legacy NodeJS application handling over 40k active Long-lived WebSocket connections](https://khelechy.medium.com/how-i-scaled-a-legacy-nodejs-application-handling-over-40k-active-long-lived-websocket-connections-aa11b43e0db0)
+- [Real-time State Management in React Using WebSockets](https://moldstud.com/articles/p-real-time-state-management-in-react-using-websockets-boost-your-apps-performance)
+- [Handling Race Conditions in Real-Time Apps](https://dev.to/mattlewandowski93/handling-race-conditions-in-real-time-apps-49c8)
+- [Handling State Update Race Conditions in React](https://medium.com/cyberark-engineering/handling-state-update-race-conditions-in-react-8e6c95b74c17)
+- [Using WebSockets with React Query - TkDodo's blog](https://tkdodo.eu/blog/using-web-sockets-with-react-query)
 
-### Moderate Pitfall Sources
-- [Kubernetes: Security Context Best Practices](https://www.wiz.io/academy/kubernetes-security-context-best-practices)
-- [ehough/docker-nfs-server GitHub](https://github.com/ehough/docker-nfs-server)
-- [GitHub: minikube nfs mount / bad option](https://github.com/kubernetes/minikube/issues/8514)
-- [Minikube: Mounting filesystems](https://minikube.sigs.k8s.io/docs/handbook/mount/)
-- [TheLinuxCode: Kubernetes Minikube 2026 Playbook](https://thelinuxcode.com/kubernetes-minikube-a-pragmatic-2026-playbook/)
-- [TrinixSoft: NFS Server Maintenance](https://blog.trinixcs.com/index.php/2019/05/17/nfs-server-maintenance-reloading-the-etc-exports-without-restarting-the-server/)
-- [GitHub: Minikube NFS mount to WinNFSd](https://github.com/winnfsd/winnfsd/issues/68)
+### Kubernetes RBAC & Resource Management
+- [Using RBAC Authorization - Kubernetes Official Documentation](https://kubernetes.io/docs/reference/access-authn-authz/rbac/)
+- [Kubernetes ServiceAccount and RBAC: Creating Pods with Controlled Permissions](https://www.jeeviacademy.com/kubernetes-serviceaccount-and-rbac-creating-pods-with-controlled-permissions/)
+- [Kubernetes RBAC: the Complete Best Practices Guide - ARMO](https://www.armosec.io/blog/a-guide-for-using-kubernetes-rbac/)
+- [Implementing Kubernetes RBAC: Best Practices and Examples](https://trilio.io/kubernetes-best-practices/kubernetes-rbac/)
+- [Orphaned Resources in Kubernetes - StackState](https://www.stackstate.com/blog/orphaned-resources-in-kubernetes-detection-impact-and-prevention-tips/)
+- [Garbage Collection - Kubernetes](https://kubernetes.io/docs/concepts/architecture/garbage-collection/)
+- [Owner References - Kubernetes Training](https://www.nakamasato.com/kubernetes-training/kubernetes-features/owner-references/)
+- [Ordered cleanup with OwnerReference - Kube by Example](https://kubebyexample.com/learning-paths/operator-framework/operator-sdk-go/ordered-cleanup-ownerreference)
 
-### Minor Pitfall Sources
-- [GitHub: nfs: Failed to resolve server](https://github.com/kubernetes/minikube/issues/3417)
-- [OpenEBS: Provisioning NFS PVCs](https://openebs.io/docs/Solutioning/read-write-many/nfspvc)
-- [Red Hat: The /etc/exports Configuration File](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/5/html/deployment_guide/s1-nfs-server-config-exports)
+### Windows FileSystemWatcher
+- [FileSystemWatcher not working when large amount of files are changed - Microsoft Learn](https://learn.microsoft.com/en-us/archive/msdn-technet-forums/60b12c2e-9dc8-4de4-be2d-bf8345bdaaee)
+- [Tamed FileSystemWatcher - Peter Meinl](https://petermeinl.wordpress.com/2015/05/18/tamed-filesystemwatcher/)
+- [FileSystemWatcher Class - .NET Microsoft Learn](https://learn.microsoft.com/en-us/dotnet/fundamentals/runtime-libraries/system-io-filesystemwatcher)
+- [FileSystemWatcher Follies - Microsoft Learn](https://learn.microsoft.com/en-us/archive/blogs/winsdk/filesystemwatcher-follies)
 
-### Additional Context
-- [Kubernetes: HostPath and Pod Scheduling](https://arun944.hashnode.dev/kubernetes-volumes-hostpath)
-- [Understanding Kubernetes Volumes: emptyDir, hostPath, NFS](https://getting-started-with-kubernetes.hashnode.dev/understanding-kubernetes-volumes-using-emptydir-hostpath-and-nfs-for-persistent-storage)
-- [Linux Kernel: Overlay Filesystem](https://docs.kernel.org/filesystems/overlayfs.html)
+### Kafka in Kubernetes
+- [Solving Java Out of Memory Issues in Kafka-Powered Microservices](https://medium.com/@msbreuer/solving-java-out-of-memory-issues-in-kafka-powered-microservices-c6911882c174)
+- [Kafka pod is constantly created and destroyed - GitHub Issue](https://github.com/banzaicloud/koperator/issues/112)
+- [Configure CPU and Memory for Confluent Platform in Kubernetes](https://docs.confluent.io/operator/current/co-resources.html)
+- [Running Kafka in Kubernetes with KRaft mode](https://rafael-natali.medium.com/running-kafka-in-kubernetes-with-kraft-mode-549d22ab31b0)
+- [Deploying Apache Kafka on Kubernetes with KRaft Mode: A Complete Guide](https://medium.com/@soumeng.kol/deploying-apache-kafka-on-kubernetes-with-kraft-mode-a-complete-guide-2edef6d9fe91)
+
+### Additional References
+- [docker-windows-volume-watcher - GitHub](https://github.com/merofeev/docker-windows-volume-watcher)
+- [Kubernetes Sidecar Containers: Use Cases and Best Practices](https://www.groundcover.com/blog/kubernetes-sidecar)
+- [Auto-Pruning Kubernetes Resources with Harness](https://www.harness.io/blog/auto-pruning-orphaned-resources)
+
+---
+
+*Pitfalls research for: File Simulator Suite v2.0 Simulator Control Platform*
+*Researched: 2026-02-02*
+*Focus: Integration risks when adding monitoring/control to stable v1.0 infrastructure*

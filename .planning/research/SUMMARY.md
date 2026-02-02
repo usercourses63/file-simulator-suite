@@ -1,250 +1,503 @@
 # Project Research Summary
 
-**Project:** File Simulator Suite - Multi-NAS Capability
-**Domain:** Development environment NAS/NFS simulation with Windows integration
-**Researched:** 2026-01-29
+**Project:** File Simulator Suite - v2.0 Simulator Control Platform
+**Domain:** Real-time monitoring and control platform for Kubernetes infrastructure testing
+**Researched:** 2026-02-02
 **Confidence:** HIGH
 
 ## Executive Summary
 
-The File Simulator Suite requires expanding from a single NFS server to 7 independent NAS servers that replicate production topology (3 input, 1 backup, 3 output). The core technical challenge is that **Linux NFS servers cannot export Windows-mounted directories** due to a fundamental kernel limitation: CIFS/9p filesystems lack the filehandle support required by NFS export tables.
+The File Simulator Suite v2.0 adds a comprehensive monitoring and control platform to the existing stable v1.0 infrastructure (7 NAS servers + 6 protocol servers). Research reveals that successful control platforms prioritize three capabilities: real-time observability via WebSocket streaming, self-service operations through golden paths, and comprehensive event tracking with audit trails. The recommended approach uses ASP.NET Core SignalR for real-time backend (native to existing .NET 9 stack), React + Vite for dashboard frontend, SQLite for embedded historical data, and minimal Kafka (single-broker Strimzi) for pub/sub testing.
 
-The recommended approach is an **init container sync pattern with userspace NFS (unfs3)**. This architecture uses init containers to copy Windows hostPath data into local emptyDir volumes, which are then exported by unfs3 (a userspace NFS server that doesn't require privileged mode). Deploy 7 independent NAS pods via Helm range loop with per-instance PV/PVC storage isolation, following the project's proven multi-instance pattern from FTP/SFTP deployments.
+The critical architectural decision is deploying the control plane in the same namespace as existing services (not separate cluster/namespace) to simplify RBAC and service discovery, while using resource quotas to prevent control platform features from starving existing FTP/SFTP/NAS servers. The stack minimizes new dependencies by leveraging built-in ASP.NET Core SignalR (no separate WebSocket server), embedded SQLite (no PostgreSQL container), and .NET KubernetesClient for dynamic resource management.
 
-The critical risk is bidirectional data synchronization: while the init container pattern solves the export limitation, it introduces sync delay and potential data loss on pod restart. Mitigation involves optional sidecar containers for continuous sync and clear documentation of the trade-offs. This architecture prioritizes production parity (7 independent NAS servers with semantic names) over perfect Windows integration.
+Key risks center on integration failures that break existing working infrastructure: WebSocket connection storms overwhelming existing servers during reconnection, Kafka's JVM memory consumption pushing Minikube over 8GB limit causing OOM kills, Windows FileSystemWatcher buffer overflows losing file events, and orphaned Kubernetes resources when ownerReferences not set properly. Mitigation requires careful resource planning (increase Minikube to 12GB if adding Kafka, configure minimal JVM heap 512MB), connection management patterns (exponential backoff, connection limits), and testing with v1.0 stability as success criterion.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The stack research identified a fundamental blocker: the current erichough/nfs-server cannot export Windows-mounted hostPath volumes because Linux kernel NFS requires filesystem features (encode_fh) that CIFS/9p don't provide. Multiple authoritative sources (SUSE, Red Hat, kernel docs) confirm this is an unsolvable kernel limitation.
+ASP.NET Core 9.0 provides the foundation with built-in SignalR for real-time WebSocket communication, eliminating need for separate Node.js/Socket.IO server. React 19.x with Vite build tool delivers the fastest modern frontend development experience. SQLite via EF Core 10.0.2 provides embedded database (no separate container) perfect for development/testing simulators. Strimzi Kafka Operator (0.50.0) delivers minimal Kafka cluster in KRaft mode (no ZooKeeper) via standard Kubernetes patterns. .NET KubernetesClient (18.0.13) enables dynamic pod orchestration using official client library.
 
 **Core technologies:**
-- **unfs3** (userspace NFS server): No privileged mode required, works in containers, avoids kernel export limitations
-- **Init Container + rsync**: Copy Windows hostPath to local emptyDir before NFS export (bypasses export limitation)
-- **StatefulSet**: Deploy 7 independent NAS pods with stable identities and per-instance volumes
-- **emptyDir + hostPath volumes**: emptyDir for NFS export (exportable), hostPath for Windows access (read-only mount)
-- **Per-instance PV/PVC**: Isolate storage between NAS servers (nas-input-1 cannot see nas-output-1 data)
+- **ASP.NET Core SignalR 9.0**: Real-time WebSocket backend — built into existing .NET 9 stack, automatic connection management, hub pattern for broadcasting events
+- **React 19.x + Vite 6.x**: Dashboard frontend UI — de facto standard for interactive dashboards, instant HMR, TypeScript native
+- **EF Core + SQLite 10.0.2**: Historical data persistence — embedded database with zero configuration, no separate container, cross-platform
+- **Strimzi Kafka 0.50.0**: Minimal Kafka for testing — Helm-based, single-broker mode, KRaft (no ZooKeeper), sufficient for pub/sub validation
+- **KubernetesClient 18.0.13**: Dynamic orchestration — official .NET client, create/delete deployments at runtime, watch pod events
 
-**Critical version requirements:**
-- Kubernetes 1.14+ for StatefulSet features
-- Helm 3.8+ for range loop YAML separator handling
-- Alpine 3.19 for rsync init containers
+**Critical version notes:**
+- All packages are 2025-2026 releases confirmed compatible with .NET 9/10 and React 19
+- Avoid Create React App (deprecated 2023), use Vite
+- Avoid ZooKeeper with Kafka (deprecated in 3.x+), use KRaft mode
+- Avoid Redux Toolkit (overkill), use Zustand for client state + React Query for server state
 
 ### Expected Features
 
-Research reveals three categories: table stakes (users expect), differentiators (production parity value), and anti-features (common mistakes to avoid).
+The platform serves three personas with distinct needs: developers debugging microservices ("Why isn't my app seeing the file?"), QA teams orchestrating test environments, and operations monitoring health. Research indicates that v2.0 must deliver observability (monitoring existing servers) and controllability (file operations, Kafka topics) as minimum viable offering, with advanced features like dynamic server management deferred until core is proven.
 
 **Must have (table stakes):**
-- NFS export per NAS server with unique DNS names
-- Windows directory mapping (testers place files, systems read via NFS)
-- NFSv4 support with subdirectory exports
-- PV/PVC configuration matching production exactly
-- Files survive pod restarts (not plain emptyDir)
+- Real-time monitoring dashboard with health status for all protocol servers — users need instant visibility into what's working
+- Protocol connectivity checks (FTP, SFTP, HTTP, S3, SMB, NFS) — essential validation that servers are reachable
+- File browser UI with upload/download/delete operations — core file manipulation for testing scenarios
+- Configuration export/import (JSON format) — environment reproducibility for QA teams
+- Basic Kafka simulator (single broker) — pub/sub testing capability
+- File event tracking via Windows directory watching — debugging visibility into file system activity
+- Audit logging for all operations — compliance and debugging requirement
 
 **Should have (competitive):**
-- 7 NAS topology exactly matching production (3 input + 1 backup + 3 output)
-- Role-based semantic naming (nas-input-1, nas-backup, nas-output-2)
-- Per-NAS directory isolation (separate Windows subdirectories)
-- Independent NAS configuration (different export options per server)
-- Configuration template library (pre-built PV/PVC manifests)
+- Dynamic server management (add/remove FTP/SFTP at runtime) — self-service without kubectl commands
+- Server templates library (common configurations) — quick setup for standard topologies
+- Historical metrics dashboard (7-day retention) — trend analysis for performance debugging
+- Event filtering and search — finding relevant events in high-volume streams
+- Kafka consumer group monitoring — debugging stuck consumers
+- Message browser for Kafka — inspect message content without external tools
 
 **Defer (v2+):**
-- Dynamic subdirectory provisioning (static pre-configuration sufficient)
-- Cross-protocol file sync (each protocol independent by design)
-- Load balancing across NAS servers (production routes explicitly by name)
-- Real-time Windows filesystem events (polling acceptable for dev environment)
+- Resource auto-scaling based on load — requires usage data to tune thresholds
+- Drift detection and auto-remediation — complex feature, low initial ROI
+- Test execution correlation (linking metrics to test runs) — requires integration with external test frameworks
+- Anomaly detection with ML — requires 30+ days historical data to train models
+- Multi-cluster management — developers typically run single local cluster
 
-**Critical anti-pattern identified:** Treating 7 NAS servers as a cluster with shared state. Production systems connect to specific NAS servers by name for specific purposes. Dev must replicate this exactness, not abstract it away.
+**Anti-features (deliberately avoid):**
+- Built-in authentication/SSO — use Kubernetes RBAC for cluster access, basic auth for external exposure only
+- Real-time cross-protocol sync — each protocol can intentionally have different files for testing isolation
+- Production-grade Kafka cluster (3+ brokers) — over-engineering for testing, adds complexity and cost
+- Complex RBAC within platform — testing platform needs simple, fast operations
 
 ### Architecture Approach
 
-The architecture research evaluated multiple patterns and recommends **Helm range loop with per-instance PV/PVC**, following the project's existing ftp-multi.yaml and sftp-multi.yaml patterns. This proven approach generates 7 independent deployments from a single values array.
+The recommended architecture extends the existing Helm umbrella chart pattern with a new control-plane subchart, deploying all components in the same file-simulator namespace for simplified networking and RBAC. The frontend layer (React SPA) communicates with backend API via REST for CRUD operations and SignalR WebSocket for real-time updates. The backend layer (ASP.NET Core) integrates Kubernetes client for dynamic resource management, FileSystemWatcher for Windows directory monitoring, and health check services for protocol connectivity validation. All components share the existing PVC (hostPath to C:\simulator-data) for file operations.
 
 **Major components:**
-1. **Values configuration** — Array of 7 NAS instances with name, nodePort, hostPath, storageSize parameters
-2. **Storage template** — PV/PVC pairs per instance (nas-storage-multi.yaml) with unique hostPath bindings
-3. **Deployment template** — StatefulSet or 7 Deployments with init container sync + unfs3 main container (nas-multi.yaml)
-4. **Service template** — Per-instance ClusterIP services with predictable DNS (nas-input-1.file-simulator.svc.cluster.local)
+1. **React Dashboard** (Nginx container) — User interface for monitoring and control with real-time updates via SignalR client hooks
+2. **Control API** (ASP.NET Core) — Backend orchestrator with SignalR hub, REST endpoints, Kubernetes client integration, health check workers
+3. **SignalR Hub** — Real-time bi-directional communication broadcasting health status, file events, metrics updates to all connected dashboards
+4. **Kubernetes Service** — Dynamic resource management creating/deleting FTP/SFTP/NAS deployments at runtime via KubernetesClient library
+5. **File Watcher** — Windows directory monitoring with FileSystemWatcher detecting file changes and streaming events via SignalR
+6. **Time-Series DB** — SQLite embedded database (dev) or Prometheus (production) for historical metrics with 7-day retention
+7. **Kafka Broker** — Strimzi-managed single-broker cluster for event streaming and pub/sub testing workflows
 
-**Data flow pattern:**
-```
-Windows: C:\simulator-data\nas-input-1\
-    ↓ (Minikube 9p mount)
-hostPath: /mnt/simulator-data/nas-input-1 (READ-ONLY)
-    ↓ (Init container rsync)
-emptyDir: /data (LOCAL FILESYSTEM)
-    ↓ (unfs3 export)
-NFS: nas-input-1:/data
-```
-
-**Critical design decisions:**
-- **emptyDir for NFS exports**: Required because hostPath cannot be exported
-- **PVC for Windows access**: Per-instance PVC mounts hostPath for file visibility
-- **Init container sync**: One-time copy on pod startup (simple, good for testing)
-- **Optional sidecar sync**: Continuous rsync for bidirectional (output NAS needs this)
-- **Scope management in Helm**: Always use `$` for root context in range loops, `.` for iteration context
+**Key patterns:**
+- SignalR with Redis backplane for multi-pod scale-out (optional for single-pod dev)
+- Kubernetes dynamic resource management with ownerReferences for garbage collection
+- React hooks for SignalR connection management with automatic reconnection
+- Time-series metrics with batched writes (reduce database load 10-100x)
+- File watcher with debouncing (1s delay to avoid event floods)
+- Umbrella Helm chart pattern (single release, atomic deployments, unified configuration)
 
 ### Critical Pitfalls
 
-Research identified 12 pitfalls across critical/moderate/minor severity. Top 5 with prevention strategies:
+Research identified integration risks as highest priority — failures that break existing stable v1.0 infrastructure. The top pitfalls focus on resource exhaustion, state synchronization, and missing cleanup patterns.
 
-1. **NFS Cannot Export CIFS/9p Filesystems** — NFS crashes with "does not support NFS export" when hostPath is Windows-mounted. Prevention: Use emptyDir + sync pattern; never mount Windows directories directly as NFS export path; verify filesystem type with `df -T`.
+1. **WebSocket connection storms during reconnection** — Multiple clients reconnecting simultaneously trigger full state synchronization, overwhelming backend with duplicate queries and starving existing FTP/SFTP servers of CPU/memory. Prevention: exponential backoff with jitter, incremental state sync (send only changes since last connection), connection admission control (max 50 concurrent), separate resource quotas for control plane.
 
-2. **emptyDir Data Loss on Pod Restart** — Plain emptyDir loses all data on pod termination, breaking Windows-as-source-of-truth. Prevention: Implement bidirectional sync with rsync sidecar; document limitations prominently; test pod restart scenarios.
+2. **Orphaned Kubernetes resources without ownerReferences** — Dynamically created FTP/SFTP servers remain after control plane deletion, consuming resources and causing port conflicts. Prevention: ALWAYS call `controllerutil.SetControllerReference()` before creating resources, validate in integration tests, use labels for resource tracking, implement finalizers for custom cleanup.
 
-3. **Multiple NFS Servers with Conflicting fsid Values** — Duplicate fsid values cause mysterious performance degradation or mount wrong filesystem. Prevention: Assign unique fsid per NAS (nas-input-1=1, nas-input-2=2, etc.); template fsid in Helm based on instance index; test all 7 servers simultaneously.
+3. **Windows FileSystemWatcher buffer overflow** — High-volume directories (1000+ files) exceed 8KB buffer causing InternalBufferOverflowException and lost events. Prevention: increase buffer to 64KB maximum, batch events with 100-200ms debounce, queue events to Channel for async processing, filter unnecessary events (ignore LastAccess, Security).
 
-4. **hostPath Pod Rescheduling to Different Node** — Pod rescheduled to different node loses Windows mount access (hostPath is node-specific). Prevention: Use nodeSelector to pin pods to Minikube node; configure StatefulSet with node affinity; document this requirement.
+4. **Kafka consuming excessive memory in Minikube** — Single-broker Kafka with default 1GB heap plus off-heap memory consumes 1.5-2GB RAM, pushing Minikube over 8GB limit and causing OOM kills of existing services. Prevention: minimal JVM heap 512MB for dev, match container limits to heap, single partition/replica, configure `offsets.topic.replication.factor=1`, increase Minikube to 12GB if adding Kafka.
 
-5. **NFS Server Requires Privileged Security Context** — erichough/nfs-server needs CAP_SYS_ADMIN, but security policies often prohibit this. Prevention: Use unfs3 instead (userspace, no privilege required); request SCC exception early if using privileged server; minimize privilege scope.
-
-**Additional moderate pitfalls:**
-- Static port requirements for RPC services (Minikube + Windows NodePort access)
-- Minikube 9p mount performance degradation with >600 files
-- exportfs state not persistent (use env vars, not runtime commands)
-- NFSv3 vs NFSv4 compatibility (Windows clients may need explicit version)
+5. **React WebSocket state update race conditions** — Dashboard shows incorrect server state (FTP "running" when stopped) due to async updates overwriting with stale data. Prevention: fetch state then subscribe to WebSocket then refetch to catch gap events (3-step pattern), use functional state updates `setState(prev => merge(prev, update))`, sequence events with version numbers, implement event cache during initial load.
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure balances technical dependencies, risk mitigation, and incremental validation:
+Based on research, the recommended phase structure prioritizes foundation before features, with strict testing of v1.0 stability as success criterion at each phase. The control platform introduces 4 new pods (control API, dashboard, Kafka, Redis) plus dynamic resources, requiring careful resource management and validation that existing servers remain healthy.
 
-### Phase 1: Single Multi-NAS Deployment (Validation)
-**Rationale:** Test the init container + unfs3 pattern with ONE NAS server before scaling to 7. Validates the core architecture without complexity of multiple instances.
+### Phase 1: Backend API Foundation with SignalR
+**Rationale:** Establish backend infrastructure and WebSocket patterns before building UI features. This phase validates that control plane can coexist with existing services without resource conflicts.
 
 **Delivers:**
-- Helm templates for multi-NAS (nas-storage-multi.yaml, nas-multi.yaml)
-- Init container rsync script with error handling
-- Single test instance (nas-test-1) deployed and verified
-- Windows directory sync confirmed working
+- ASP.NET Core Control API project with Dockerfile
+- SignalR hub setup (without Redis for single-pod dev)
+- Basic REST endpoints (list servers, health status)
+- Kubernetes client integration (KubernetesClient NuGet)
+- RBAC configuration (ServiceAccount, Role, RoleBinding)
+- Helm subchart for control plane with resource limits
+- Integration tests validating v1.0 servers remain healthy
+
+**Addresses features:**
+- Backend API with health check system (foundation for all features)
+- Protocol connectivity checks (FTP, SFTP, HTTP, S3, SMB, NFS)
+
+**Avoids pitfalls:**
+- Pitfall #1 (connection storms): Implement connection management patterns from start
+- Pitfall #5 (state races): Establish state synchronization patterns before UI complexity
+- Pitfall #6 (RBAC): Configure permissions before attempting resource operations
+
+**Resource planning:**
+- Control API: 256Mi request, 1Gi limit, 200m CPU request, 1 CPU limit
+- Deploy in file-simulator namespace, verify existing pods not evicted
+- Test under load: 50 concurrent connections, existing servers remain responsive
+
+**Complexity:** MEDIUM (Kubernetes client integration, RBAC configuration)
+**Research flag:** NO — Standard ASP.NET Core + Kubernetes patterns are well-documented
+
+---
+
+### Phase 2: Real-Time Monitoring Dashboard
+**Rationale:** Build on stable backend to deliver immediate value (visibility) before adding controllability. Dashboard validates SignalR integration and provides user feedback loop for subsequent features.
+
+**Delivers:**
+- React 19.x dashboard with Vite build
+- SignalR client integration (custom useSignalR hook)
+- Real-time health status display with connection state handling
+- Metrics visualization (Recharts for line/pie charts)
+- Nginx container for serving static files
+- WebSocket connection management with exponential backoff
+
+**Addresses features:**
+- Real-time monitoring dashboard (WebSocket-based)
+- Protocol connectivity checks (visualize health data from Phase 1)
+
+**Uses stack:**
+- React 19.x + Vite 6.x (frontend framework + build tool)
+- @microsoft/signalr 9.0.0 (JavaScript client)
+- recharts 3.6.0 (charting library)
+- zustand 5.x (client state management)
+
+**Implements architecture:**
+- React Dashboard component with SignalR hooks
+- Connection state handling (connecting/connected/disconnected)
+- Real-time event streaming from backend to UI
+
+**Avoids pitfalls:**
+- Pitfall #7 (connection leaks): Implement cleanup function in useEffect from start
+- Pitfall #5 (state races): Use 3-step pattern (fetch, subscribe, refetch) for initial load
+
+**Resource planning:**
+- Dashboard (Nginx): 64Mi request, 128Mi limit, 50m CPU
+- Total new: 320Mi request, 1.1Gi limit (within 8GB Minikube)
+
+**Complexity:** MEDIUM (WebSocket state management, real-time UI updates)
+**Research flag:** NO — React + SignalR patterns are well-established
+
+---
+
+### Phase 3: File Operations and Event Streaming
+**Rationale:** Add file manipulation capabilities (controllability) and Windows directory watching. This phase introduces FileSystemWatcher complexity and requires careful buffer management.
+
+**Delivers:**
+- File browser UI component (tree view with breadcrumbs)
+- Upload/download/delete operations with progress indicators
+- Windows FileSystemWatcher service with debouncing
+- File event streaming via SignalR (created/modified/deleted)
+- Event log panel in dashboard (recent changes)
+- Audit logging for file operations
+
+**Addresses features:**
+- File browser UI with upload/download/delete
+- File event tracking (Windows directory watching)
+- Audit logging for all operations
+
+**Uses stack:**
+- System.IO.FileSystemWatcher (built-in .NET)
+- SignalR for event streaming
+- React file upload components
+
+**Implements architecture:**
+- FileWatcherService (debounced event emission)
+- File API endpoints (CRUD operations)
+- Event log store (Zustand) in dashboard
+
+**Avoids pitfalls:**
+- Pitfall #3 (FileSystemWatcher overflow): 64KB buffer, batching, debounce 1s, async queue
+- Pitfall #9 (silent sidecar failure): Add liveness probe for file watcher, heartbeat metrics
+
+**Testing requirements:**
+- Stress test: create 1000 files in 10s, verify all events captured
+- Verify InternalBufferOverflowException handled gracefully
+- Confirm existing NAS servers continue serving files during high event volume
+
+**Complexity:** MEDIUM-HIGH (FileSystemWatcher tuning, event buffering)
+**Research flag:** MAYBE — FileSystemWatcher with Windows + Minikube 9p mount may need empirical testing for buffer tuning
+
+---
+
+### Phase 4: Historical Metrics and Storage
+**Rationale:** Add time-series data persistence for trend analysis. SQLite provides embedded solution without additional container complexity.
+
+**Delivers:**
+- EF Core DbContext with Metric entity
+- SQLite database with migrations
+- Metrics collection background worker (batched writes)
+- REST API for historical queries (last 24h, last 7d)
+- Historical trends dashboard page (line charts)
+- 7-day retention policy with auto-cleanup
+
+**Addresses features:**
+- Historical data retention (7-day minimum)
+- Usage metrics (connection counts, bandwidth, errors)
+
+**Uses stack:**
+- Microsoft.EntityFrameworkCore.Sqlite 10.0.2
+- Background worker with batched writes (100 metrics per flush, 30s interval)
+
+**Implements architecture:**
+- Time-Series DB component (SQLite embedded)
+- MetricsService with batched writes pattern
+- Background worker for periodic collection
+
+**Avoids pitfalls:**
+- Batched writes prevent database lock under load (>100 writes/sec)
+- SQLite file on PVC for persistence across pod restarts
+
+**Resource planning:**
+- SQLite database file: ~100MB for 7 days of 5s granularity metrics
+- PVC storage sufficient (10Gi existing allocation)
+
+**Complexity:** LOW-MEDIUM (EF Core setup, batch write pattern)
+**Research flag:** NO — EF Core + SQLite is well-documented, established pattern
+
+---
+
+### Phase 5: Kafka Integration for Event Streaming
+**Rationale:** Add pub/sub testing capability. Kafka introduces highest resource cost and requires careful memory management. Deploy after core features proven stable.
+
+**Delivers:**
+- Strimzi Kafka operator deployment (Helm)
+- Single-broker Kafka cluster (KRaft mode)
+- Topic creation/deletion API
+- Kafka producer in Control API (file events to topic)
+- Kafka consumer for event replay
+- Basic topic management UI
+
+**Addresses features:**
+- Basic Kafka simulator (single broker)
+- Topic creation/deletion UI
+
+**Uses stack:**
+- Strimzi Kafka Operator 0.50.0
+- Kafka 3.9+ (KRaft mode, no ZooKeeper)
+- Confluent.Kafka .NET client
+
+**Implements architecture:**
+- Kafka Broker component (StatefulSet)
+- Event streaming integration (file events → Kafka → consumers)
+
+**Avoids pitfalls:**
+- Pitfall #4 (Kafka memory): Minimal JVM heap 512MB, container limit 768Mi, single partition/replica, `offsets.topic.replication.factor=1`
+- Pitfall #11 (disk retention): Set `retention.ms=86400000` (1 day) or `retention.bytes=1073741824` (1GB)
+
+**Resource planning:**
+- Kafka broker: 512Mi request, 768Mi limit, 250m CPU
+- Strimzi operator: 128Mi request, 256Mi limit, 50m CPU
+- **CRITICAL:** Increase Minikube to 12GB memory before this phase
+- Combined total: ~2.2Gi new + 2.85Gi existing = 5Gi (within 12GB with headroom)
+
+**Testing requirements:**
+- Monitor `kubectl top pod` before/after Kafka deployment
+- Verify existing FTP/SFTP/NAS servers not evicted
+- Validate Kafka doesn't OOMKill in tight loop
+
+**Complexity:** HIGH (JVM tuning, resource constraints, Strimzi operator)
+**Research flag:** MAYBE — Kafka minimal resource allocation needs empirical validation in Minikube
+
+---
+
+### Phase 6: Dynamic Server Management
+**Rationale:** Most complex feature requiring stable foundation. Enables self-service infrastructure without kubectl commands. Deploy last after all monitoring/control features proven.
+
+**Delivers:**
+- KubernetesService for creating/deleting Deployments + Services
+- Server templates library (common FTP/SFTP/NAS configurations)
+- Add/remove server UI flow with confirmation dialogs
+- ownerReferences for garbage collection
+- Safe operation guardrails (typing server name for destructive ops)
+- Configuration export/import with Git-backed versioning
+
+**Addresses features:**
+- Dynamic server management (add/remove at runtime)
+- Server templates library
+- Configuration export/import (JSON)
+- Safe operation guardrails
+
+**Uses stack:**
+- KubernetesClient 18.0.13 (.NET Kubernetes API client)
+- RBAC with create/update/delete permissions
+
+**Implements architecture:**
+- Kubernetes Service component (dynamic resource management)
+- Template library with best-practice configurations
+- Golden paths pattern (curated templates make secure choice easiest)
+
+**Avoids pitfalls:**
+- Pitfall #2 (orphaned resources): ALWAYS set ownerReferences before creating resources, integration test validates cleanup
+- Pitfall #6 (RBAC): Explicit Role with all needed verbs (get, list, watch, create, update, patch, delete)
+- Pitfall #10 (config drift): Separate static (Helm) vs dynamic (control-plane) resources with labels, use `helm.sh/resource-policy: keep`
+
+**Testing requirements:**
+- Integration test: create server dynamically, delete parent, verify child deleted within 30s
+- Verify `kubectl auth can-i create pods --as=system:serviceaccount:file-simulator:control-plane`
+- Test NodePort allocation (prevent conflicts with existing servers)
+
+**Complexity:** HIGH (Kubernetes API complexity, RBAC, resource lifecycle)
+**Research flag:** NO — Official KubernetesClient documentation comprehensive, operator patterns established
+
+---
+
+### Phase 7: Production Readiness and Polish
+**Rationale:** Final hardening for stability, error handling, monitoring, and documentation.
+
+**Delivers:**
+- Redis backplane for SignalR multi-pod scale-out
+- Alert rules configuration (health check failures, buffer overflows)
+- Comprehensive error boundaries in React
+- User-friendly error messages (translate Kubernetes errors to user terms)
+- End-to-end testing suite
+- Documentation for Minikube setup, Helm deployment, troubleshooting
 
 **Addresses:**
-- NFS export per server (table stakes feature)
-- Windows directory mapping (table stakes feature)
-- Avoid Pitfall #1 (cannot export hostPath directly)
+- Multi-pod scalability (Redis backplane)
+- Alert rules and notifications
+- Production logging and monitoring
+- Deployment documentation
 
-**Technical validation checklist:**
-- File written to Windows visible via NFS mount within 30 seconds
-- Pod restart preserves data (init container re-syncs)
-- unfs3 runs without privileged mode
-- NFS mount succeeds from client pod
+**Resource planning:**
+- Redis: 128Mi request, 256Mi limit, 50m CPU
+- Final total: ~5.5Gi within 12GB Minikube comfortably
 
-### Phase 2: Expand to 7 Independent NAS Servers
-**Rationale:** With core pattern validated, scale to full production topology. This phase proves multi-instance Helm templating and resource isolation.
+**Complexity:** MEDIUM (Redis configuration, E2E testing, documentation)
+**Research flag:** NO — Redis + SignalR backplane well-documented
 
-**Delivers:**
-- 7 NAS server pods (nas-input-1/2/3, nas-backup, nas-output-1/2/3)
-- Unique service DNS per NAS with sequential NodePorts (32150-32156)
-- Per-instance PV/PVC with isolated Windows subdirectories
-- Storage isolation verified (nas-input-1 cannot access nas-output-1 data)
-
-**Uses:**
-- StatefulSet with 7 replicas (ARCHITECTURE.md pattern)
-- Helm range loop over nasServers array (existing ftp-multi.yaml pattern)
-- Unique fsid per NAS (Pitfall #3 prevention)
-
-**Avoids:**
-- Pitfall #3 (duplicate fsid values causing performance degradation)
-- Pitfall #4 (hostPath rescheduling via nodeAffinity)
-- Single NAS with 7 exports anti-pattern (breaks production parity)
-
-### Phase 3: Bidirectional Sync for Output NAS
-**Rationale:** Input NAS servers only need one-way sync (Windows → emptyDir). Output NAS servers need bidirectional sync so systems can write files that testers retrieve on Windows.
-
-**Delivers:**
-- Sidecar rsync container for continuous sync (emptyDir → Windows)
-- Bidirectional sync enabled for nas-output-1/2/3 and nas-backup
-- Polling-based sync (inotify doesn't work over 9p mounts)
-- Sync interval configurable (default 30 seconds)
-
-**Implements:**
-- Cross-NAS file sharing simulation (FEATURES.md differentiator)
-- End-to-end workflow validation (system writes → tester retrieves)
-
-**Avoids:**
-- Pitfall #2 (data loss on pod restart) for output directories
-- Real-time filesystem events anti-feature (polling sufficient)
-
-### Phase 4: Configuration Templates and Documentation
-**Rationale:** With working infrastructure, provide developer-friendly configuration templates and operational documentation.
-
-**Delivers:**
-- Pre-built PV/PVC manifests for each of 7 NAS servers
-- ConfigMap with service discovery (nas-endpoints.json)
-- Example microservice deployment using multiple NAS mounts
-- Troubleshooting guide for common failure modes
-- Windows directory preparation PowerShell script
-
-**Addresses:**
-- Configuration template library (FEATURES.md differentiator)
-- PV/PVC configuration matching production (table stakes)
+---
 
 ### Phase Ordering Rationale
 
-- **Phase 1 before Phase 2**: Prove the workaround pattern works before investing in 7-instance complexity. If unfs3 + init container fails, we discover early with minimal rework.
-- **Phase 2 before Phase 3**: Establish infrastructure (7 servers deployed) before adding sidecar complexity. Bidirectional sync is optional for input NAS, so defer until base working.
-- **Phase 3 isolated**: Bidirectional sync adds failure modes (rsync loops, sync conflicts). Only enable for output NAS that need it.
-- **Phase 4 last**: Documentation and templates only valuable once infrastructure proven stable.
+The roadmap follows dependency order and risk mitigation strategy:
 
-**Critical path:** Phase 1 is the make-or-break phase. If Windows hostPath → emptyDir → NFS export chain fails, entire architecture needs rethinking (possibly external NFS server).
+1. **Backend foundation first** (Phase 1) enables iterative testing before UI complexity. Kubernetes client integration validates RBAC and resource management patterns before attempting dynamic operations.
+
+2. **Monitoring before control** (Phase 2 before 3-6) delivers immediate value (visibility) and establishes feedback loop for development. Users see existing infrastructure health before adding new capabilities.
+
+3. **File operations before Kafka** (Phase 3 before 5) prioritizes core file simulator features. FileSystemWatcher complexity isolated from Kafka resource constraints.
+
+4. **Metrics after events** (Phase 4 after 3) builds on event streaming infrastructure. Time-series data storage requires understanding event patterns first.
+
+5. **Kafka late in roadmap** (Phase 5) due to resource cost and complexity. Deploy after core features proven stable to avoid destabilizing v1.0.
+
+6. **Dynamic management last** (Phase 6) as most complex feature requiring stable backend, UI, and Kubernetes integration. Depends on patterns established in earlier phases.
+
+7. **Continuous validation** — Each phase tests that existing v1.0 FTP/SFTP/NAS servers remain healthy. v1.0 stability is success criterion, not just new feature functionality.
+
+**Dependency chain:**
+```
+Phase 1 (Backend API) → enables → Phase 2 (Dashboard UI)
+Phase 1 (Backend API) → enables → Phase 3 (File Operations)
+Phase 3 (File Events) → enhances → Phase 2 (Dashboard)
+Phase 2 (Dashboard) + Phase 1 (Backend) → enables → Phase 4 (Metrics)
+Phase 1 (Backend) → enables → Phase 5 (Kafka) [independent track]
+Phase 1 (Backend) + Phase 2 (Dashboard) → enables → Phase 6 (Dynamic Mgmt)
+All phases → enables → Phase 7 (Production)
+```
+
+**Critical path:** Phase 1 → Phase 2 → Phase 3 → Phase 6 (monitoring + control features)
+**Parallel track:** Phase 5 (Kafka) can develop in parallel with Phases 3-4 after Phase 1 complete
 
 ### Research Flags
 
-**Phases needing deeper research during planning:**
-- **Phase 1**: unfs3 configuration specifics (export options, pseudo-filesystem setup) — research if issues arise
-- **Phase 3**: rsync bidirectional sync patterns (conflict handling, sync loops) — standard pattern but needs validation
+Phases requiring deeper research or empirical validation during planning:
 
-**Phases with standard patterns (skip research-phase):**
-- **Phase 2**: Multi-instance Helm templating is proven in project (ftp-multi.yaml, sftp-multi.yaml)
-- **Phase 4**: Documentation and templates — no technical research needed
+- **Phase 3 (File Operations):** MAYBE — FileSystemWatcher buffer overflow threshold with Windows + Minikube 9p mount needs empirical testing. Recommendation: Stress test with 1000+ files created in 10s burst, measure actual buffer usage and event loss patterns.
+
+- **Phase 5 (Kafka Integration):** MAYBE — Kafka minimum viable resource allocation (512MB vs 768MB vs 1GB heap) needs profiling under development workload in Minikube. Recommendation: Deploy with conservative 512MB, monitor actual memory usage with `kubectl top pod`, adjust if OOMKilled.
+
+Phases with standard patterns (skip research-phase):
+
+- **Phase 1 (Backend API):** Well-documented ASP.NET Core + SignalR + KubernetesClient patterns, official Microsoft Learn documentation comprehensive
+- **Phase 2 (Dashboard):** React 19 + SignalR client well-established, multiple production examples available
+- **Phase 4 (Metrics):** EF Core + SQLite standard pattern, batched writes common optimization
+- **Phase 6 (Dynamic Management):** Kubernetes operator patterns mature, ownerReferences well-documented in official guides
+- **Phase 7 (Production):** Redis backplane for SignalR documented by Microsoft, E2E testing with Playwright standard practice
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | **HIGH** | Core limitation (cannot export hostPath) verified by multiple authoritative sources (SUSE, Red Hat, kernel docs). unfs3 solution validated by production use cases. |
-| Features | **HIGH** | Table stakes identified from NFS/Kubernetes documentation. Production parity requirements clear from CLAUDE.md context. Anti-patterns documented in community reports. |
-| Architecture | **HIGH** | Multi-instance pattern exists in codebase (ftp-multi.yaml). StatefulSet approach standard Kubernetes. Helm templating patterns well-documented. |
-| Pitfalls | **HIGH** | All critical pitfalls (1-4) have authoritative sources and match observed behavior. Moderate pitfalls (5-9) have community evidence. Minor pitfalls documented in specs. |
+| Stack | HIGH | All technologies verified from official sources (Microsoft Learn, npm, NuGet), versions confirmed compatible with .NET 9/10 and React 19, released 2025-2026 |
+| Features | HIGH | Based on current platform engineering trends, verified monitoring tools (Grafana, Confluent, AKHQ), extensive research on control plane patterns and real-time dashboards |
+| Architecture | HIGH | SignalR + Kubernetes patterns validated in production systems (G-Research, multiple Medium articles), umbrella chart pattern official Helm best practice |
+| Pitfalls | HIGH | Critical pitfalls (#1-#6) verified with authoritative sources (Microsoft Learn, Kubernetes docs) or production postmortems, resource constraints quantified against v1.0 baseline |
 
-**Overall confidence:** **HIGH**
+**Overall confidence:** HIGH
+
+Research is comprehensive with authoritative sources for all major decisions. Stack choices align with existing .NET 9 infrastructure, minimizing new dependencies. Architecture patterns proven in production real-time systems. Pitfalls grounded in documented failures and official best practices.
 
 ### Gaps to Address
 
-Despite high confidence, some areas need validation during implementation:
+Areas requiring validation during implementation (not blockers, but need attention):
 
-- **Sync latency trade-off**: Research indicates rsync polling is necessary (inotify doesn't work over 9p), but actual latency tolerance for testers needs validation. Acceptable range: 5-60 seconds. Test with realistic workflow: tester places file → system processes → output appears.
+- **WebSocket connection limit threshold:** Exact limit before performance degradation varies by backend technology and hardware. Recommendation: Load test with artillery.io or similar tool, measure at 50/100/200 concurrent connections, establish baseline before deploying to users.
 
-- **Resource capacity**: Calculations show 7 NAS pods fit in 8GB Minikube cluster (896Mi request, 3.5Gi limit), but actual resource usage under load unknown. Monitor with `kubectl top pods` during rollout; fallback is reduce pod limits or increase Minikube memory.
+- **FileSystemWatcher buffer tuning:** Default 64KB buffer may need adjustment based on Windows + Minikube 9p mount performance characteristics. Recommendation: Start with 64KB, monitor for InternalBufferOverflowException, empirically determine optimal batch size (100-500ms debounce).
 
-- **9p performance threshold**: Documentation states ">600 files" causes degradation, but exact threshold varies. Test with 100, 500, 1000, 5000 files to establish project-specific limits. Document findings in operational guide.
+- **Kafka resource allocation:** 512MB heap is conservative; actual minimum may be lower or require adjustment. Recommendation: Profile Kafka under realistic development workload (10-20 topics, 100-500 messages/min), use `kubectl top pod` and JVM heap metrics to right-size.
 
-- **Windows NFS client compatibility**: Research suggests NFSv3/v4 version mismatches can cause issues, but specific mount options for Windows 10/11 NFS client not fully documented. Test mount options systematically; document working configuration.
+- **React state management patterns:** Multiple concurrent WebSocket streams (health events + file events + metrics updates) may require optimization. Recommendation: Prototype with Zustand + React Query, measure render performance with React DevTools Profiler, optimize selective subscriptions if needed.
 
-**Recommended validation approach:** Prototype Phase 1 rapidly (1-2 days) to validate core assumptions before committing to full 7-instance architecture. If hostPath sync pattern proves unworkable, pivot to external NFS server on Windows host (WinNFSd or haneWIN NFS Server).
+- **v1.0 regression testing:** Each phase must verify existing FTP/SFTP/NAS servers remain healthy. Recommendation: Establish baseline metrics (connection latency, file transfer throughput) before Phase 1, regression test after each phase deployment.
+
+**Validation activities per phase:**
+- Phase 1: Load test 50 concurrent WebSocket connections
+- Phase 2: WebSocket reconnection storm test (disconnect 10 clients, reconnect simultaneously)
+- Phase 3: Stress test FileSystemWatcher with 1000+ files in 10s burst
+- Phase 4: Validate batched writes prevent SQLite lock under load
+- Phase 5: Profile Kafka memory usage under dev workload
+- Phase 6: Integration test dynamic resource cleanup (ownerReferences)
+- Phase 7: End-to-end test all features with v1.0 servers active
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- [SUSE Support: exportfs error - does not support NFS export](https://www.suse.com/support/kb/doc/?id=000021721) — Kernel limitation confirmed
-- [NFS Ganesha FSAL_VFS documentation](https://github.com/nfs-ganesha/nfs-ganesha/wiki/VFS) — CIFS/NFS unsupported
-- [Red Hat: How do I configure the fsid option in /etc/exports?](https://access.redhat.com/solutions/548083) — fsid collision behavior
-- [Kubernetes: Persistent Volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) — PV/PVC patterns
-- [Kubernetes: StatefulSets](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) — Multi-instance deployment
-- [unfs3 GitHub repository](https://github.com/unfs3/unfs3) — Userspace NFS server capabilities
+
+**Stack Research:**
+- Microsoft Learn: ASP.NET Core SignalR production hosting and scaling
+- Strimzi.io: Official Apache Kafka on Kubernetes documentation
+- Kubernetes Client GitHub: Official C# client repository and documentation
+- Microsoft Learn: FileSystemWatcher class and monitoring best practices
+- React official documentation: React 19 + TypeScript setup guides
+- Vite official documentation: Build tool configuration
+
+**Features Research:**
+- Grafana.com: Real-time monitoring dashboard patterns
+- Confluent: Kafka management and control center features
+- AKHQ GitHub: Open-source Kafka UI capabilities
+- BrowserStack: Testing platform monitoring dashboard best practices
+- Platform Engineering Org: 2026 observability tools evaluation
+- CNCF Blog: Platform control trends and autonomous enterprise forecast
+
+**Architecture Research:**
+- Medium (Mahdi Karimipour): Scalable real-time messaging with SignalR, React, .NET, Kubernetes
+- Microsoft Learn: SignalR Redis backplane configuration
+- Strimzi Quickstarts: Single-broker Kafka deployment guides
+- GitHub kubernetes-client/csharp: Official examples for dynamic resource management
+- Helm official documentation: Umbrella chart best practices
+
+**Pitfalls Research:**
+- Medium (Voodoo Engineering): WebSockets on production with Node.js (40k+ connections)
+- Kubernetes Official Docs: Garbage collection and ownerReferences
+- Microsoft Learn: FileSystemWatcher buffer overflow handling
+- Confluent Documentation: Kafka memory configuration for Kubernetes
+- React community blogs: State update race conditions in real-time apps
 
 ### Secondary (MEDIUM confidence)
-- [Minikube mount documentation](https://minikube.sigs.k8s.io/docs/handbook/mount/) — 9p filesystem characteristics
-- [Linux Kernel: CONFIG_CIFS_NFSD_EXPORT](https://cateee.net/lkddb/web-lkddb/CIFS_NFSD_EXPORT.html) — Experimental export support
-- [Helm: Flow Control in Templates](https://helm.sh/docs/chart_template_guide/control_structures/) — Range loop patterns
-- [Medium: Creating multiple deployments with Helm](https://medium.com/@pasternaktal/creating-multiple-deployments-with-different-configurations-using-helm-4992f9f735fd) — Multi-instance examples
-- [Earl C. Ruby III: Setting up NFS FSID](https://earlruby.org/2022/01/setting-up-nfs-fsid-for-multiple-networks/) — fsid best practices
 
-### Tertiary (LOW confidence — informational)
-- [Baeldung: NFS Shares with Subdirectories](https://www.baeldung.com/linux/nfs-shares-export-import) — Export patterns
-- [Computing for Geeks: Configure NFS for Kubernetes](https://computingforgeeks.com/configure-nfs-as-kubernetes-persistent-volume-storage/) — Setup guide
-- Community reports on 9p performance (Minikube GitHub issues) — Needs empirical validation
+- Medium articles on production WebSocket scaling (not official but multiple sources align)
+- Community Kafka deployment guides (verified against Strimzi official docs)
+- React state management comparisons (Zustand vs Redux ecosystem consensus)
+- Helm chart refactoring patterns (verified against Codefresh best practices)
+
+### Tertiary (LOW confidence)
+
+- None — all critical decisions backed by official documentation or multiple aligned sources
+
+**Source quality verification:**
+- All stack versions verified on official package registries (NuGet, npm)
+- Architecture patterns cross-referenced with Microsoft Learn + production case studies
+- Pitfalls validated against official Kubernetes/ASP.NET Core documentation
+- Feature requirements based on 2026 platform engineering trends from CNCF + industry leaders
 
 ---
-*Research completed: 2026-01-29*
+*Research completed: 2026-02-02*
 *Ready for roadmap: yes*
