@@ -2,13 +2,13 @@
 
 ## Milestones
 
-- ✅ **v1.0 Multi-NAS Production Topology** - Phases 1-5 (shipped 2026-02-01)
-- 🚧 **v2.0 Simulator Control Platform** - Phases 6-12 (in progress)
+- **v1.0 Multi-NAS Production Topology** - Phases 1-5 (shipped 2026-02-01)
+- **v2.0 Simulator Control Platform** - Phases 6-12 (in progress)
 
 ## Phases
 
 <details>
-<summary>✅ v1.0 Multi-NAS Production Topology (Phases 1-5) - SHIPPED 2026-02-01</summary>
+<summary>v1.0 Multi-NAS Production Topology (Phases 1-5) - SHIPPED 2026-02-01</summary>
 
 ### Phase 1: NFS Pattern Validation
 **Goal**: Validate init container + unfs3 pattern for exposing Windows directories via NFS
@@ -29,12 +29,12 @@ Plans:
 - [x] 02-03: Server isolation and validation testing
 
 ### Phase 3: Bidirectional Sync
-**Goal**: Implement bidirectional sync (Windows→NFS + NFS→Windows)
+**Goal**: Implement bidirectional sync (Windows->NFS + NFS->Windows)
 **Plans**: 2 plans
 
 Plans:
-- [x] 03-01: Init container sync (Windows→NFS)
-- [x] 03-02: Sidecar sync (NFS→Windows) with selective deployment
+- [x] 03-01: Init container sync (Windows->NFS)
+- [x] 03-02: Sidecar sync (NFS->Windows) with selective deployment
 
 ### Phase 4: Static PV/PVC Provisioning
 **Goal**: Deliver production-matching static PV/PVC manifests
@@ -53,7 +53,7 @@ Plans:
 
 </details>
 
-### 🚧 v2.0 Simulator Control Platform (In Progress)
+### v2.0 Simulator Control Platform (In Progress)
 
 **Milestone Goal:** Transform the simulator into an observable, controllable platform with real-time monitoring, dynamic server management, and Kafka integration - enabling self-service test environment orchestration.
 
@@ -70,9 +70,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — ASP.NET Core project with SignalR and Dockerfile
-- [ ] 06-02-PLAN.md — Kubernetes RBAC and Helm deployment templates
-- [ ] 06-03-PLAN.md — SignalR hub, K8s discovery, health checks, and status broadcasting
+- [x] 06-01-PLAN.md - ASP.NET Core project with SignalR and Dockerfile
+- [x] 06-02-PLAN.md - Kubernetes RBAC and Helm deployment templates
+- [x] 06-03-PLAN.md - SignalR hub, K8s discovery, health checks, and status broadcasting
 
 #### Phase 7: Real-Time Monitoring Dashboard
 **Goal**: Deliver React dashboard with real-time health monitoring and protocol connectivity visualization
@@ -80,17 +80,17 @@ Plans:
 **Requirements**: DASH-01, DASH-02, DASH-03, DASH-04, DASH-08, MON-01, MON-02, MON-03, BACK-04
 **Success Criteria** (what must be TRUE):
   1. Dashboard displays health status for all 13 servers (7 NAS + 6 protocols) updated every 5 seconds
-  2. User can see real-time server status changes (stopped → running → healthy) without page refresh
+  2. User can see real-time server status changes (stopped -> running -> healthy) without page refresh
   3. Connection quality metrics show latency and success rate for each protocol
   4. Dashboard reconnects automatically when WebSocket disconnects and displays accurate state
   5. Protocol-specific details panel shows FTP/SFTP/HTTP/S3/SMB/NFS connection information
 **Plans**: 4 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Vite React TypeScript project with SignalR hook and types
-- [ ] 07-02-PLAN.md — Core dashboard components (ConnectionStatus, SummaryHeader, ServerCard, ServerGrid)
-- [ ] 07-03-PLAN.md — Protocol details panel with connection info and copy-to-clipboard
-- [ ] 07-04-PLAN.md — Complete CSS styling and human verification checkpoint
+- [x] 07-01-PLAN.md - Vite React TypeScript project with SignalR hook and types
+- [x] 07-02-PLAN.md - Core dashboard components (ConnectionStatus, SummaryHeader, ServerCard, ServerGrid)
+- [x] 07-03-PLAN.md - Protocol details panel with connection info and copy-to-clipboard
+- [x] 07-04-PLAN.md - Complete CSS styling and human verification checkpoint
 
 #### Phase 8: File Operations and Event Streaming
 **Goal**: Enable file operations through UI and implement Windows directory event tracking
@@ -103,12 +103,15 @@ Plans:
   4. User can delete files across all protocols from dashboard with confirmation dialog
   5. File event feed shows real-time arrivals/departures when files created/modified/deleted in Windows
   6. Multi-protocol tracking shows which servers can see each file (e.g., "Visible via: FTP, SFTP, NAS-input-1")
-**Plans**: TBD
+**Plans**: 6 plans
 
 Plans:
-- [ ] 08-01: [TBD during planning]
-- [ ] 08-02: [TBD during planning]
-- [ ] 08-03: [TBD during planning]
+- [ ] 08-01-PLAN.md - Backend FileWatcher service with debouncing and SignalR hub
+- [ ] 08-02-PLAN.md - Backend File API endpoints (browse, upload, download, delete)
+- [ ] 08-03-PLAN.md - Frontend npm packages, types, and hooks
+- [ ] 08-04-PLAN.md - Frontend FileBrowser, FileTree, and FileUploader components
+- [ ] 08-05-PLAN.md - Frontend FileEventFeed, App integration, and CSS styling
+- [ ] 08-06-PLAN.md - Human verification checkpoint
 
 #### Phase 9: Historical Metrics and Storage
 **Goal**: Add time-series data persistence with 7-day retention and historical trend visualization
@@ -185,7 +188,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-v2.0 phases execute sequentially: 6 → 7 → 8 → 9 → 10 → 11 → 12
+v2.0 phases execute sequentially: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -196,11 +199,11 @@ v2.0 phases execute sequentially: 6 → 7 → 8 → 9 → 10 → 11 → 12
 | 5. Comprehensive Testing | v1.0 | 1/1 | Complete | 2026-02-01 |
 | 6. Backend API Foundation | v2.0 | 3/3 | Complete | 2026-02-02 |
 | 7. Real-Time Monitoring Dashboard | v2.0 | 4/4 | Complete | 2026-02-02 |
-| 8. File Operations and Event Streaming | v2.0 | 0/TBD | Not started | - |
+| 8. File Operations and Event Streaming | v2.0 | 0/6 | Planned | - |
 | 9. Historical Metrics and Storage | v2.0 | 0/TBD | Not started | - |
 | 10. Kafka Integration for Event Streaming | v2.0 | 0/TBD | Not started | - |
 | 11. Dynamic Server Management | v2.0 | 0/TBD | Not started | - |
 | 12. Alerting and Production Readiness | v2.0 | 0/TBD | Not started | - |
 
 ---
-*Last updated: 2026-02-02 after Phase 7 completion*
+*Last updated: 2026-02-02 after Phase 8 planning*
