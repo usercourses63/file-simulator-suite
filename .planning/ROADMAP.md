@@ -67,11 +67,12 @@ Plans:
   3. KubernetesClient can list all existing protocol servers (FTP, SFTP, NAS) via K8s API
   4. RBAC ServiceAccount has verified permissions to read pods/deployments/services
   5. v1.0 servers (7 NAS + 6 protocols) remain fully operational with no performance degradation
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 06-01: [TBD during planning]
-- [ ] 06-02: [TBD during planning]
+- [ ] 06-01-PLAN.md — ASP.NET Core project with SignalR and Dockerfile
+- [ ] 06-02-PLAN.md — Kubernetes RBAC and Helm deployment templates
+- [ ] 06-03-PLAN.md — SignalR hub, K8s discovery, health checks, and status broadcasting
 
 #### Phase 7: Real-Time Monitoring Dashboard
 **Goal**: Deliver React dashboard with real-time health monitoring and protocol connectivity visualization
@@ -191,7 +192,7 @@ v2.0 phases execute sequentially: 6 → 7 → 8 → 9 → 10 → 11 → 12
 | 3. Bidirectional Sync | v1.0 | 2/2 | Complete | 2026-01-31 |
 | 4. Static PV/PVC Provisioning | v1.0 | 2/2 | Complete | 2026-02-01 |
 | 5. Comprehensive Testing | v1.0 | 1/1 | Complete | 2026-02-01 |
-| 6. Backend API Foundation | v2.0 | 0/TBD | Not started | - |
+| 6. Backend API Foundation | v2.0 | 0/3 | Planned | - |
 | 7. Real-Time Monitoring Dashboard | v2.0 | 0/TBD | Not started | - |
 | 8. File Operations and Event Streaming | v2.0 | 0/TBD | Not started | - |
 | 9. Historical Metrics and Storage | v2.0 | 0/TBD | Not started | - |
@@ -200,4 +201,4 @@ v2.0 phases execute sequentially: 6 → 7 → 8 → 9 → 10 → 11 → 12
 | 12. Alerting and Production Readiness | v2.0 | 0/TBD | Not started | - |
 
 ---
-*Last updated: 2026-02-02 after v2.0 roadmap creation*
+*Last updated: 2026-02-02 after Phase 6 planning*
