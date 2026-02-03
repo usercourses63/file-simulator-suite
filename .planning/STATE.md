@@ -13,7 +13,7 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 Phase: 11 of 12 (Dynamic Server Management)
 Plan: 5 of 5 complete
 Status: Phase complete
-Last activity: 2026-02-03 - Completed 11-06-PLAN.md
+Last activity: 2026-02-03 - Completed 11-08-PLAN.md
 
 Progress: [■■■■■■■■■■■■] 100% (40 of 40 plans complete)
 
@@ -22,7 +22,7 @@ Progress: [■■■■■■■■■■■■] 100% (40 of 40 plans complete)
 **Velocity:**
 - Total plans completed: 40
 - Average duration: 6.0 min
-- Total execution time: 4.28 hours
+- Total execution time: 4.38 hours
 
 **By Phase:**
 
@@ -38,10 +38,10 @@ Progress: [■■■■■■■■■■■■] 100% (40 of 40 plans complete)
 | 8. File Operations and Event Streaming | 5 | 21 min | 4.2 min |
 | 9. Historical Metrics and Storage | 6 | 38.5 min | 6.4 min |
 | 10. Kafka Integration | 7 | 36 min | 5.1 min |
-| 11. Dynamic Server Management | 5/5 | 31 min | 6.2 min |
+| 11. Dynamic Server Management | 5 | 37 min | 7.4 min |
 
 **Recent Trend:**
-- Last 5 plans: [6.0, 6.0, 7.0, 7.0, 5.0] min
+- Last 5 plans: [6.0, 7.0, 7.0, 5.0, 6.0] min
 - Trend: Consistent execution pace
 
 *Updated after each plan completion*
@@ -137,6 +137,9 @@ Recent decisions affecting current work:
 - Phase 11-06: Debounced name availability check (300ms) for CreateServerModal
 - Phase 11-06: Inline editing in ServerDetailsPanel for dynamic servers only
 - Phase 11-06: Helm servers shown as read-only with notice in details panel
+- Phase 11-08: Per-conflict resolution for import (skip/replace/rename per server, not global strategy)
+- Phase 11-08: Export downloads JSON via Content-Disposition header
+- Phase 11-08: Settings panel accessible from header gear icon
 
 ### Pending Todos
 
@@ -154,5 +157,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 11-06-PLAN.md - Frontend types, hooks, and CreateServerModal
+Stopped at: Completed 11-08-PLAN.md - Frontend config export/import and settings panel
 Resume file: None
