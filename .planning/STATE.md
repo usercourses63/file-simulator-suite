@@ -124,9 +124,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-1. **Backend bug: Duplicate server name** - Kubernetes discovery returns SFTP server with `name: "ftp"` instead of `name: "sftp"`, causing React duplicate key warnings in dashboard. Fix in Phase 6 backend code.
-
-2. **Upgrade to .NET 10 SDK** - When next working on backend (Control API), upgrade from .NET 9 to .NET 10 SDK.
+1. **Upgrade to .NET 10 SDK** - When next working on backend (Control API), upgrade from .NET 9 to .NET 10 SDK.
 
 ### Blockers/Concerns
 

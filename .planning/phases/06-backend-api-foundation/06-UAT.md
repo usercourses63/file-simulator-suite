@@ -3,7 +3,7 @@ status: complete
 phase: 06-backend-api-foundation
 source: [06-01-SUMMARY.md, 06-02-SUMMARY.md, 06-03-SUMMARY.md]
 started: 2026-02-02T13:00:00Z
-updated: 2026-02-02T14:12:00Z
+updated: 2026-02-03T11:20:00Z
 ---
 
 ## Current Test
@@ -52,6 +52,18 @@ issues: 0
 pending: 0
 skipped: 0
 
+## Bug Fixes Verified (2026-02-03)
+
+### SFTP Server Name Bug
+**Issue:** KubernetesDiscoveryService returned `name: "ftp"` for SFTP server due to substring matching (`"sftp".Contains("ftp")` was true).
+**Fix:** Changed to exact segment matching in `GetServerName()` method.
+**Verified:** Dashboard now shows distinct "ftp" and "sftp" servers without React duplicate key warnings.
+
+### Folder Expansion Bug
+**Issue:** Clicking folders in Files tab did nothing - `Children: null` treated as leaf node by react-arborist.
+**Fix:** FilesController.GetTree now returns recursive `Children` arrays for directories.
+**Verified:** Folders expand on click, nested files visible in tree view.
+
 ## Gaps
 
-[none yet]
+[none]
