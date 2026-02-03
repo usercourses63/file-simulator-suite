@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 ## Current Position
 
 Phase: 9 of 12 (Historical Metrics and Storage)
-Plan: 1/6 complete
+Plan: 2/6 complete
 Status: In progress
-Last activity: 2026-02-03 - Completed 09-01-PLAN.md
+Last activity: 2026-02-03 - Completed 09-02-PLAN.md
 
 Progress: [■■■■■■■■░░░░] 67% (8 of 12 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 23
-- Average duration: 6.9 min
-- Total execution time: 2.65 hours
+- Total plans completed: 24
+- Average duration: 6.8 min
+- Total execution time: 2.72 hours
 
 **By Phase:**
 
@@ -36,10 +36,10 @@ Progress: [■■■■■■■■░░░░] 67% (8 of 12 phases complete)
 | 6. Backend API Foundation | 3 | 17 min | 5.7 min |
 | 7. Real-Time Monitoring Dashboard | 4 | 12 min | 3.0 min |
 | 8. File Operations and Event Streaming | 5 | 21 min | 4.2 min |
-| 9. Historical Metrics and Storage | 1 | 4 min | 4.0 min |
+| 9. Historical Metrics and Storage | 2 | 8 min | 4.0 min |
 
 **Recent Trend:**
-- Last 5 plans: [3.0, 5.0, 3.0, 4.0, 4.0] min
+- Last 5 plans: [5.0, 3.0, 4.0, 4.0, 4.0] min
 - Trend: Stable (established patterns with moderate complexity)
 
 *Updated after each plan completion*
@@ -91,6 +91,10 @@ Recent decisions affecting current work:
 - Phase 9-01: IDbContextFactory pattern for background service compatibility
 - Phase 9-01: Snake_case table/column names in EF Core Fluent API
 - Phase 9-01: Composite indexes on (ServerId, Timestamp) for time-range queries
+- Phase 9-02: 5min initial delay for RollupGenerationService to let system stabilize
+- Phase 9-02: 10min initial delay for RetentionCleanupService
+- Phase 9-02: Linear interpolation for P95 percentile calculation
+- Phase 9-02: hostPath volume for database persistence (matches simulator-data pattern)
 
 ### Pending Todos
 
@@ -110,5 +114,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 09-01-PLAN.md
+Stopped at: Completed 09-02-PLAN.md
 Resume file: None
