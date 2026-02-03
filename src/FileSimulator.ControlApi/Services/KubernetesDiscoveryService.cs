@@ -20,6 +20,7 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
     // Label selectors for file-simulator components
     private const string AppLabel = "app.kubernetes.io/name";
     private const string AppValue = "file-simulator";
+    private const string ManagedByLabel = "app.kubernetes.io/managed-by";
 
     // Protocol detection from deployment names
     private static readonly Dictionary<string, string> ProtocolMappings = new()
@@ -101,6 +102,11 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
                 var port = service.Spec.Ports.FirstOrDefault();
                 var nodePort = port?.NodePort;
 
+                // Determine if server is dynamic (managed by control-api vs Helm)
+                var podLabels = pod.Metadata.Labels ?? new Dictionary<string, string>();
+                var managedBy = podLabels.TryGetValue(ManagedByLabel, out var manager) ? manager : "Helm";
+                var isDynamic = managedBy == "control-api";
+
                 servers.Add(new DiscoveredServer
                 {
                     Name = GetServerName(pod.Metadata.Name),
@@ -111,7 +117,9 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
                     Port = port?.Port ?? 0,
                     NodePort = nodePort,
                     PodStatus = pod.Status.Phase,
-                    PodReady = IsPodReady(pod)
+                    PodReady = IsPodReady(pod),
+                    IsDynamic = isDynamic,
+                    ManagedBy = managedBy
                 });
             }
 
