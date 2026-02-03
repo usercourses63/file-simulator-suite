@@ -1,0 +1,224 @@
+{{- if .Values.kafka.enabled }}
+---
+# Kafka + ZooKeeper Sidecar Deployment
+# ZooKeeper runs as sidecar container in same pod for simplified lifecycle
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-kafka
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "file-simulator.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: kafka
+  template:
+    metadata:
+      labels:
+        {{- include "file-simulator.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: kafka
+    spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "file-simulator.serviceAccountName" . }}
+      {{- end }}
+      containers:
+        # ZooKeeper sidecar container
+        - name: zookeeper
+          image: "{{ .Values.kafka.zookeeper.image.repository }}:{{ .Values.kafka.zookeeper.image.tag }}"
+          imagePullPolicy: {{ .Values.kafka.image.pullPolicy }}
+          ports:
+            - name: zk-client
+              containerPort: 2181
+              protocol: TCP
+          env:
+            - name: ALLOW_ANONYMOUS_LOGIN
+              value: "yes"
+            - name: ZOO_HEAP_SIZE
+              value: "{{ .Values.kafka.zookeeper.heap }}"
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - 'echo "ruok" | nc localhost 2181 | grep imok'
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - 'echo "ruok" | nc localhost 2181 | grep imok'
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+          resources:
+            {{- toYaml .Values.kafka.zookeeper.resources | nindent 12 }}
+          volumeMounts:
+            - name: zookeeper-data
+              mountPath: /bitnami/zookeeper
+
+        # Kafka broker container
+        - name: kafka
+          image: "{{ .Values.kafka.image.repository }}:{{ .Values.kafka.image.tag }}"
+          imagePullPolicy: {{ .Values.kafka.image.pullPolicy }}
+          ports:
+            - name: kafka-internal
+              containerPort: 9092
+              protocol: TCP
+            - name: kafka-external
+              containerPort: 9094
+              protocol: TCP
+          env:
+            # ZooKeeper connection (sidecar on localhost)
+            - name: KAFKA_CFG_ZOOKEEPER_CONNECT
+              value: "localhost:2181"
+            # Listener configuration
+            - name: KAFKA_CFG_LISTENERS
+              value: "PLAINTEXT://:9092,EXTERNAL://:9094"
+            - name: KAFKA_CFG_ADVERTISED_LISTENERS
+              value: "PLAINTEXT://{{ include "file-simulator.fullname" . }}-kafka:9092,EXTERNAL://$(NODE_IP):{{ .Values.kafka.service.externalNodePort }}"
+            - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
+              value: "PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT"
+            - name: KAFKA_CFG_INTER_BROKER_LISTENER_NAME
+              value: "PLAINTEXT"
+            # JVM heap settings
+            - name: KAFKA_HEAP_OPTS
+              value: "-Xmx{{ .Values.kafka.heap }} -Xms{{ .Values.kafka.heap }}"
+            # Disable auto topic creation (explicit via API)
+            - name: KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE
+              value: "false"
+            # Message retention
+            - name: KAFKA_CFG_LOG_RETENTION_MS
+              value: "{{ .Values.kafka.retention.ms | int64 }}"
+            # Node IP for external listener advertisement
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          # Wait for ZooKeeper to be ready before starting
+          startupProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - 'nc -z localhost 2181'
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: kafka-internal
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: kafka-internal
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+          resources:
+            {{- toYaml .Values.kafka.resources | nindent 12 }}
+          volumeMounts:
+            - name: kafka-data
+              mountPath: /bitnami/kafka
+      volumes:
+        - name: zookeeper-data
+          emptyDir: {}
+        - name: kafka-data
+          hostPath:
+            path: {{ .Values.controlApi.persistence.hostPath }}/kafka-data
+            type: DirectoryOrCreate
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+# Kafka Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-kafka
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: kafka
+spec:
+  type: {{ .Values.kafka.service.type }}
+  ports:
+    - port: {{ .Values.kafka.service.port }}
+      targetPort: kafka-internal
+      protocol: TCP
+      name: kafka-internal
+      {{- if eq .Values.kafka.service.type "NodePort" }}
+      nodePort: {{ .Values.kafka.service.nodePort }}
+      {{- end }}
+    - port: {{ .Values.kafka.service.externalPort }}
+      targetPort: kafka-external
+      protocol: TCP
+      name: kafka-external
+      {{- if eq .Values.kafka.service.type "NodePort" }}
+      nodePort: {{ .Values.kafka.service.externalNodePort }}
+      {{- end }}
+  selector:
+    {{- include "file-simulator.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: kafka
+---
+# Topic initialization job (post-install hook)
+{{- if .Values.kafka.defaultTopics }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-kafka-init
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: kafka-init
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: kafka-init
+          image: "{{ .Values.kafka.image.repository }}:{{ .Values.kafka.image.tag }}"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              # Wait for Kafka broker to be ready
+              echo "Waiting for Kafka broker to be ready..."
+              until /opt/bitnami/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server {{ include "file-simulator.fullname" . }}-kafka:9092 2>/dev/null; do
+                echo "Kafka not ready yet, waiting..."
+                sleep 5
+              done
+              echo "Kafka broker is ready"
+
+              # Create default topics
+              {{- range .Values.kafka.defaultTopics }}
+              echo "Creating topic: {{ .name }} with {{ .partitions }} partition(s)"
+              /opt/bitnami/kafka/bin/kafka-topics.sh \
+                --bootstrap-server {{ include "file-simulator.fullname" $ }}-kafka:9092 \
+                --create \
+                --if-not-exists \
+                --topic {{ .name }} \
+                --partitions {{ .partitions }} \
+                --replication-factor 1
+              {{- end }}
+
+              echo "All topics created successfully"
+              /opt/bitnami/kafka/bin/kafka-topics.sh \
+                --bootstrap-server {{ include "file-simulator.fullname" . }}-kafka:9092 \
+                --list
+{{- end }}
+{{- end }}
