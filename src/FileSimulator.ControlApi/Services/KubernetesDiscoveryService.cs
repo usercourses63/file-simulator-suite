@@ -107,9 +107,14 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
                 var managedBy = podLabels.TryGetValue(ManagedByLabel, out var manager) ? manager : "Helm";
                 var isDynamic = managedBy == "control-api";
 
+                // For dynamic servers, use instance label; for Helm, use parsed name
+                var serverName = isDynamic && podLabels.TryGetValue("app.kubernetes.io/instance", out var instance)
+                    ? instance
+                    : GetServerName(pod.Metadata.Name);
+
                 servers.Add(new DiscoveredServer
                 {
-                    Name = GetServerName(pod.Metadata.Name),
+                    Name = serverName,
                     PodName = pod.Metadata.Name,
                     Protocol = protocol,
                     ServiceName = service.Metadata.Name,
