@@ -6,23 +6,23 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 
 **Core value:** Development systems must connect to simulated NAS servers using identical PV/PVC configurations as production OCP, with test files written on Windows immediately visible through NFS mounts - zero deployment differences between dev and prod.
 
-**Current focus:** Phase 8 - File Operations and Event Streaming
+**Current focus:** Phase 9 - Historical Metrics and Storage
 
 ## Current Position
 
-Phase: 8 of 12 (File Operations and Event Streaming) - COMPLETE
-Plan: 6/6 complete
-Status: UAT passed - all 6 success criteria verified
-Last activity: 2026-02-02 - Phase 8 complete
+Phase: 9 of 12 (Historical Metrics and Storage)
+Plan: 1/6 complete
+Status: In progress
+Last activity: 2026-02-03 - Completed 09-01-PLAN.md
 
 Progress: [■■■■■■■■░░░░] 67% (8 of 12 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 22
-- Average duration: 7.0 min
-- Total execution time: 2.58 hours
+- Total plans completed: 23
+- Average duration: 6.9 min
+- Total execution time: 2.65 hours
 
 **By Phase:**
 
@@ -36,9 +36,10 @@ Progress: [■■■■■■■■░░░░] 67% (8 of 12 phases complete)
 | 6. Backend API Foundation | 3 | 17 min | 5.7 min |
 | 7. Real-Time Monitoring Dashboard | 4 | 12 min | 3.0 min |
 | 8. File Operations and Event Streaming | 5 | 21 min | 4.2 min |
+| 9. Historical Metrics and Storage | 1 | 4 min | 4.0 min |
 
 **Recent Trend:**
-- Last 5 plans: [3.0, 3.0, 5.0, 3.0, 4.0] min
+- Last 5 plans: [3.0, 5.0, 3.0, 4.0, 4.0] min
 - Trend: Stable (established patterns with moderate complexity)
 
 *Updated after each plan completion*
@@ -86,6 +87,10 @@ Recent decisions affecting current work:
 - Phase 8-04: react-arborist for tree view, react-dropzone for upload
 - Phase 8-05: Tab-based navigation for multi-view dashboard
 - Phase 8-05: 350px sidebar for file event feed (compact info display)
+- Phase 9-01: DateTime (UTC) for SQLite timestamps (DateTimeOffset cannot be ordered/compared)
+- Phase 9-01: IDbContextFactory pattern for background service compatibility
+- Phase 9-01: Snake_case table/column names in EF Core Fluent API
+- Phase 9-01: Composite indexes on (ServerId, Timestamp) for time-range queries
 
 ### Pending Todos
 
@@ -104,6 +109,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-02-02
-Stopped at: Completed 08-05-PLAN.md
+Last session: 2026-02-03
+Stopped at: Completed 09-01-PLAN.md
 Resume file: None
