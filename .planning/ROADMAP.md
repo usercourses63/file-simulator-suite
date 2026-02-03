@@ -147,13 +147,13 @@ Plans:
 **Plans**: 7 plans
 
 Plans:
-- [ ] 10-01-PLAN.md - Helm templates for Kafka+ZooKeeper sidecar and Kafka-UI
-- [ ] 10-02-PLAN.md - Backend Kafka services (Confluent.Kafka) and models
-- [ ] 10-03-PLAN.md - Backend API endpoints and SignalR hub for real-time streaming
-- [ ] 10-04-PLAN.md - Frontend types, hooks, and KafkaTab skeleton
-- [ ] 10-05-PLAN.md - Frontend topic management and message producer UI
-- [ ] 10-06-PLAN.md - Frontend message viewer and consumer group monitoring
-- [ ] 10-07-PLAN.md - Human verification checkpoint
+- [x] 10-01-PLAN.md - Helm templates for Kafka+ZooKeeper sidecar and Kafka-UI
+- [x] 10-02-PLAN.md - Backend Kafka services (Confluent.Kafka) and models
+- [x] 10-03-PLAN.md - Backend API endpoints and SignalR hub for real-time streaming
+- [x] 10-04-PLAN.md - Frontend types, hooks, and KafkaTab skeleton
+- [x] 10-05-PLAN.md - Frontend topic management and message producer UI
+- [x] 10-06-PLAN.md - Frontend message viewer and consumer group monitoring
+- [x] 10-07-PLAN.md - Human verification checkpoint
 
 #### Phase 11: Dynamic Server Management
 **Goal**: Enable runtime addition/removal of FTP, SFTP, and NAS servers with configuration management
@@ -168,12 +168,18 @@ Plans:
   6. User can export current configuration to JSON file downloadable from browser
   7. User can import configuration JSON and simulator recreates all servers automatically
   8. ConfigMap updates when servers added/removed so applications can discover new endpoints
-**Plans**: TBD
+**Plans**: 9 plans
 
 Plans:
-- [ ] 11-01: [TBD during planning]
-- [ ] 11-02: [TBD during planning]
-- [ ] 11-03: [TBD during planning]
+- [ ] 11-01-PLAN.md - RBAC update and request models with FluentValidation
+- [ ] 11-02-PLAN.md - IKubernetesManagementService and FTP creation with ownerReferences
+- [ ] 11-03-PLAN.md - SFTP/NAS creation and deletion with explicit cleanup
+- [ ] 11-04-PLAN.md - ConfigMap updates and lifecycle operations (start/stop/restart)
+- [ ] 11-05-PLAN.md - Configuration export/import backend
+- [ ] 11-06-PLAN.md - Frontend types, hooks, and CreateServerModal
+- [ ] 11-07-PLAN.md - Frontend delete, multi-select, and batch operations
+- [ ] 11-08-PLAN.md - Frontend config export/import and settings panel
+- [ ] 11-09-PLAN.md - Human verification checkpoint
 
 #### Phase 12: Alerting and Production Readiness
 **Goal**: Implement alerting system, Redis backplane for scale-out, and production hardening
@@ -209,9 +215,9 @@ v2.0 phases execute sequentially: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 7. Real-Time Monitoring Dashboard | v2.0 | 4/4 | Complete | 2026-02-02 |
 | 8. File Operations and Event Streaming | v2.0 | 6/6 | Complete | 2026-02-02 |
 | 9. Historical Metrics and Storage | v2.0 | 6/6 | Complete | 2026-02-03 |
-| 10. Kafka Integration for Event Streaming | v2.0 | 0/7 | Planned | - |
-| 11. Dynamic Server Management | v2.0 | 0/TBD | Not started | - |
+| 10. Kafka Integration for Event Streaming | v2.0 | 7/7 | Complete | 2026-02-03 |
+| 11. Dynamic Server Management | v2.0 | 0/9 | Planned | - |
 | 12. Alerting and Production Readiness | v2.0 | 0/TBD | Not started | - |
 
 ---
-*Last updated: 2026-02-03 after Phase 10 planning*
+*Last updated: 2026-02-03 after Phase 11 planning*
