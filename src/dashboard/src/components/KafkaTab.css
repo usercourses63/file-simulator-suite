@@ -1,11 +1,16 @@
 /* =============================================================================
-   KAFKA TAB
+   KAFKA TAB - Topic Management UI
    ============================================================================= */
 
+/* Tab container */
 .kafka-tab {
   padding: var(--spacing-lg);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
+/* Health indicator bar */
 .kafka-health {
   display: flex;
   align-items: center;
@@ -39,45 +44,43 @@
   font-weight: 500;
 }
 
-.kafka-content {
+/* Three-column layout */
+.kafka-layout {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  grid-template-columns: 280px 1fr 280px;
   gap: var(--spacing-lg);
+  flex: 1;
+  min-height: 0;
 }
 
-.kafka-section {
+@media (max-width: 1200px) {
+  .kafka-layout {
+    grid-template-columns: 250px 1fr 250px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .kafka-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+  }
+}
+
+/* Panel containers */
+.kafka-panel {
   background: var(--color-surface);
   border-radius: 8px;
   padding: var(--spacing-md);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
 }
 
-.kafka-section__header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-md);
-  padding-bottom: var(--spacing-sm);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.kafka-section__header h2 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.kafka-section__count {
-  background: var(--color-bg);
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.85rem;
-  color: var(--color-text-secondary);
-}
-
+/* Shared status messages */
 .kafka-loading,
 .kafka-error,
-.kafka-empty {
-  padding: var(--spacing-md);
+.kafka-empty,
+.kafka-placeholder {
+  padding: var(--spacing-lg);
   text-align: center;
   color: var(--color-text-secondary);
 }
@@ -86,63 +89,419 @@
   color: var(--color-down);
 }
 
-.kafka-topics,
-.kafka-groups {
+/* =============================================================================
+   TOPIC LIST
+   ============================================================================= */
+
+.topic-list__header {
   display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border);
 }
 
-.kafka-topic,
-.kafka-group {
+.topic-list__header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.topic-list__create-btn {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: 0.85rem;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.topic-list__create-btn:hover {
+  opacity: 0.9;
+}
+
+.topic-list__empty {
+  padding: var(--spacing-md);
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.topic-list__items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.topic-list__item {
   display: flex;
   align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
+  border-radius: 4px;
+  background: var(--color-bg);
+  transition: background-color 0.15s ease;
+}
+
+.topic-list__item--selected {
+  background: var(--color-primary);
+  color: white;
+}
+
+.topic-list__item-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: var(--spacing-sm);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  text-align: left;
+}
+
+.topic-list__item-name {
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.topic-list__item-info {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.topic-list__delete-btn {
+  padding: var(--spacing-sm);
+  background: none;
+  border: none;
+  color: var(--color-down);
+  cursor: pointer;
+  font-size: 1rem;
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+}
+
+.topic-list__delete-btn:hover {
+  opacity: 1;
+}
+
+.topic-list__confirm {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
+  font-size: 0.85rem;
+}
+
+.topic-list__confirm-yes,
+.topic-list__confirm-no {
+  padding: 2px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.topic-list__confirm-yes {
+  background: var(--color-down);
+  color: white;
+}
+
+.topic-list__confirm-no {
+  background: var(--color-bg);
+}
+
+/* =============================================================================
+   MESSAGE PRODUCER
+   ============================================================================= */
+
+.message-producer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.message-producer__title {
+  margin: 0 0 var(--spacing-md) 0;
+  font-size: 1rem;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.message-producer__form {
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-md);
+  flex: 1;
+}
+
+.message-producer__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.message-producer__field label {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.message-producer__field input,
+.message-producer__field textarea {
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.message-producer__field input:focus,
+.message-producer__field textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.message-producer__field textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.message-producer__error {
+  padding: var(--spacing-sm);
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 4px;
+  color: var(--color-down);
+  font-size: 0.85rem;
+}
+
+.message-producer__success {
+  padding: var(--spacing-sm);
+  background: rgba(34, 197, 94, 0.1);
+  border-radius: 4px;
+  color: var(--color-healthy);
+  font-size: 0.85rem;
+}
+
+.message-producer__submit {
   padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: opacity 0.15s ease;
+}
+
+.message-producer__submit:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.message-producer__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* =============================================================================
+   CONSUMER GROUPS (Right Panel)
+   ============================================================================= */
+
+.kafka-panel--groups h3 {
+  margin: 0 0 var(--spacing-md) 0;
+  font-size: 1rem;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.kafka-group-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.kafka-group-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
   background: var(--color-bg);
   border-radius: 4px;
 }
 
-.kafka-topic__name,
-.kafka-group__id {
-  flex: 1;
+.kafka-group-item__id {
   font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: break-all;
+  font-size: 0.9rem;
 }
 
-.kafka-topic__partitions,
-.kafka-group__state,
-.kafka-group__members {
-  font-size: 0.85rem;
+.kafka-group-item__state,
+.kafka-group-item__members {
+  font-size: 0.8rem;
   color: var(--color-text-secondary);
 }
 
-.kafka-group__lag {
+.kafka-group-item__lag {
+  display: inline-block;
   padding: 2px 8px;
   border-radius: 4px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+  width: fit-content;
 }
 
-.kafka-group__lag--green {
+.kafka-group-item__lag--green {
   background: rgba(34, 197, 94, 0.2);
   color: var(--color-healthy);
 }
 
-.kafka-group__lag--yellow {
+.kafka-group-item__lag--yellow {
   background: rgba(234, 179, 8, 0.2);
   color: var(--color-degraded);
 }
 
-.kafka-group__lag--red {
+.kafka-group-item__lag--red {
   background: rgba(239, 68, 68, 0.2);
   color: var(--color-down);
 }
 
-/* Responsive adjustments */
-@media (max-width: 900px) {
-  .kafka-content {
-    grid-template-columns: 1fr;
-  }
+/* =============================================================================
+   CREATE TOPIC MODAL
+   ============================================================================= */
+
+.create-topic-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.create-topic-form {
+  background: var(--color-surface);
+  border-radius: 8px;
+  padding: var(--spacing-lg);
+  width: 400px;
+  max-width: 90vw;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.create-topic-form__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.create-topic-form__header h3 {
+  margin: 0;
+}
+
+.create-topic-form__close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  padding: var(--spacing-xs);
+}
+
+.create-topic-form__close:hover {
+  color: var(--color-text);
+}
+
+.create-topic-form__error {
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 4px;
+  color: var(--color-down);
+  font-size: 0.85rem;
+}
+
+.create-topic-form__field {
+  margin-bottom: var(--spacing-md);
+}
+
+.create-topic-form__field label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.create-topic-form__field input {
+  width: 100%;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.create-topic-form__field input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.create-topic-form__hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.create-topic-form__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.create-topic-form__cancel,
+.create-topic-form__submit {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: opacity 0.15s ease;
+}
+
+.create-topic-form__cancel {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.create-topic-form__cancel:hover {
+  opacity: 0.8;
+}
+
+.create-topic-form__submit {
+  background: var(--color-primary);
+  color: white;
+}
+
+.create-topic-form__submit:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.create-topic-form__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

@@ -1,5 +1,9 @@
+import { useState } from 'react';
 import { useKafka } from '../hooks/useKafka';
 import { getLagLevel } from '../types/kafka';
+import TopicList from './TopicList';
+import CreateTopicForm from './CreateTopicForm';
+import MessageProducer from './MessageProducer';
 import './KafkaTab.css';
 
 /**
@@ -11,20 +15,26 @@ interface KafkaTabProps {
 }
 
 /**
- * KafkaTab component displays Kafka topics and consumer groups.
- * Shows health status, topic list with partition counts,
- * and consumer groups with lag indicators.
+ * KafkaTab component displays Kafka management UI.
+ * Shows topics (with create/delete), message producer, and consumer groups.
+ * Layout: Left panel (topics) | Center (message producer) | Right (consumer groups)
  */
 function KafkaTab({ apiBaseUrl }: KafkaTabProps) {
   const {
     topics,
     topicsLoading,
     topicsError,
+    createTopic,
+    deleteTopic,
     consumerGroups,
     groupsLoading,
     groupsError,
+    produceMessage,
     isHealthy
   } = useKafka({ apiBaseUrl });
+
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   return (
     <div className="kafka-tab">
@@ -36,61 +46,71 @@ function KafkaTab({ apiBaseUrl }: KafkaTabProps) {
         </span>
       </div>
 
-      <div className="kafka-content">
-        {/* Topics Section */}
-        <section className="kafka-section">
-          <header className="kafka-section__header">
-            <h2>Topics</h2>
-            <span className="kafka-section__count">{topics.length}</span>
-          </header>
-
+      <div className="kafka-layout">
+        {/* Left: Topics */}
+        <div className="kafka-panel kafka-panel--topics">
           {topicsLoading ? (
             <div className="kafka-loading">Loading topics...</div>
           ) : topicsError ? (
             <div className="kafka-error">{topicsError}</div>
-          ) : topics.length === 0 ? (
-            <div className="kafka-empty">No topics found</div>
           ) : (
-            <div className="kafka-topics">
-              {topics.map(topic => (
-                <div key={topic.name} className="kafka-topic">
-                  <span className="kafka-topic__name">{topic.name}</span>
-                  <span className="kafka-topic__partitions">{topic.partitionCount} partitions</span>
-                </div>
-              ))}
+            <TopicList
+              topics={topics}
+              selectedTopic={selectedTopic}
+              onSelectTopic={setSelectedTopic}
+              onDeleteTopic={deleteTopic}
+              onCreateClick={() => setShowCreateForm(true)}
+            />
+          )}
+        </div>
+
+        {/* Center: Message Producer (when topic selected) */}
+        <div className="kafka-panel kafka-panel--producer">
+          {selectedTopic ? (
+            <MessageProducer
+              topic={selectedTopic}
+              onProduce={produceMessage}
+            />
+          ) : (
+            <div className="kafka-placeholder">
+              Select a topic to produce messages
             </div>
           )}
-        </section>
+        </div>
 
-        {/* Consumer Groups Section */}
-        <section className="kafka-section">
-          <header className="kafka-section__header">
-            <h2>Consumer Groups</h2>
-            <span className="kafka-section__count">{consumerGroups.length}</span>
-          </header>
-
+        {/* Right: Consumer Groups */}
+        <div className="kafka-panel kafka-panel--groups">
+          <h3>Consumer Groups</h3>
           {groupsLoading ? (
-            <div className="kafka-loading">Loading consumer groups...</div>
+            <div className="kafka-loading">Loading groups...</div>
           ) : groupsError ? (
             <div className="kafka-error">{groupsError}</div>
           ) : consumerGroups.length === 0 ? (
-            <div className="kafka-empty">No consumer groups found</div>
+            <div className="kafka-empty">No consumer groups</div>
           ) : (
-            <div className="kafka-groups">
+            <ul className="kafka-group-list">
               {consumerGroups.map(group => (
-                <div key={group.groupId} className="kafka-group">
-                  <span className="kafka-group__id">{group.groupId}</span>
-                  <span className="kafka-group__state">{group.state}</span>
-                  <span className="kafka-group__members">{group.memberCount} members</span>
-                  <span className={`kafka-group__lag kafka-group__lag--${getLagLevel(group.totalLag)}`}>
+                <li key={group.groupId} className="kafka-group-item">
+                  <span className="kafka-group-item__id">{group.groupId}</span>
+                  <span className="kafka-group-item__state">{group.state}</span>
+                  <span className="kafka-group-item__members">{group.memberCount} members</span>
+                  <span className={`kafka-group-item__lag kafka-group-item__lag--${getLagLevel(group.totalLag)}`}>
                     Lag: {group.totalLag}
                   </span>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
-        </section>
+        </div>
       </div>
+
+      {/* Create Topic Modal */}
+      {showCreateForm && (
+        <CreateTopicForm
+          onSubmit={createTopic}
+          onCancel={() => setShowCreateForm(false)}
+        />
+      )}
     </div>
   );
 }
