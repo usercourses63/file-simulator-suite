@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Events;
+using FileSimulator.ControlApi.Data;
 using FileSimulator.ControlApi.Hubs;
 using FileSimulator.ControlApi.Services;
 using FileSimulator.ControlApi.Models;
@@ -52,7 +54,13 @@ try
     builder.Services.Configure<KubernetesOptions>(
         builder.Configuration.GetSection("Kubernetes"));
 
+    // EF Core SQLite for metrics persistence
+    // Use IDbContextFactory for background service compatibility
+    builder.Services.AddDbContextFactory<MetricsDbContext>(options =>
+        options.UseSqlite("Data Source=/mnt/control-data/metrics.db"));
+
     // Services
+    builder.Services.AddScoped<IMetricsService, MetricsService>();
     builder.Services.AddSingleton<IKubernetesDiscoveryService, KubernetesDiscoveryService>();
     builder.Services.AddSingleton<IHealthCheckService, HealthCheckService>();
     builder.Services.AddSingleton<ServerStatusBroadcaster>();
@@ -61,6 +69,15 @@ try
     builder.Services.AddHostedService(sp => sp.GetRequiredService<FileWatcherService>());
 
     var app = builder.Build();
+
+    // Ensure SQLite database exists with schema
+    using (var scope = app.Services.CreateScope())
+    {
+        var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<MetricsDbContext>>();
+        using var context = factory.CreateDbContext();
+        context.Database.EnsureCreated();
+        Log.Information("Metrics database initialized at /mnt/control-data/metrics.db");
+    }
 
     // Middleware pipeline
     app.UseSerilogRequestLogging();
