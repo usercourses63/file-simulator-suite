@@ -6,23 +6,23 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 
 **Core value:** Development systems must connect to simulated NAS servers using identical PV/PVC configurations as production OCP, with test files written on Windows immediately visible through NFS mounts - zero deployment differences between dev and prod.
 
-**Current focus:** Phase 10 UAT Verified - Ready for Phase 11
+**Current focus:** Phase 11 - Dynamic Server Management
 
 ## Current Position
 
-Phase: 10 of 12 (Kafka Integration for Event Streaming) - UAT VERIFIED
-Plan: 7 of 7 complete (including human verification)
-Status: Phase complete and verified
-Last activity: 2026-02-03 - Completed 10-07-PLAN.md (UAT: 8/8 tests passed)
+Phase: 11 of 12 (Dynamic Server Management)
+Plan: 2 of 5 complete
+Status: In progress
+Last activity: 2026-02-03 - Completed 11-02-PLAN.md
 
-Progress: [■■■■■■■■■■░░] 92% (35 of 38 plans complete)
+Progress: [■■■■■■■■■■░░] 97% (37 of 38 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 35
+- Total plans completed: 37
 - Average duration: 6.0 min
-- Total execution time: 3.85 hours
+- Total execution time: 3.97 hours
 
 **By Phase:**
 
@@ -38,10 +38,11 @@ Progress: [■■■■■■■■■■░░] 92% (35 of 38 plans complete)
 | 8. File Operations and Event Streaming | 5 | 21 min | 4.2 min |
 | 9. Historical Metrics and Storage | 6 | 38.5 min | 6.4 min |
 | 10. Kafka Integration | 7 | 36 min | 5.1 min |
+| 11. Dynamic Server Management | 2/5 | 12 min | 6.0 min |
 
 **Recent Trend:**
-- Last 5 plans: [6.0, 3.0, 5.0, 5.0] min
-- Trend: Frontend plans executing efficiently
+- Last 5 plans: [5.0, 5.0, 6.0, 6.0, 6.0] min
+- Trend: Consistent execution pace
 
 *Updated after each plan completion*
 
@@ -121,6 +122,11 @@ Recent decisions affecting current work:
 - Phase 10-06: Produce/Consume view toggle in center panel for single topic selection
 - Phase 10-06: Live (SignalR) and Manual (REST) message viewing modes
 - Phase 10-06: Expandable consumer group detail pattern for space efficiency
+- Phase 11-01: FluentValidation for server creation request validation
+- Phase 11-01: RBAC expanded with deployments, services verbs for dynamic server management
+- Phase 11-02: OwnerReferences point to POD (not Deployment) for proper K8s garbage collection
+- Phase 11-02: IKubernetes registered as singleton for sharing between services
+- Phase 11-02: Dynamic resources labeled with app.kubernetes.io/managed-by=control-api
 
 ### Pending Todos
 
@@ -138,5 +144,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 10-07-PLAN.md UAT (8/8 tests passed) - Phase 10 Verified Complete
+Stopped at: Completed 11-02-PLAN.md - IKubernetesManagementService interface and FTP creation
 Resume file: None
