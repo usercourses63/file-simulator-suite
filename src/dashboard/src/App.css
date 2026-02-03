@@ -1468,6 +1468,26 @@ body {
   gap: 1rem;
 }
 
+.header-add-server-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  background: var(--color-success);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.header-add-server-btn:hover {
+  background: #16a34a;
+  transform: translateY(-1px);
+}
+
 .header-settings-btn {
   display: flex;
   align-items: center;

@@ -17,6 +17,7 @@ import SettingsPanel from './components/SettingsPanel';
 import ImportConfigDialog from './components/ImportConfigDialog';
 import DeleteConfirmDialog from './components/DeleteConfirmDialog';
 import BatchOperationsBar from './components/BatchOperationsBar';
+import CreateServerModal from './components/CreateServerModal';
 import './App.css';
 
 // Extended server info for multi-select filtering
@@ -54,6 +55,7 @@ function App() {
   // Settings panel and import dialog state
   const [showSettings, setShowSettings] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showCreateServer, setShowCreateServer] = useState(false);
 
   // Server management hook
   const { deleteServer, isLoading: isDeleting } = useServerManagement({ apiBaseUrl });
@@ -62,18 +64,14 @@ function App() {
   const [deleteTarget, setDeleteTarget] = useState<{ name: string; protocol: string } | null>(null);
   const [batchDeleteTargets, setBatchDeleteTargets] = useState<string[]>([]);
 
-  // Build dynamic info map for servers
-  // Servers created via the Control API are labeled with managed-by=control-api
-  // Servers starting with file-sim are Helm-managed
+  // Build dynamic info map for servers from SignalR data
   const dynamicInfo = useMemo(() => {
     if (!data?.servers) return {};
     const info: Record<string, { isDynamic: boolean; managedBy: string }> = {};
     for (const server of data.servers) {
-      // Dynamic servers don't have the 'file-sim-' prefix from Helm releases
-      const isDynamic = !server.name.startsWith('file-sim-');
       info[server.name] = {
-        isDynamic,
-        managedBy: isDynamic ? 'control-api' : 'Helm'
+        isDynamic: server.isDynamic,
+        managedBy: server.managedBy
       };
     }
     return info;
@@ -182,6 +180,14 @@ function App() {
           </nav>
         </div>
         <div className="header-actions">
+          <button
+            className="header-add-server-btn"
+            onClick={() => setShowCreateServer(true)}
+            title="Add Server"
+            type="button"
+          >
+            + Add Server
+          </button>
           <ConnectionStatus
             isConnected={isConnected}
             isReconnecting={isReconnecting}
@@ -303,6 +309,15 @@ function App() {
         isDeleting={isDeleting}
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
+      />
+
+      <CreateServerModal
+        isOpen={showCreateServer}
+        onClose={() => setShowCreateServer(false)}
+        onCreated={() => {
+          // SignalR will push updates
+        }}
+        apiBaseUrl={apiBaseUrl}
       />
     </div>
   );

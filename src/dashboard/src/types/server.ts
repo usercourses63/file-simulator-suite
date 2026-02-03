@@ -31,6 +31,8 @@ export interface ServerStatus {
   healthMessage?: string;
   latencyMs?: number;
   checkedAt: string; // ISO 8601 timestamp
+  isDynamic: boolean; // True if created via Control API
+  managedBy: string; // "control-api" or "Helm"
 }
 
 /**

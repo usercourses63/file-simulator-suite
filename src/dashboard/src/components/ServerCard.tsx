@@ -40,9 +40,11 @@ export function ServerCard({
   isSelected,
   onToggleSelect,
   onDelete,
-  isDynamic
+  isDynamic: isDynamicProp
   // managedBy is received but not currently used; reserved for future tooltip
 }: ServerCardProps) {
+  // Use prop if provided, otherwise fall back to server's isDynamic property
+  const isDynamic = isDynamicProp ?? server.isDynamic;
   const healthState = getHealthState(server);
   const healthText = getHealthStateText(healthState);
 

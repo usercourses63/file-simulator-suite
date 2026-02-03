@@ -160,7 +160,8 @@ export function ServerDetailsPanel({
   const protocolInfo = getProtocolInfo(server.name, server.protocol);
   const externalConnection = getExternalConnectionString(server.protocol);
 
-  const isDynamic = serverConfig?.isDynamic ?? false;
+  // Use isDynamic directly from server status (from SignalR)
+  const isDynamic = server.isDynamic;
   const isHelm = !isDynamic;
   const protocol = server.protocol.toLowerCase();
 
