@@ -14,6 +14,7 @@ using FileSimulator.ControlApi.Models;
 public class ServerStatusBroadcaster : BackgroundService
 {
     private readonly IHubContext<ServerStatusHub> _hubContext;
+    private readonly IHubContext<MetricsHub> _metricsHubContext;
     private readonly IKubernetesDiscoveryService _discovery;
     private readonly IHealthCheckService _healthCheck;
     private readonly IDbContextFactory<MetricsDbContext> _contextFactory;
@@ -28,12 +29,14 @@ public class ServerStatusBroadcaster : BackgroundService
 
     public ServerStatusBroadcaster(
         IHubContext<ServerStatusHub> hubContext,
+        IHubContext<MetricsHub> metricsHubContext,
         IKubernetesDiscoveryService discovery,
         IHealthCheckService healthCheck,
         IDbContextFactory<MetricsDbContext> contextFactory,
         ILogger<ServerStatusBroadcaster> logger)
     {
         _hubContext = hubContext;
+        _metricsHubContext = metricsHubContext;
         _discovery = discovery;
         _healthCheck = healthCheck;
         _contextFactory = contextFactory;
@@ -119,6 +122,22 @@ public class ServerStatusBroadcaster : BackgroundService
 
         // Record metrics to database for historical storage
         await RecordMetricsAsync(statuses, ct);
+
+        // Stream real-time samples to metrics hub for dashboards
+        await _metricsHubContext.Clients.All.SendAsync(
+            "MetricsSample",
+            new
+            {
+                timestamp = DateTime.UtcNow,
+                samples = statuses.Select(s => new
+                {
+                    serverId = s.Name,
+                    serverType = s.Protocol,
+                    isHealthy = s.IsHealthy,
+                    latencyMs = s.IsHealthy ? (int?)s.LatencyMs : null
+                })
+            },
+            ct);
     }
 
     /// <summary>

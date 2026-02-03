@@ -93,6 +93,7 @@ try
     // Map SignalR hubs
     app.MapHub<ServerStatusHub>("/hubs/status");
     app.MapHub<FileEventsHub>("/hubs/fileevents");
+    app.MapHub<MetricsHub>("/hubs/metrics");
 
     // Map REST API controllers
     app.MapControllers();
@@ -107,6 +108,7 @@ try
             "/health",
             "/hubs/status",
             "/hubs/fileevents",
+            "/hubs/metrics",
             "/api/version",
             "/api/servers",
             "/api/status",
@@ -114,7 +116,10 @@ try
             "/api/files",
             "/api/files/tree",
             "/api/files/upload",
-            "/api/files/download"
+            "/api/files/download",
+            "/api/metrics/samples",
+            "/api/metrics/hourly",
+            "/api/metrics/servers"
         }
     });
 
@@ -167,6 +172,7 @@ try
     Log.Information("File Simulator Control API started successfully");
     Log.Information("SignalR hub available at /hubs/status");
     Log.Information("FileEvents hub available at /hubs/fileevents");
+    Log.Information("Metrics hub available at /hubs/metrics");
     Log.Information("Health check available at /health");
 
     app.Run();
