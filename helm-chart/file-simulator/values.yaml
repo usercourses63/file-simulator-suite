@@ -383,15 +383,14 @@ controlApi:
   # RBAC configuration
   rbac:
     create: true
-    # Permissions needed for Phase 6 (read-only discovery)
-    # Phase 11 will add create/update/delete for dynamic management
+    # Permissions for Phase 11 dynamic server management (full CRUD)
     rules:
       - apiGroups: [""]
-        resources: ["pods", "services", "configmaps"]
-        verbs: ["get", "list", "watch"]
+        resources: ["pods", "services", "configmaps", "persistentvolumeclaims"]
+        verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
       - apiGroups: ["apps"]
         resources: ["deployments"]
-        verbs: ["get", "list", "watch"]
+        verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
   # Resource limits - sized to coexist with v1.0 servers
   # Current cluster: 8GB RAM, 4 CPU
