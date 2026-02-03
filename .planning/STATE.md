@@ -137,6 +137,10 @@ Recent decisions affecting current work:
 - Phase 11-06: Debounced name availability check (300ms) for CreateServerModal
 - Phase 11-06: Inline editing in ServerDetailsPanel for dynamic servers only
 - Phase 11-06: Helm servers shown as read-only with notice in details panel
+- Phase 11-07: Set<string> for multi-select state with O(1) lookup
+- Phase 11-07: canSelect predicate defaults to isDynamic check (protect Helm servers)
+- Phase 11-07: Delete confirmation asks about NAS file cleanup per deletion
+- Phase 11-07: Server source identified by name prefix (file-sim- = Helm)
 - Phase 11-08: Per-conflict resolution for import (skip/replace/rename per server, not global strategy)
 - Phase 11-08: Export downloads JSON via Content-Disposition header
 - Phase 11-08: Settings panel accessible from header gear icon
