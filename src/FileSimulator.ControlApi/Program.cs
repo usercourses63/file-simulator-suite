@@ -53,6 +53,8 @@ try
     // Configuration
     builder.Services.Configure<KubernetesOptions>(
         builder.Configuration.GetSection("Kubernetes"));
+    builder.Services.Configure<KafkaOptions>(
+        builder.Configuration.GetSection("Kafka"));
 
     // EF Core SQLite for metrics persistence
     // Use IDbContextFactory for background service compatibility
@@ -71,6 +73,11 @@ try
     // Metrics background services
     builder.Services.AddHostedService<RollupGenerationService>();
     builder.Services.AddHostedService<RetentionCleanupService>();
+
+    // Kafka services
+    builder.Services.AddSingleton<IKafkaAdminService, KafkaAdminService>();
+    builder.Services.AddSingleton<IKafkaProducerService, KafkaProducerService>();
+    builder.Services.AddSingleton<IKafkaConsumerService, KafkaConsumerService>();
 
     var app = builder.Build();
 
@@ -94,6 +101,7 @@ try
     app.MapHub<ServerStatusHub>("/hubs/status");
     app.MapHub<FileEventsHub>("/hubs/fileevents");
     app.MapHub<MetricsHub>("/hubs/metrics");
+    app.MapHub<KafkaHub>("/hubs/kafka");
 
     // Map REST API controllers
     app.MapControllers();
@@ -109,6 +117,7 @@ try
             "/hubs/status",
             "/hubs/fileevents",
             "/hubs/metrics",
+            "/hubs/kafka",
             "/api/version",
             "/api/servers",
             "/api/status",
@@ -119,7 +128,10 @@ try
             "/api/files/download",
             "/api/metrics/samples",
             "/api/metrics/hourly",
-            "/api/metrics/servers"
+            "/api/metrics/servers",
+            "/api/kafka/topics",
+            "/api/kafka/consumer-groups",
+            "/api/kafka/health"
         }
     });
 
@@ -173,6 +185,7 @@ try
     Log.Information("SignalR hub available at /hubs/status");
     Log.Information("FileEvents hub available at /hubs/fileevents");
     Log.Information("Metrics hub available at /hubs/metrics");
+    Log.Information("Kafka hub available at /hubs/kafka");
     Log.Information("Health check available at /health");
 
     app.Run();
