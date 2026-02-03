@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useKafka } from '../hooks/useKafka';
-import { getLagLevel } from '../types/kafka';
 import TopicList from './TopicList';
 import CreateTopicForm from './CreateTopicForm';
 import MessageProducer from './MessageProducer';
+import MessageViewer from './MessageViewer';
+import ConsumerGroupDetail from './ConsumerGroupDetail';
 import './KafkaTab.css';
 
 /**
@@ -16,10 +17,12 @@ interface KafkaTabProps {
 
 /**
  * KafkaTab component displays Kafka management UI.
- * Shows topics (with create/delete), message producer, and consumer groups.
- * Layout: Left panel (topics) | Center (message producer) | Right (consumer groups)
+ * Shows topics (with create/delete), message producer/consumer, and consumer groups.
+ * Layout: Left panel (topics) | Center (message producer/viewer) | Right (consumer groups)
  */
 function KafkaTab({ apiBaseUrl }: KafkaTabProps) {
+  const kafkaHubUrl = `${apiBaseUrl}/hubs/kafka`;
+
   const {
     topics,
     topicsLoading,
@@ -29,12 +32,17 @@ function KafkaTab({ apiBaseUrl }: KafkaTabProps) {
     consumerGroups,
     groupsLoading,
     groupsError,
+    getGroupDetail,
+    resetOffsets,
+    deleteGroup,
+    getMessages,
     produceMessage,
     isHealthy
   } = useKafka({ apiBaseUrl });
 
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [viewMode, setViewMode] = useState<'produce' | 'consume'>('produce');
 
   return (
     <div className="kafka-tab">
@@ -64,16 +72,43 @@ function KafkaTab({ apiBaseUrl }: KafkaTabProps) {
           )}
         </div>
 
-        {/* Center: Message Producer (when topic selected) */}
-        <div className="kafka-panel kafka-panel--producer">
+        {/* Center: Producer/Consumer */}
+        <div className="kafka-panel kafka-panel--messages">
           {selectedTopic ? (
-            <MessageProducer
-              topic={selectedTopic}
-              onProduce={produceMessage}
-            />
+            <>
+              <div className="kafka-view-toggle">
+                <button
+                  className={`kafka-view-toggle__btn ${viewMode === 'produce' ? 'kafka-view-toggle__btn--active' : ''}`}
+                  onClick={() => setViewMode('produce')}
+                  type="button"
+                >
+                  Produce
+                </button>
+                <button
+                  className={`kafka-view-toggle__btn ${viewMode === 'consume' ? 'kafka-view-toggle__btn--active' : ''}`}
+                  onClick={() => setViewMode('consume')}
+                  type="button"
+                >
+                  Consume
+                </button>
+              </div>
+
+              {viewMode === 'produce' ? (
+                <MessageProducer
+                  topic={selectedTopic}
+                  onProduce={produceMessage}
+                />
+              ) : (
+                <MessageViewer
+                  topic={selectedTopic}
+                  hubUrl={kafkaHubUrl}
+                  getMessages={getMessages}
+                />
+              )}
+            </>
           ) : (
             <div className="kafka-placeholder">
-              Select a topic to produce messages
+              Select a topic to produce or consume messages
             </div>
           )}
         </div>
@@ -88,18 +123,17 @@ function KafkaTab({ apiBaseUrl }: KafkaTabProps) {
           ) : consumerGroups.length === 0 ? (
             <div className="kafka-empty">No consumer groups</div>
           ) : (
-            <ul className="kafka-group-list">
+            <div className="kafka-groups-list">
               {consumerGroups.map(group => (
-                <li key={group.groupId} className="kafka-group-item">
-                  <span className="kafka-group-item__id">{group.groupId}</span>
-                  <span className="kafka-group-item__state">{group.state}</span>
-                  <span className="kafka-group-item__members">{group.memberCount} members</span>
-                  <span className={`kafka-group-item__lag kafka-group-item__lag--${getLagLevel(group.totalLag)}`}>
-                    Lag: {group.totalLag}
-                  </span>
-                </li>
+                <ConsumerGroupDetail
+                  key={group.groupId}
+                  group={group}
+                  getDetail={getGroupDetail}
+                  onResetOffsets={resetOffsets}
+                  onDeleteGroup={deleteGroup}
+                />
               ))}
-            </ul>
+            </div>
           )}
         </div>
       </div>
