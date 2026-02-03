@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 ## Current Position
 
 Phase: 11 of 12 (Dynamic Server Management)
-Plan: 3 of 5 complete
+Plan: 4 of 5 complete
 Status: In progress
-Last activity: 2026-02-03 - Completed 11-03-PLAN.md
+Last activity: 2026-02-03 - Completed 11-04-PLAN.md
 
-Progress: [■■■■■■■■■■░░] 97% (38 of 40 plans complete)
+Progress: [■■■■■■■■■■░░] 98% (39 of 40 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 38
+- Total plans completed: 39
 - Average duration: 6.0 min
-- Total execution time: 4.09 hours
+- Total execution time: 4.20 hours
 
 **By Phase:**
 
@@ -38,10 +38,10 @@ Progress: [■■■■■■■■■■░░] 97% (38 of 40 plans complete)
 | 8. File Operations and Event Streaming | 5 | 21 min | 4.2 min |
 | 9. Historical Metrics and Storage | 6 | 38.5 min | 6.4 min |
 | 10. Kafka Integration | 7 | 36 min | 5.1 min |
-| 11. Dynamic Server Management | 3/5 | 19 min | 6.3 min |
+| 11. Dynamic Server Management | 4/5 | 26 min | 6.5 min |
 
 **Recent Trend:**
-- Last 5 plans: [5.0, 6.0, 6.0, 6.0, 7.0] min
+- Last 5 plans: [6.0, 6.0, 6.0, 7.0, 7.0] min
 - Trend: Consistent execution pace
 
 *Updated after each plan completion*
@@ -131,6 +131,9 @@ Recent decisions affecting current work:
 - Phase 11-03: NAS SubPath on shared PVC for directory isolation (no dedicated PVCs)
 - Phase 11-03: Directory presets: input/output/backup resolve to nas-*-dynamic subdirs
 - Phase 11-03: DeleteServerAsync explicitly deletes services first (no cascade)
+- Phase 11-04: ConfigMapUpdateService updates {releasePrefix}-endpoints ConfigMap on all operations
+- Phase 11-04: V1Scale + MergePatch for deployment scale (not direct replicas property)
+- Phase 11-04: StopServerAsync scales to 0, StartServerAsync scales to 1, RestartServerAsync deletes pods
 
 ### Pending Todos
 
@@ -148,5 +151,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 11-03-PLAN.md - SFTP and NAS server creation with deletion
+Stopped at: Completed 11-04-PLAN.md - ConfigMap updates and server lifecycle operations
 Resume file: None
