@@ -4,6 +4,8 @@ import ServerCard from './ServerCard';
 interface ServerGridProps {
   servers: ServerStatus[];
   onCardClick: (server: ServerStatus) => void;
+  sparklineData?: Map<string, number[]>;  // serverId -> latency values
+  onSparklineClick?: (serverId: string) => void;  // Navigate to History tab
 }
 
 /**
@@ -15,7 +17,7 @@ interface ServerGridProps {
  *
  * Uses CSS Grid with auto-fit for responsive wrapping.
  */
-export function ServerGrid({ servers, onCardClick }: ServerGridProps) {
+export function ServerGrid({ servers, onCardClick, sparklineData, onSparklineClick }: ServerGridProps) {
   // Group servers by type
   const nasServers = servers.filter(s => s.protocol === 'NFS');
   const protocolServers = servers.filter(s => s.protocol !== 'NFS');
@@ -33,6 +35,8 @@ export function ServerGrid({ servers, onCardClick }: ServerGridProps) {
               key={server.name}
               server={server}
               onClick={() => onCardClick(server)}
+              sparklineData={sparklineData?.get(server.name)}
+              onSparklineClick={() => onSparklineClick?.(server.name)}
             />
           ))}
           {nasServers.length === 0 && (
@@ -52,6 +56,8 @@ export function ServerGrid({ servers, onCardClick }: ServerGridProps) {
               key={server.name}
               server={server}
               onClick={() => onCardClick(server)}
+              sparklineData={sparklineData?.get(server.name)}
+              onSparklineClick={() => onSparklineClick?.(server.name)}
             />
           ))}
           {protocolServers.length === 0 && (

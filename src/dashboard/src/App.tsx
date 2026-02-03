@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSignalR } from './hooks/useSignalR';
 import { useFileEvents } from './hooks/useFileEvents';
+import { useMetricsStream } from './hooks/useMetricsStream';
 import { ServerStatus, ServerStatusUpdate } from './types/server';
 import ConnectionStatus from './components/ConnectionStatus';
 import SummaryHeader from './components/SummaryHeader';
@@ -8,6 +9,7 @@ import ServerGrid from './components/ServerGrid';
 import ServerDetailsPanel from './components/ServerDetailsPanel';
 import FileBrowser from './components/FileBrowser';
 import FileEventFeed from './components/FileEventFeed';
+import HistoryTab from './components/HistoryTab';
 import './App.css';
 
 function App() {
@@ -15,6 +17,7 @@ function App() {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://172.25.174.184:30500';
   const statusHubUrl = import.meta.env.VITE_SIGNALR_HUB_URL || `${apiBaseUrl}/hubs/status`;
   const fileEventsHubUrl = `${apiBaseUrl}/hubs/fileevents`;
+  const metricsHubUrl = `${apiBaseUrl}/hubs/metrics`;
 
   // Connect to SignalR hub and receive status updates
   const { data, isConnected, isReconnecting, reconnectAttempt, error, lastUpdate } =
@@ -23,11 +26,23 @@ function App() {
   // Connect to file events hub
   const { events: fileEvents, isConnected: fileEventsConnected, clearEvents } = useFileEvents(fileEventsHubUrl);
 
+  // Connect to metrics hub for real-time sparkline data
+  const { latestSamples } = useMetricsStream(metricsHubUrl);
+
   // Track selected server for details panel
   const [selectedServer, setSelectedServer] = useState<ServerStatus | null>(null);
 
   // Track active tab
-  const [activeTab, setActiveTab] = useState<'servers' | 'files'>('servers');
+  const [activeTab, setActiveTab] = useState<'servers' | 'files' | 'history'>('servers');
+
+  // Track selected server for History tab filter
+  const [historyServerId, setHistoryServerId] = useState<string | undefined>();
+
+  // Handle sparkline click - navigate to History tab with server filter
+  const handleSparklineClick = (serverId: string) => {
+    setHistoryServerId(serverId);
+    setActiveTab('history');
+  };
 
   return (
     <div className={`app ${selectedServer && activeTab === 'servers' ? 'app--panel-open' : ''}`}>
@@ -48,6 +63,13 @@ function App() {
               type="button"
             >
               Files
+            </button>
+            <button
+              className={`header-tab ${activeTab === 'history' ? 'header-tab--active' : ''}`}
+              onClick={() => setActiveTab('history')}
+              type="button"
+            >
+              History
             </button>
           </nav>
         </div>
@@ -75,6 +97,8 @@ function App() {
                 <ServerGrid
                   servers={data.servers}
                   onCardClick={setSelectedServer}
+                  sparklineData={latestSamples}
+                  onSparklineClick={handleSparklineClick}
                 />
               </>
             ) : (
@@ -100,6 +124,13 @@ function App() {
               />
             </aside>
           </div>
+        )}
+
+        {activeTab === 'history' && (
+          <HistoryTab
+            apiBaseUrl={apiBaseUrl}
+            initialServerId={historyServerId}
+          />
         )}
       </main>
 

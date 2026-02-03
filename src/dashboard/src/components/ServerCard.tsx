@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { ServerStatus } from '../types/server';
 import { getHealthState, getHealthStateText } from '../utils/healthStatus';
+import ServerSparkline from './ServerSparkline';
 
 interface ServerCardProps {
   server: ServerStatus;
   onClick: () => void;
+  sparklineData?: number[];  // Latency values for sparkline
+  onSparklineClick?: () => void;  // Navigate to History tab
 }
 
 /**
@@ -15,9 +18,10 @@ interface ServerCardProps {
  * - Status dot with health state text
  * - Latency display in milliseconds
  * - Brief pulse animation when status changes
+ * - Mini sparkline showing latency trend
  * - Click handler to open details panel
  */
-export function ServerCard({ server, onClick }: ServerCardProps) {
+export function ServerCard({ server, onClick, sparklineData, onSparklineClick }: ServerCardProps) {
   const healthState = getHealthState(server);
   const healthText = getHealthStateText(healthState);
 
@@ -41,6 +45,12 @@ export function ServerCard({ server, onClick }: ServerCardProps) {
     if (latencyMs === undefined) return '-';
     if (latencyMs < 1000) return `${latencyMs}ms`;
     return `${(latencyMs / 1000).toFixed(1)}s`;
+  };
+
+  // Handle sparkline click without triggering card click
+  const handleSparklineClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSparklineClick?.();
   };
 
   return (
@@ -67,6 +77,16 @@ export function ServerCard({ server, onClick }: ServerCardProps) {
           <span className="metric-value">{formatLatency(server.latencyMs)}</span>
         </div>
       </div>
+
+      {sparklineData && sparklineData.length > 0 && (
+        <div className="server-card-sparkline" onClick={handleSparklineClick}>
+          <ServerSparkline
+            data={sparklineData}
+            isHealthy={server.isHealthy}
+            onClick={onSparklineClick}
+          />
+        </div>
+      )}
 
       {server.healthMessage && (
         <div className="server-card-footer">

@@ -1,5 +1,5 @@
 /**
- * TypeScript types for metrics API endpoints and data structures.
+ * TypeScript types for metrics API and SignalR events.
  * Matches backend DTOs from FileSimulator.ControlApi.
  */
 
