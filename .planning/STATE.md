@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 ## Current Position
 
 Phase: 11 of 12 (Dynamic Server Management)
-Plan: 2 of 5 complete
+Plan: 3 of 5 complete
 Status: In progress
-Last activity: 2026-02-03 - Completed 11-02-PLAN.md
+Last activity: 2026-02-03 - Completed 11-03-PLAN.md
 
-Progress: [■■■■■■■■■■░░] 97% (37 of 38 plans complete)
+Progress: [■■■■■■■■■■░░] 97% (38 of 40 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 37
+- Total plans completed: 38
 - Average duration: 6.0 min
-- Total execution time: 3.97 hours
+- Total execution time: 4.09 hours
 
 **By Phase:**
 
@@ -38,10 +38,10 @@ Progress: [■■■■■■■■■■░░] 97% (37 of 38 plans complete)
 | 8. File Operations and Event Streaming | 5 | 21 min | 4.2 min |
 | 9. Historical Metrics and Storage | 6 | 38.5 min | 6.4 min |
 | 10. Kafka Integration | 7 | 36 min | 5.1 min |
-| 11. Dynamic Server Management | 2/5 | 12 min | 6.0 min |
+| 11. Dynamic Server Management | 3/5 | 19 min | 6.3 min |
 
 **Recent Trend:**
-- Last 5 plans: [5.0, 5.0, 6.0, 6.0, 6.0] min
+- Last 5 plans: [5.0, 6.0, 6.0, 6.0, 7.0] min
 - Trend: Consistent execution pace
 
 *Updated after each plan completion*
@@ -127,6 +127,10 @@ Recent decisions affecting current work:
 - Phase 11-02: OwnerReferences point to POD (not Deployment) for proper K8s garbage collection
 - Phase 11-02: IKubernetes registered as singleton for sharing between services
 - Phase 11-02: Dynamic resources labeled with app.kubernetes.io/managed-by=control-api
+- Phase 11-03: SFTP uses atmoz/sftp with Args format user:pass:uid:gid (not env vars)
+- Phase 11-03: NAS SubPath on shared PVC for directory isolation (no dedicated PVCs)
+- Phase 11-03: Directory presets: input/output/backup resolve to nas-*-dynamic subdirs
+- Phase 11-03: DeleteServerAsync explicitly deletes services first (no cascade)
 
 ### Pending Todos
 
@@ -144,5 +148,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 11-02-PLAN.md - IKubernetesManagementService interface and FTP creation
+Stopped at: Completed 11-03-PLAN.md - SFTP and NAS server creation with deletion
 Resume file: None
