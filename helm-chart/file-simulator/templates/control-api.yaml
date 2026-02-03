@@ -74,10 +74,16 @@ spec:
           volumeMounts:
             - name: simulator-data
               mountPath: /mnt/simulator-data
+            - name: control-data
+              mountPath: {{ .Values.controlApi.persistence.mountPath | default "/mnt/control-data" }}
       volumes:
         - name: simulator-data
           hostPath:
             path: {{ .Values.global.storage.hostPath }}
+            type: DirectoryOrCreate
+        - name: control-data
+          hostPath:
+            path: {{ .Values.controlApi.persistence.hostPath | default "/mnt/control-data" }}
             type: DirectoryOrCreate
       {{- with .Values.nodeSelector }}
       nodeSelector:

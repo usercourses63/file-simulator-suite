@@ -420,6 +420,14 @@ controlApi:
     # Keep-alive interval (seconds)
     keepAliveInterval: 15
 
+  # Persistence for metrics database (SQLite)
+  persistence:
+    enabled: true
+    # Use hostPath for Minikube (same pattern as simulator-data)
+    hostPath: /mnt/control-data
+    # Mount path inside container (matches Program.cs connection string)
+    mountPath: /mnt/control-data
+
 # ============================================
 # Ingress Configuration (optional)
 # ============================================
