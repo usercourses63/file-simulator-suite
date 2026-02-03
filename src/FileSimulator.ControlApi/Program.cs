@@ -1,3 +1,4 @@
+using FluentValidation;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -6,6 +7,8 @@ using FileSimulator.ControlApi.Data;
 using FileSimulator.ControlApi.Hubs;
 using FileSimulator.ControlApi.Services;
 using FileSimulator.ControlApi.Models;
+using FileSimulator.ControlApi.Validators;
+using Microsoft.Extensions.Options;
 
 // Configure Serilog before creating the builder
 Log.Logger = new LoggerConfiguration()
@@ -68,6 +71,16 @@ try
     builder.Services.Configure<KafkaOptions>(
         builder.Configuration.GetSection("Kafka"));
 
+    // Register Kubernetes client for injection into management service
+    builder.Services.AddSingleton<k8s.IKubernetes>(sp =>
+    {
+        var options = sp.GetRequiredService<IOptions<KubernetesOptions>>().Value;
+        var config = options.InCluster
+            ? k8s.KubernetesClientConfiguration.InClusterConfig()
+            : k8s.KubernetesClientConfiguration.BuildConfigFromConfigFile();
+        return new k8s.Kubernetes(config);
+    });
+
     // EF Core SQLite for metrics persistence
     // Use IDbContextFactory for background service compatibility
     builder.Services.AddDbContextFactory<MetricsDbContext>(options =>
@@ -77,6 +90,9 @@ try
     builder.Services.AddScoped<IMetricsService, MetricsService>();
     builder.Services.AddSingleton<IKubernetesDiscoveryService, KubernetesDiscoveryService>();
     builder.Services.AddSingleton<IHealthCheckService, HealthCheckService>();
+
+    // FluentValidation validators for server creation requests
+    builder.Services.AddValidatorsFromAssemblyContaining<CreateFtpServerValidator>();
     builder.Services.AddSingleton<ServerStatusBroadcaster>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<ServerStatusBroadcaster>());
     builder.Services.AddSingleton<FileWatcherService>();
