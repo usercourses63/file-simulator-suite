@@ -123,11 +123,15 @@ Plans:
   3. User can query metrics for specific time ranges (last 1h, last 24h, last 7d)
   4. Database survives pod restarts with data intact
   5. Auto-cleanup removes data older than 7 days to prevent unbounded growth
-**Plans**: TBD
+**Plans**: 6 plans
 
 Plans:
-- [ ] 09-01: [TBD during planning]
-- [ ] 09-02: [TBD during planning]
+- [ ] 09-01-PLAN.md - EF Core SQLite setup, entities (HealthSample, HealthHourly), MetricsService
+- [ ] 09-02-PLAN.md - Background services (recording, rollup, retention), Helm PVC updates
+- [ ] 09-03-PLAN.md - REST API endpoints (/api/metrics/*), MetricsHub SignalR streaming
+- [ ] 09-04-PLAN.md - Frontend: Recharts/date-fns, types, hooks, HistoryTab with zoomable charts
+- [ ] 09-05-PLAN.md - Frontend: Sparklines on ServerCard, App integration, CSS styling
+- [ ] 09-06-PLAN.md - Human verification checkpoint
 
 #### Phase 10: Kafka Integration for Event Streaming
 **Goal**: Deploy minimal Kafka simulator for pub/sub testing with topic management
@@ -200,10 +204,10 @@ v2.0 phases execute sequentially: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 6. Backend API Foundation | v2.0 | 3/3 | Complete | 2026-02-02 |
 | 7. Real-Time Monitoring Dashboard | v2.0 | 4/4 | Complete | 2026-02-02 |
 | 8. File Operations and Event Streaming | v2.0 | 6/6 | Complete | 2026-02-02 |
-| 9. Historical Metrics and Storage | v2.0 | 0/TBD | Not started | - |
+| 9. Historical Metrics and Storage | v2.0 | 0/6 | Planned | - |
 | 10. Kafka Integration for Event Streaming | v2.0 | 0/TBD | Not started | - |
 | 11. Dynamic Server Management | v2.0 | 0/TBD | Not started | - |
 | 12. Alerting and Production Readiness | v2.0 | 0/TBD | Not started | - |
 
 ---
-*Last updated: 2026-02-02 after Phase 8 planning*
+*Last updated: 2026-02-03 after Phase 9 planning*
