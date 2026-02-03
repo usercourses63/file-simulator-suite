@@ -10,6 +10,7 @@ import ServerDetailsPanel from './components/ServerDetailsPanel';
 import FileBrowser from './components/FileBrowser';
 import FileEventFeed from './components/FileEventFeed';
 import HistoryTab from './components/HistoryTab';
+import KafkaTab from './components/KafkaTab';
 import './App.css';
 
 function App() {
@@ -33,7 +34,7 @@ function App() {
   const [selectedServer, setSelectedServer] = useState<ServerStatus | null>(null);
 
   // Track active tab
-  const [activeTab, setActiveTab] = useState<'servers' | 'files' | 'history'>('servers');
+  const [activeTab, setActiveTab] = useState<'servers' | 'files' | 'history' | 'kafka'>('servers');
 
   // Track selected server for History tab filter
   const [historyServerId, setHistoryServerId] = useState<string | undefined>();
@@ -70,6 +71,13 @@ function App() {
               type="button"
             >
               History
+            </button>
+            <button
+              className={`header-tab ${activeTab === 'kafka' ? 'header-tab--active' : ''}`}
+              onClick={() => setActiveTab('kafka')}
+              type="button"
+            >
+              Kafka
             </button>
           </nav>
         </div>
@@ -131,6 +139,10 @@ function App() {
             apiBaseUrl={apiBaseUrl}
             initialServerId={historyServerId}
           />
+        )}
+
+        {activeTab === 'kafka' && (
+          <KafkaTab apiBaseUrl={apiBaseUrl} />
         )}
       </main>
 

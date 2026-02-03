@@ -1,0 +1,148 @@
+/* =============================================================================
+   KAFKA TAB
+   ============================================================================= */
+
+.kafka-tab {
+  padding: var(--spacing-lg);
+}
+
+.kafka-health {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: var(--color-surface);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.kafka-health__indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.kafka-health__indicator--healthy {
+  background: var(--color-healthy);
+}
+
+.kafka-health__indicator--unhealthy {
+  background: var(--color-down);
+}
+
+.kafka-health__indicator--unknown {
+  background: var(--color-degraded);
+}
+
+.kafka-health__label {
+  font-weight: 500;
+}
+
+.kafka-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.kafka-section {
+  background: var(--color-surface);
+  border-radius: 8px;
+  padding: var(--spacing-md);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.kafka-section__header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.kafka-section__header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.kafka-section__count {
+  background: var(--color-bg);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.kafka-loading,
+.kafka-error,
+.kafka-empty {
+  padding: var(--spacing-md);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.kafka-error {
+  color: var(--color-down);
+}
+
+.kafka-topics,
+.kafka-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.kafka-topic,
+.kafka-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg);
+  border-radius: 4px;
+}
+
+.kafka-topic__name,
+.kafka-group__id {
+  flex: 1;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kafka-topic__partitions,
+.kafka-group__state,
+.kafka-group__members {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.kafka-group__lag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.kafka-group__lag--green {
+  background: rgba(34, 197, 94, 0.2);
+  color: var(--color-healthy);
+}
+
+.kafka-group__lag--yellow {
+  background: rgba(234, 179, 8, 0.2);
+  color: var(--color-degraded);
+}
+
+.kafka-group__lag--red {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--color-down);
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .kafka-content {
+    grid-template-columns: 1fr;
+  }
+}
