@@ -68,6 +68,10 @@ try
     builder.Services.AddSingleton<FileWatcherService>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<FileWatcherService>());
 
+    // Metrics background services
+    builder.Services.AddHostedService<RollupGenerationService>();
+    builder.Services.AddHostedService<RetentionCleanupService>();
+
     var app = builder.Build();
 
     // Ensure SQLite database exists with schema
