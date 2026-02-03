@@ -15,7 +15,7 @@ import './App.css';
 
 function App() {
   // Get base URL from environment
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://172.25.174.184:30500';
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://172.25.170.231:30500';
   const statusHubUrl = import.meta.env.VITE_SIGNALR_HUB_URL || `${apiBaseUrl}/hubs/status`;
   const fileEventsHubUrl = `${apiBaseUrl}/hubs/fileevents`;
   const metricsHubUrl = `${apiBaseUrl}/hubs/metrics`;
