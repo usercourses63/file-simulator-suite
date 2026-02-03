@@ -161,10 +161,12 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
             }
         }
 
-        // For other protocols, use second-to-last meaningful part
+        // For other protocols, check for exact segment match (not substring)
+        // This prevents "sftp" from matching "ftp" incorrectly
         foreach (var (key, _) in ProtocolMappings)
         {
-            if (podName.Contains(key, StringComparison.OrdinalIgnoreCase))
+            // Check if any segment exactly matches the protocol key
+            if (parts.Any(p => p.Equals(key, StringComparison.OrdinalIgnoreCase)))
                 return key;
         }
 

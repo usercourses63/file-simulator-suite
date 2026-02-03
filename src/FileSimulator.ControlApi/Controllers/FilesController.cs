@@ -23,12 +23,13 @@ public class FilesController : ControllerBase
     }
 
     /// <summary>
-    /// Get directory tree listing
+    /// Get directory tree listing with nested children
     /// </summary>
     /// <param name="path">Relative path from base directory (empty for root)</param>
-    /// <returns>List of FileNodeDto for immediate children</returns>
+    /// <param name="depth">Max recursion depth (default 3, max 5)</param>
+    /// <returns>List of FileNodeDto with nested children</returns>
     [HttpGet("tree")]
-    public IActionResult GetTree([FromQuery] string path = "")
+    public IActionResult GetTree([FromQuery] string path = "", [FromQuery] int depth = 3)
     {
         if (!ValidatePath(path, out var fullPath))
         {
@@ -41,52 +42,13 @@ public class FilesController : ControllerBase
             return NotFound(new { error = "Directory not found" });
         }
 
+        // Limit depth to prevent excessive recursion
+        depth = Math.Clamp(depth, 1, 5);
+
         try
         {
-            var nodes = new List<FileNodeDto>();
-
-            // Get directories first
-            var directories = Directory.GetDirectories(fullPath)
-                .Select(dir => new DirectoryInfo(dir))
-                .Where(dir => !HiddenDirs.Contains(dir.Name))
-                .OrderBy(dir => dir.Name);
-
-            foreach (var dir in directories)
-            {
-                var relativePath = Path.GetRelativePath(_basePath, dir.FullName);
-                nodes.Add(new FileNodeDto
-                {
-                    Id = relativePath.Replace('\\', '/'),
-                    Name = dir.Name,
-                    IsDirectory = true,
-                    Size = null,
-                    Modified = dir.LastWriteTimeUtc.ToString("O"),
-                    Protocols = GetVisibleProtocols(dir.FullName),
-                    Children = null
-                });
-            }
-
-            // Get files
-            var files = Directory.GetFiles(fullPath)
-                .Select(file => new FileInfo(file))
-                .OrderBy(file => file.Name);
-
-            foreach (var file in files)
-            {
-                var relativePath = Path.GetRelativePath(_basePath, file.FullName);
-                nodes.Add(new FileNodeDto
-                {
-                    Id = relativePath.Replace('\\', '/'),
-                    Name = file.Name,
-                    IsDirectory = false,
-                    Size = file.Length,
-                    Modified = file.LastWriteTimeUtc.ToString("O"),
-                    Protocols = GetVisibleProtocols(file.FullName),
-                    Children = null
-                });
-            }
-
-            _logger.LogDebug("Listed {Count} items in {Path}", nodes.Count, path);
+            var nodes = GetDirectoryNodes(fullPath, depth);
+            _logger.LogDebug("Listed tree with {Count} root items in {Path}", nodes.Count, path);
             return Ok(nodes);
         }
         catch (Exception ex)
@@ -94,6 +56,61 @@ public class FilesController : ControllerBase
             _logger.LogError(ex, "Error listing directory: {Path}", path);
             return StatusCode(500, new { error = "Failed to list directory" });
         }
+    }
+
+    /// <summary>
+    /// Recursively get directory nodes with children
+    /// </summary>
+    private List<FileNodeDto> GetDirectoryNodes(string fullPath, int remainingDepth)
+    {
+        var nodes = new List<FileNodeDto>();
+
+        // Get directories first
+        var directories = Directory.GetDirectories(fullPath)
+            .Select(dir => new DirectoryInfo(dir))
+            .Where(dir => !HiddenDirs.Contains(dir.Name))
+            .OrderBy(dir => dir.Name);
+
+        foreach (var dir in directories)
+        {
+            var relativePath = Path.GetRelativePath(_basePath, dir.FullName);
+            var children = remainingDepth > 1
+                ? GetDirectoryNodes(dir.FullName, remainingDepth - 1)
+                : new List<FileNodeDto>(); // Empty list allows expansion in UI
+
+            nodes.Add(new FileNodeDto
+            {
+                Id = relativePath.Replace('\\', '/'),
+                Name = dir.Name,
+                IsDirectory = true,
+                Size = null,
+                Modified = dir.LastWriteTimeUtc.ToString("O"),
+                Protocols = GetVisibleProtocols(dir.FullName),
+                Children = children
+            });
+        }
+
+        // Get files
+        var files = Directory.GetFiles(fullPath)
+            .Select(file => new FileInfo(file))
+            .OrderBy(file => file.Name);
+
+        foreach (var file in files)
+        {
+            var relativePath = Path.GetRelativePath(_basePath, file.FullName);
+            nodes.Add(new FileNodeDto
+            {
+                Id = relativePath.Replace('\\', '/'),
+                Name = file.Name,
+                IsDirectory = false,
+                Size = file.Length,
+                Modified = file.LastWriteTimeUtc.ToString("O"),
+                Protocols = GetVisibleProtocols(file.FullName),
+                Children = null // Files don't have children
+            });
+        }
+
+        return nodes;
     }
 
     /// <summary>
