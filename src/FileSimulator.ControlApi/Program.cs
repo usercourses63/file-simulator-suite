@@ -89,6 +89,8 @@ try
     // Services
     builder.Services.AddScoped<IMetricsService, MetricsService>();
     builder.Services.AddSingleton<IKubernetesDiscoveryService, KubernetesDiscoveryService>();
+    // ConfigMap update service must be registered before management service (dependency)
+    builder.Services.AddSingleton<IConfigMapUpdateService, ConfigMapUpdateService>();
     builder.Services.AddSingleton<IKubernetesManagementService, KubernetesManagementService>();
     builder.Services.AddSingleton<IConfigurationExportService, ConfigurationExportService>();
     builder.Services.AddSingleton<IHealthCheckService, HealthCheckService>();
@@ -161,7 +163,13 @@ try
             "/api/metrics/servers",
             "/api/kafka/topics",
             "/api/kafka/consumer-groups",
-            "/api/kafka/health"
+            "/api/kafka/health",
+            "/api/configuration/export",
+            "/api/configuration/preview",
+            "/api/configuration/import",
+            "/api/configuration/import/file",
+            "/api/configuration/validate",
+            "/api/configuration/templates"
         }
     });
 

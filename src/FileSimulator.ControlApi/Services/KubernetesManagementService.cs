@@ -258,6 +258,9 @@ public class KubernetesManagementService : IKubernetesManagementService
         _logger.LogInformation("Created FTP server '{Name}' with NodePort {NodePort}, owner pod: {OwnerPod}",
             request.Name, assignedNodePort, controlPod.Metadata.Name);
 
+        // Update service discovery ConfigMap
+        await _configMapService.UpdateConfigMapAsync(ct);
+
         return new DiscoveredServer
         {
             Name = request.Name,
@@ -452,6 +455,9 @@ public class KubernetesManagementService : IKubernetesManagementService
 
         _logger.LogInformation("Created SFTP server '{Name}' with NodePort {NodePort}, owner pod: {OwnerPod}",
             request.Name, assignedNodePort, controlPod.Metadata.Name);
+
+        // Update service discovery ConfigMap
+        await _configMapService.UpdateConfigMapAsync(ct);
 
         return new DiscoveredServer
         {
@@ -660,6 +666,9 @@ public class KubernetesManagementService : IKubernetesManagementService
         _logger.LogInformation("Created NAS server '{Name}' at directory '{Directory}' with NodePort {NodePort}, owner pod: {OwnerPod}",
             request.Name, directory, assignedNodePort, controlPod.Metadata.Name);
 
+        // Update service discovery ConfigMap
+        await _configMapService.UpdateConfigMapAsync(ct);
+
         return new DiscoveredServer
         {
             Name = request.Name,
@@ -732,17 +741,116 @@ public class KubernetesManagementService : IKubernetesManagementService
         }
 
         _logger.LogInformation("Deleted server '{ServerName}'", serverName);
+
+        // Update service discovery ConfigMap
+        await _configMapService.UpdateConfigMapAsync(ct);
     }
 
     /// <inheritdoc />
-    public Task StopServerAsync(string serverName, CancellationToken ct = default)
-        => throw new NotImplementedException("Implemented in plan 11-04");
+    public async Task StopServerAsync(string serverName, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Stopping server {ServerName}", serverName);
+
+        var labelSelector = $"{LabelInstance}={serverName}";
+        var deployments = await _client.AppsV1.ListNamespacedDeploymentAsync(
+            _namespace,
+            labelSelector: labelSelector,
+            cancellationToken: ct);
+
+        if (!deployments.Items.Any())
+        {
+            throw new InvalidOperationException($"Server '{serverName}' not found");
+        }
+
+        foreach (var deployment in deployments.Items)
+        {
+            // Scale to 0 replicas using patch
+            var patchBody = new V1Scale
+            {
+                Spec = new V1ScaleSpec { Replicas = 0 }
+            };
+
+            await _client.AppsV1.PatchNamespacedDeploymentScaleAsync(
+                new V1Patch(patchBody, V1Patch.PatchType.MergePatch),
+                deployment.Metadata.Name,
+                _namespace,
+                cancellationToken: ct);
+
+            _logger.LogInformation("Scaled {Deployment} to 0 replicas", deployment.Metadata.Name);
+        }
+
+        // Update ConfigMap to reflect server is stopped (removed from discovery)
+        await _configMapService.UpdateConfigMapAsync(ct);
+    }
 
     /// <inheritdoc />
-    public Task StartServerAsync(string serverName, CancellationToken ct = default)
-        => throw new NotImplementedException("Implemented in plan 11-04");
+    public async Task StartServerAsync(string serverName, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Starting server {ServerName}", serverName);
+
+        var labelSelector = $"{LabelInstance}={serverName}";
+        var deployments = await _client.AppsV1.ListNamespacedDeploymentAsync(
+            _namespace,
+            labelSelector: labelSelector,
+            cancellationToken: ct);
+
+        if (!deployments.Items.Any())
+        {
+            throw new InvalidOperationException($"Server '{serverName}' not found");
+        }
+
+        foreach (var deployment in deployments.Items)
+        {
+            // Scale to 1 replica using patch
+            var patchBody = new V1Scale
+            {
+                Spec = new V1ScaleSpec { Replicas = 1 }
+            };
+
+            await _client.AppsV1.PatchNamespacedDeploymentScaleAsync(
+                new V1Patch(patchBody, V1Patch.PatchType.MergePatch),
+                deployment.Metadata.Name,
+                _namespace,
+                cancellationToken: ct);
+
+            _logger.LogInformation("Scaled {Deployment} to 1 replica", deployment.Metadata.Name);
+        }
+
+        // Update ConfigMap to reflect server is available again
+        await _configMapService.UpdateConfigMapAsync(ct);
+    }
 
     /// <inheritdoc />
-    public Task RestartServerAsync(string serverName, CancellationToken ct = default)
-        => throw new NotImplementedException("Implemented in plan 11-04");
+    public async Task RestartServerAsync(string serverName, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Restarting server {ServerName}", serverName);
+
+        var labelSelector = $"{LabelInstance}={serverName}";
+
+        // Delete pods - deployment will recreate them
+        var pods = await _client.CoreV1.ListNamespacedPodAsync(
+            _namespace,
+            labelSelector: labelSelector,
+            cancellationToken: ct);
+
+        if (!pods.Items.Any())
+        {
+            _logger.LogWarning("No pods found for server '{ServerName}' - may already be stopped", serverName);
+            throw new InvalidOperationException($"No running pods found for server '{serverName}'");
+        }
+
+        foreach (var pod in pods.Items)
+        {
+            await _client.CoreV1.DeleteNamespacedPodAsync(
+                pod.Metadata.Name,
+                _namespace,
+                gracePeriodSeconds: 5,
+                cancellationToken: ct);
+
+            _logger.LogInformation("Deleted pod {Pod} for restart", pod.Metadata.Name);
+        }
+
+        // Update ConfigMap - server temporarily unavailable during restart
+        await _configMapService.UpdateConfigMapAsync(ct);
+    }
 }
