@@ -1,0 +1,54 @@
+.batch-operations-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: var(--color-primary);
+  color: white;
+  margin: -20px -20px 20px;
+  border-radius: 8px 8px 0 0;
+}
+
+.selection-count {
+  font-weight: 500;
+}
+
+.batch-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.batch-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  font-weight: 500;
+}
+
+.batch-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.batch-btn--secondary {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.batch-btn--secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.batch-btn--danger {
+  background: var(--color-down);
+  color: white;
+}
+
+.batch-btn--danger:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
