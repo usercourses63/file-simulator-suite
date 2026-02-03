@@ -85,6 +85,16 @@ public record CreateFtpServerRequest
     /// Optional specific NodePort (null = auto-assign from range 30000-32767).
     /// </summary>
     public int? NodePort { get; init; }
+
+    /// <summary>
+    /// Passive mode port range start (for FTP data connections).
+    /// </summary>
+    public int? PassivePortStart { get; init; }
+
+    /// <summary>
+    /// Passive mode port range end (for FTP data connections).
+    /// </summary>
+    public int? PassivePortEnd { get; init; }
 }
 
 /// <summary>
@@ -108,6 +118,16 @@ public record CreateSftpServerRequest
     public string Password { get; init; } = "sftppass";
 
     /// <summary>
+    /// User ID for the SFTP user (atmoz/sftp format).
+    /// </summary>
+    public int Uid { get; init; } = 1000;
+
+    /// <summary>
+    /// Group ID for the SFTP user (atmoz/sftp format).
+    /// </summary>
+    public int Gid { get; init; } = 1000;
+
+    /// <summary>
     /// Optional specific NodePort.
     /// </summary>
     public int? NodePort { get; init; }
@@ -124,9 +144,15 @@ public record CreateNasServerRequest
     public required string Name { get; init; }
 
     /// <summary>
-    /// Subdirectory under shared storage to expose.
+    /// Directory preset or custom path. Presets: "input", "output", "backup".
+    /// Custom paths use the value as subdirectory under shared storage.
     /// </summary>
-    public string DataDirectory { get; init; } = "dynamic";
+    public string Directory { get; init; } = "dynamic";
+
+    /// <summary>
+    /// NFS export options (e.g., "rw,sync,no_subtree_check,no_root_squash").
+    /// </summary>
+    public string ExportOptions { get; init; } = "rw,sync,no_subtree_check,no_root_squash";
 
     /// <summary>
     /// Optional specific NodePort.
