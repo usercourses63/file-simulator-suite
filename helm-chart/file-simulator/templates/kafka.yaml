@@ -1,7 +1,7 @@
 {{- if .Values.kafka.enabled }}
 ---
-# Kafka + ZooKeeper Sidecar Deployment
-# ZooKeeper runs as sidecar container in same pod for simplified lifecycle
+# Kafka Broker Deployment (KRaft mode - no ZooKeeper needed)
+# Using official Apache Kafka image with built-in controller
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -26,44 +26,7 @@ spec:
       serviceAccountName: {{ include "file-simulator.serviceAccountName" . }}
       {{- end }}
       containers:
-        # ZooKeeper sidecar container
-        - name: zookeeper
-          image: "{{ .Values.kafka.zookeeper.image.repository }}:{{ .Values.kafka.zookeeper.image.tag }}"
-          imagePullPolicy: {{ .Values.kafka.image.pullPolicy }}
-          ports:
-            - name: zk-client
-              containerPort: 2181
-              protocol: TCP
-          env:
-            - name: ALLOW_ANONYMOUS_LOGIN
-              value: "yes"
-            - name: ZOO_HEAP_SIZE
-              value: "{{ .Values.kafka.zookeeper.heap }}"
-          readinessProbe:
-            exec:
-              command:
-                - sh
-                - -c
-                - 'echo "ruok" | nc localhost 2181 | grep imok'
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 5
-          livenessProbe:
-            exec:
-              command:
-                - sh
-                - -c
-                - 'echo "ruok" | nc localhost 2181 | grep imok'
-            initialDelaySeconds: 30
-            periodSeconds: 20
-            timeoutSeconds: 5
-          resources:
-            {{- toYaml .Values.kafka.zookeeper.resources | nindent 12 }}
-          volumeMounts:
-            - name: zookeeper-data
-              mountPath: /bitnami/zookeeper
-
-        # Kafka broker container
+        # Kafka broker container (KRaft mode - combined broker + controller)
         - name: kafka
           image: "{{ .Values.kafka.image.repository }}:{{ .Values.kafka.image.tag }}"
           imagePullPolicy: {{ .Values.kafka.image.pullPolicy }}
@@ -71,47 +34,47 @@ spec:
             - name: kafka-internal
               containerPort: 9092
               protocol: TCP
-            - name: kafka-external
-              containerPort: 9094
+            - name: controller
+              containerPort: 9093
               protocol: TCP
           env:
-            # ZooKeeper connection (sidecar on localhost)
-            - name: KAFKA_CFG_ZOOKEEPER_CONNECT
-              value: "localhost:2181"
-            # Listener configuration
-            - name: KAFKA_CFG_LISTENERS
-              value: "PLAINTEXT://:9092,EXTERNAL://:9094"
-            - name: KAFKA_CFG_ADVERTISED_LISTENERS
-              value: "PLAINTEXT://{{ include "file-simulator.fullname" . }}-kafka:9092,EXTERNAL://$(NODE_IP):{{ .Values.kafka.service.externalNodePort }}"
-            - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
-              value: "PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT"
-            - name: KAFKA_CFG_INTER_BROKER_LISTENER_NAME
+            # KRaft mode configuration
+            - name: KAFKA_NODE_ID
+              value: "1"
+            - name: KAFKA_PROCESS_ROLES
+              value: "broker,controller"
+            - name: KAFKA_CONTROLLER_QUORUM_VOTERS
+              value: "1@localhost:9093"
+            # Listener configuration (internal only - external via NodePort)
+            - name: KAFKA_LISTENERS
+              value: "PLAINTEXT://:9092,CONTROLLER://:9093"
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: "PLAINTEXT://{{ include "file-simulator.fullname" . }}-kafka:9092"
+            - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+              value: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+            - name: KAFKA_CONTROLLER_LISTENER_NAMES
+              value: "CONTROLLER"
+            - name: KAFKA_INTER_BROKER_LISTENER_NAME
               value: "PLAINTEXT"
+            # Cluster ID (required for KRaft)
+            - name: CLUSTER_ID
+              value: "file-simulator-kafka-cluster"
             # JVM heap settings
             - name: KAFKA_HEAP_OPTS
               value: "-Xmx{{ .Values.kafka.heap }} -Xms{{ .Values.kafka.heap }}"
             # Disable auto topic creation (explicit via API)
-            - name: KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE
+            - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
               value: "false"
             # Message retention
-            - name: KAFKA_CFG_LOG_RETENTION_MS
+            - name: KAFKA_LOG_RETENTION_MS
               value: "{{ .Values.kafka.retention.ms | int64 }}"
-            # Node IP for external listener advertisement
-            - name: NODE_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
-          # Wait for ZooKeeper to be ready before starting
-          startupProbe:
-            exec:
-              command:
-                - sh
-                - -c
-                - 'nc -z localhost 2181'
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            failureThreshold: 30
-            timeoutSeconds: 5
+            # Offsets topic replication (single broker)
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+              value: "1"
           readinessProbe:
             tcpSocket:
               port: kafka-internal
@@ -128,10 +91,8 @@ spec:
             {{- toYaml .Values.kafka.resources | nindent 12 }}
           volumeMounts:
             - name: kafka-data
-              mountPath: /bitnami/kafka
+              mountPath: /var/lib/kafka/data
       volumes:
-        - name: zookeeper-data
-          emptyDir: {}
         - name: kafka-data
           hostPath:
             path: {{ .Values.controlApi.persistence.hostPath }}/kafka-data
@@ -156,16 +117,9 @@ spec:
     - port: {{ .Values.kafka.service.port }}
       targetPort: kafka-internal
       protocol: TCP
-      name: kafka-internal
+      name: kafka
       {{- if eq .Values.kafka.service.type "NodePort" }}
       nodePort: {{ .Values.kafka.service.nodePort }}
-      {{- end }}
-    - port: {{ .Values.kafka.service.externalPort }}
-      targetPort: kafka-external
-      protocol: TCP
-      name: kafka-external
-      {{- if eq .Values.kafka.service.type "NodePort" }}
-      nodePort: {{ .Values.kafka.service.externalNodePort }}
       {{- end }}
   selector:
     {{- include "file-simulator.selectorLabels" . | nindent 4 }}
@@ -198,7 +152,7 @@ spec:
             - |
               # Wait for Kafka broker to be ready
               echo "Waiting for Kafka broker to be ready..."
-              until /opt/bitnami/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server {{ include "file-simulator.fullname" . }}-kafka:9092 2>/dev/null; do
+              until /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server {{ include "file-simulator.fullname" . }}-kafka:9092 2>/dev/null; do
                 echo "Kafka not ready yet, waiting..."
                 sleep 5
               done
@@ -207,7 +161,7 @@ spec:
               # Create default topics
               {{- range .Values.kafka.defaultTopics }}
               echo "Creating topic: {{ .name }} with {{ .partitions }} partition(s)"
-              /opt/bitnami/kafka/bin/kafka-topics.sh \
+              /opt/kafka/bin/kafka-topics.sh \
                 --bootstrap-server {{ include "file-simulator.fullname" $ }}-kafka:9092 \
                 --create \
                 --if-not-exists \
@@ -217,7 +171,7 @@ spec:
               {{- end }}
 
               echo "All topics created successfully"
-              /opt/bitnami/kafka/bin/kafka-topics.sh \
+              /opt/kafka/bin/kafka-topics.sh \
                 --bootstrap-server {{ include "file-simulator.fullname" . }}-kafka:9092 \
                 --list
 {{- end }}
