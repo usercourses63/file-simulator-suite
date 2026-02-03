@@ -138,18 +138,22 @@ Plans:
 **Depends on**: Phase 6 (backend API for Kafka integration)
 **Requirements**: KAFKA-01, KAFKA-02, KAFKA-03, KAFKA-04, KAFKA-05, KAFKA-06, KAFKA-07, KAFKA-08, KAFKA-09
 **Success Criteria** (what must be TRUE):
-  1. Single-broker Kafka cluster deploys successfully in KRaft mode (no ZooKeeper)
+  1. Single-broker Kafka cluster deploys successfully (ZooKeeper mode per user decision)
   2. User can create topics through UI with specified partition count and replication factor
   3. User can produce test messages to topics via dashboard
   4. User can consume messages from topics and view message content in UI
   5. Consumer group monitoring shows offset lag and active members
   6. Kafka broker health check shows green status and existing v1.0 servers remain responsive
-**Plans**: TBD
+**Plans**: 7 plans
 
 Plans:
-- [ ] 10-01: [TBD during planning]
-- [ ] 10-02: [TBD during planning]
-- [ ] 10-03: [TBD during planning]
+- [ ] 10-01-PLAN.md - Helm templates for Kafka+ZooKeeper sidecar and Kafka-UI
+- [ ] 10-02-PLAN.md - Backend Kafka services (Confluent.Kafka) and models
+- [ ] 10-03-PLAN.md - Backend API endpoints and SignalR hub for real-time streaming
+- [ ] 10-04-PLAN.md - Frontend types, hooks, and KafkaTab skeleton
+- [ ] 10-05-PLAN.md - Frontend topic management and message producer UI
+- [ ] 10-06-PLAN.md - Frontend message viewer and consumer group monitoring
+- [ ] 10-07-PLAN.md - Human verification checkpoint
 
 #### Phase 11: Dynamic Server Management
 **Goal**: Enable runtime addition/removal of FTP, SFTP, and NAS servers with configuration management
@@ -205,9 +209,9 @@ v2.0 phases execute sequentially: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 7. Real-Time Monitoring Dashboard | v2.0 | 4/4 | Complete | 2026-02-02 |
 | 8. File Operations and Event Streaming | v2.0 | 6/6 | Complete | 2026-02-02 |
 | 9. Historical Metrics and Storage | v2.0 | 6/6 | Complete | 2026-02-03 |
-| 10. Kafka Integration for Event Streaming | v2.0 | 0/TBD | Not started | - |
+| 10. Kafka Integration for Event Streaming | v2.0 | 0/7 | Planned | - |
 | 11. Dynamic Server Management | v2.0 | 0/TBD | Not started | - |
 | 12. Alerting and Production Readiness | v2.0 | 0/TBD | Not started | - |
 
 ---
-*Last updated: 2026-02-03 after Phase 9 UAT*
+*Last updated: 2026-02-03 after Phase 10 planning*
