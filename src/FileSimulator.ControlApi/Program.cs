@@ -90,6 +90,7 @@ try
     builder.Services.AddScoped<IMetricsService, MetricsService>();
     builder.Services.AddSingleton<IKubernetesDiscoveryService, KubernetesDiscoveryService>();
     builder.Services.AddSingleton<IKubernetesManagementService, KubernetesManagementService>();
+    builder.Services.AddSingleton<IConfigurationExportService, ConfigurationExportService>();
     builder.Services.AddSingleton<IHealthCheckService, HealthCheckService>();
 
     // FluentValidation validators for server creation requests
