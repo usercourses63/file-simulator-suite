@@ -1,18 +1,22 @@
 namespace FileSimulator.ControlApi.Services;
 
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using FileSimulator.ControlApi.Data;
+using FileSimulator.ControlApi.Data.Entities;
 using FileSimulator.ControlApi.Hubs;
 using FileSimulator.ControlApi.Models;
 
 /// <summary>
 /// Background service that periodically discovers servers,
-/// checks health, and broadcasts status via SignalR.
+/// checks health, broadcasts status via SignalR, and records metrics to database.
 /// </summary>
 public class ServerStatusBroadcaster : BackgroundService
 {
     private readonly IHubContext<ServerStatusHub> _hubContext;
     private readonly IKubernetesDiscoveryService _discovery;
     private readonly IHealthCheckService _healthCheck;
+    private readonly IDbContextFactory<MetricsDbContext> _contextFactory;
     private readonly ILogger<ServerStatusBroadcaster> _logger;
 
     // Broadcast interval - matches dashboard refresh expectations
@@ -26,11 +30,13 @@ public class ServerStatusBroadcaster : BackgroundService
         IHubContext<ServerStatusHub> hubContext,
         IKubernetesDiscoveryService discovery,
         IHealthCheckService healthCheck,
+        IDbContextFactory<MetricsDbContext> contextFactory,
         ILogger<ServerStatusBroadcaster> logger)
     {
         _hubContext = hubContext;
         _discovery = discovery;
         _healthCheck = healthCheck;
+        _contextFactory = contextFactory;
         _logger = logger;
     }
 
@@ -110,5 +116,45 @@ public class ServerStatusBroadcaster : BackgroundService
         _logger.LogDebug(
             "Broadcast status: {Healthy}/{Total} healthy",
             update.HealthyServers, update.TotalServers);
+
+        // Record metrics to database for historical storage
+        await RecordMetricsAsync(statuses, ct);
+    }
+
+    /// <summary>
+    /// Record health check results to the metrics database.
+    /// Uses IDbContextFactory pattern for background service compatibility.
+    /// </summary>
+    private async Task RecordMetricsAsync(IReadOnlyList<ServerStatus> statuses, CancellationToken ct)
+    {
+        try
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
+            var timestamp = DateTime.UtcNow;
+
+            foreach (var status in statuses)
+            {
+                var sample = new HealthSample
+                {
+                    Timestamp = timestamp,
+                    ServerId = status.Name,
+                    ServerType = status.Protocol,
+                    IsHealthy = status.IsHealthy,
+                    LatencyMs = status.IsHealthy ? status.LatencyMs : null
+                };
+
+                context.HealthSamples.Add(sample);
+            }
+
+            await context.SaveChangesAsync(ct);
+
+            _logger.LogDebug("Recorded {Count} health samples to database", statuses.Count);
+        }
+        catch (Exception ex)
+        {
+            // Don't fail the broadcast cycle if metrics recording fails
+            _logger.LogWarning(ex, "Failed to record health metrics to database");
+        }
     }
 }
