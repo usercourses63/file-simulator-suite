@@ -3,15 +3,20 @@ namespace FileSimulator.ControlApi.Services;
 using System.Diagnostics;
 using System.Net.Sockets;
 using FileSimulator.ControlApi.Models;
+using Microsoft.Extensions.Options;
 
 public class HealthCheckService : IHealthCheckService
 {
     private readonly ILogger<HealthCheckService> _logger;
+    private readonly KubernetesOptions _k8sOptions;
     private readonly TimeSpan _timeout = TimeSpan.FromSeconds(5);
 
-    public HealthCheckService(ILogger<HealthCheckService> logger)
+    public HealthCheckService(
+        ILogger<HealthCheckService> logger,
+        IOptions<KubernetesOptions> k8sOptions)
     {
         _logger = logger;
+        _k8sOptions = k8sOptions.Value;
     }
 
     public async Task<ServerStatus> CheckHealthAsync(DiscoveredServer server, CancellationToken ct = default)
@@ -36,11 +41,27 @@ public class HealthCheckService : IHealthCheckService
         bool isHealthy;
         string? message = null;
 
+        // Use external host + NodePort when running outside the cluster
+        string checkHost;
+        int checkPort;
+        if (_k8sOptions.InCluster)
+        {
+            checkHost = server.ClusterIp;
+            checkPort = server.Port;
+        }
+        else
+        {
+            checkHost = _k8sOptions.ExternalHost ?? server.ClusterIp;
+            checkPort = server.NodePort.HasValue && server.NodePort > 0 ? server.NodePort.Value : server.Port;
+            _logger.LogDebug("External health check: {Host}:{Port} for {Server}",
+                checkHost, checkPort, server.Name);
+        }
+
         try
         {
             isHealthy = await CheckTcpConnectivityAsync(
-                server.ClusterIp,
-                server.Port,
+                checkHost,
+                checkPort,
                 ct);
 
             if (!isHealthy)

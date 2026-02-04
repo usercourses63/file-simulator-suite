@@ -9,6 +9,7 @@ public class KubernetesOptions
 {
     public bool InCluster { get; set; } = true;
     public string Namespace { get; set; } = "file-simulator";
+    public string? ExternalHost { get; set; }
 }
 
 public class KubernetesDiscoveryService : IKubernetesDiscoveryService

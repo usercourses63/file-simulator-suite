@@ -37,8 +37,16 @@ public class KafkaController : ControllerBase
     [HttpGet("topics")]
     public async Task<ActionResult<IReadOnlyList<TopicInfo>>> GetTopics(CancellationToken ct)
     {
-        var topics = await _adminService.GetTopicsAsync(ct);
-        return Ok(topics);
+        try
+        {
+            var topics = await _adminService.GetTopicsAsync(ct);
+            return Ok(topics);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get topics");
+            return StatusCode(503, new { error = "Kafka unavailable", details = ex.Message });
+        }
     }
 
     /// <summary>
@@ -47,10 +55,18 @@ public class KafkaController : ControllerBase
     [HttpGet("topics/{name}")]
     public async Task<ActionResult<TopicInfo>> GetTopic(string name, CancellationToken ct)
     {
-        var topic = await _adminService.GetTopicAsync(name, ct);
-        if (topic == null)
-            return NotFound(new { error = $"Topic '{name}' not found" });
-        return Ok(topic);
+        try
+        {
+            var topic = await _adminService.GetTopicAsync(name, ct);
+            if (topic == null)
+                return NotFound(new { error = $"Topic '{name}' not found" });
+            return Ok(topic);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get topic {Name}", name);
+            return StatusCode(503, new { error = "Kafka unavailable", details = ex.Message });
+        }
     }
 
     /// <summary>
@@ -156,8 +172,16 @@ public class KafkaController : ControllerBase
     [HttpGet("consumer-groups")]
     public async Task<ActionResult<IReadOnlyList<ConsumerGroupInfo>>> GetConsumerGroups(CancellationToken ct)
     {
-        var groups = await _adminService.GetConsumerGroupsAsync(ct);
-        return Ok(groups);
+        try
+        {
+            var groups = await _adminService.GetConsumerGroupsAsync(ct);
+            return Ok(groups);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get consumer groups");
+            return StatusCode(503, new { error = "Kafka unavailable", details = ex.Message });
+        }
     }
 
     /// <summary>
@@ -166,10 +190,18 @@ public class KafkaController : ControllerBase
     [HttpGet("consumer-groups/{groupId}")]
     public async Task<ActionResult<ConsumerGroupDetail>> GetConsumerGroup(string groupId, CancellationToken ct)
     {
-        var group = await _adminService.GetConsumerGroupDetailAsync(groupId, ct);
-        if (group == null)
-            return NotFound(new { error = $"Consumer group '{groupId}' not found" });
-        return Ok(group);
+        try
+        {
+            var group = await _adminService.GetConsumerGroupDetailAsync(groupId, ct);
+            if (group == null)
+                return NotFound(new { error = $"Consumer group '{groupId}' not found" });
+            return Ok(group);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get consumer group {GroupId}", groupId);
+            return StatusCode(503, new { error = "Kafka unavailable", details = ex.Message });
+        }
     }
 
     /// <summary>
@@ -231,9 +263,17 @@ public class KafkaController : ControllerBase
     [HttpGet("health")]
     public async Task<ActionResult> HealthCheck(CancellationToken ct)
     {
-        var healthy = await _adminService.HealthCheckAsync(ct);
-        if (healthy)
-            return Ok(new { status = "healthy" });
-        return StatusCode(503, new { status = "unhealthy" });
+        try
+        {
+            var healthy = await _adminService.HealthCheckAsync(ct);
+            if (healthy)
+                return Ok(new { status = "healthy" });
+            return StatusCode(503, new { status = "unhealthy" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Kafka health check failed with exception");
+            return StatusCode(503, new { status = "unhealthy", error = ex.Message });
+        }
     }
 }

@@ -11,7 +11,8 @@ namespace FileSimulator.ControlApi.Services;
 /// </summary>
 public class KafkaAdminService : IKafkaAdminService
 {
-    private readonly IAdminClient _adminClient;
+    private IAdminClient? _adminClient;
+    private readonly object _clientLock = new();
     private readonly ILogger<KafkaAdminService> _logger;
     private readonly string _bootstrapServers;
 
@@ -19,19 +20,36 @@ public class KafkaAdminService : IKafkaAdminService
     {
         _logger = logger;
         _bootstrapServers = options.Value.BootstrapServers;
+        _logger.LogInformation("KafkaAdminService configured with bootstrap servers: {Servers}", _bootstrapServers);
+    }
 
-        _adminClient = new AdminClientBuilder(new AdminClientConfig
+    private IAdminClient GetAdminClient()
+    {
+        if (_adminClient != null)
+            return _adminClient;
+
+        lock (_clientLock)
         {
-            BootstrapServers = _bootstrapServers
-        }).Build();
+            if (_adminClient != null)
+                return _adminClient;
 
-        _logger.LogInformation("KafkaAdminService initialized with bootstrap servers: {Servers}", _bootstrapServers);
+            _adminClient = new AdminClientBuilder(new AdminClientConfig
+            {
+                BootstrapServers = _bootstrapServers,
+                SocketTimeoutMs = 10000,
+                MetadataMaxAgeMs = 10000
+            }).Build();
+
+            _logger.LogInformation("KafkaAdminService AdminClient created");
+            return _adminClient;
+        }
     }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<TopicInfo>> GetTopicsAsync(CancellationToken ct)
     {
-        var metadata = _adminClient.GetMetadata(TimeSpan.FromSeconds(10));
+        var adminClient = GetAdminClient();
+        var metadata = adminClient.GetMetadata(TimeSpan.FromSeconds(10));
         var topics = metadata.Topics
             .Where(t => !t.Topic.StartsWith("__"))  // Exclude internal topics
             .Select(t => new TopicInfo(
@@ -63,7 +81,8 @@ public class KafkaAdminService : IKafkaAdminService
             ReplicationFactor = request.ReplicationFactor
         };
 
-        await _adminClient.CreateTopicsAsync(new[] { spec });
+        var adminClient = GetAdminClient();
+        await adminClient.CreateTopicsAsync(new[] { spec });
         _logger.LogInformation("Created topic {Name} with {Partitions} partitions, replication factor {Rf}",
             request.Name, request.Partitions, request.ReplicationFactor);
     }
@@ -71,21 +90,23 @@ public class KafkaAdminService : IKafkaAdminService
     /// <inheritdoc />
     public async Task DeleteTopicAsync(string name, CancellationToken ct)
     {
-        await _adminClient.DeleteTopicsAsync(new[] { name });
+        var adminClient = GetAdminClient();
+        await adminClient.DeleteTopicsAsync(new[] { name });
         _logger.LogInformation("Deleted topic {Name}", name);
     }
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<ConsumerGroupInfo>> GetConsumerGroupsAsync(CancellationToken ct)
     {
-        var groups = await _adminClient.ListConsumerGroupsAsync();
+        var adminClient = GetAdminClient();
+        var groups = await adminClient.ListConsumerGroupsAsync();
         var groupInfos = new List<ConsumerGroupInfo>();
 
         foreach (var group in groups.Valid)
         {
             try
             {
-                var descriptions = await _adminClient.DescribeConsumerGroupsAsync(
+                var descriptions = await adminClient.DescribeConsumerGroupsAsync(
                     new[] { group.GroupId });
                 var desc = descriptions.ConsumerGroupDescriptions.FirstOrDefault();
 
@@ -112,7 +133,8 @@ public class KafkaAdminService : IKafkaAdminService
     /// <inheritdoc />
     public async Task<ConsumerGroupDetail?> GetConsumerGroupDetailAsync(string groupId, CancellationToken ct)
     {
-        var descriptions = await _adminClient.DescribeConsumerGroupsAsync(new[] { groupId });
+        var adminClient = GetAdminClient();
+        var descriptions = await adminClient.DescribeConsumerGroupsAsync(new[] { groupId });
         var desc = descriptions.ConsumerGroupDescriptions.FirstOrDefault();
 
         if (desc == null)
@@ -130,7 +152,7 @@ public class KafkaAdminService : IKafkaAdminService
         var partitions = new List<PartitionOffset>();
         try
         {
-            var offsets = await _adminClient.ListConsumerGroupOffsetsAsync(
+            var offsets = await adminClient.ListConsumerGroupOffsetsAsync(
                 new[] { new ConsumerGroupTopicPartitions(groupId, null) });
 
             foreach (var tpo in offsets.SelectMany(o => o.Partitions))
@@ -200,7 +222,8 @@ public class KafkaAdminService : IKafkaAdminService
             : Offset.End;
 
         // Get all partitions for the topic
-        var metadata = _adminClient.GetMetadata(request.Topic, TimeSpan.FromSeconds(5));
+        var adminClient = GetAdminClient();
+        var metadata = adminClient.GetMetadata(request.Topic, TimeSpan.FromSeconds(5));
         var topicMeta = metadata.Topics.FirstOrDefault(t => t.Topic == request.Topic);
 
         if (topicMeta == null)
@@ -209,7 +232,7 @@ public class KafkaAdminService : IKafkaAdminService
         var offsets = topicMeta.Partitions.Select(p =>
             new TopicPartitionOffset(request.Topic, p.PartitionId, targetOffset)).ToList();
 
-        await _adminClient.AlterConsumerGroupOffsetsAsync(
+        await adminClient.AlterConsumerGroupOffsetsAsync(
             new[] { new ConsumerGroupTopicPartitionOffsets(request.GroupId, offsets) });
 
         _logger.LogInformation("Reset offsets for consumer group {GroupId} on topic {Topic} to {Target}",
@@ -219,7 +242,8 @@ public class KafkaAdminService : IKafkaAdminService
     /// <inheritdoc />
     public async Task DeleteConsumerGroupAsync(string groupId, CancellationToken ct)
     {
-        await _adminClient.DeleteGroupsAsync(new[] { groupId });
+        var adminClient = GetAdminClient();
+        await adminClient.DeleteGroupsAsync(new[] { groupId });
         _logger.LogInformation("Deleted consumer group {GroupId}", groupId);
     }
 
@@ -228,7 +252,8 @@ public class KafkaAdminService : IKafkaAdminService
     {
         try
         {
-            var metadata = _adminClient.GetMetadata(TimeSpan.FromSeconds(5));
+            var adminClient = GetAdminClient();
+            var metadata = adminClient.GetMetadata(TimeSpan.FromSeconds(5));
             var healthy = metadata.Brokers.Count > 0;
             _logger.LogDebug("Kafka health check: {BrokerCount} brokers available", metadata.Brokers.Count);
             return Task.FromResult(healthy);

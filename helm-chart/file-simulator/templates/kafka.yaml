@@ -34,6 +34,9 @@ spec:
             - name: kafka-internal
               containerPort: 9092
               protocol: TCP
+            - name: kafka-external
+              containerPort: 9094
+              protocol: TCP
             - name: controller
               containerPort: 9093
               protocol: TCP
@@ -45,17 +48,17 @@ spec:
               value: "broker,controller"
             - name: KAFKA_CONTROLLER_QUORUM_VOTERS
               value: "1@localhost:9093"
-            # Listener configuration (internal only - external via NodePort)
+            # Listener configuration (internal + external)
             - name: KAFKA_LISTENERS
-              value: "PLAINTEXT://:9092,CONTROLLER://:9093"
+              value: "INTERNAL://:9092,EXTERNAL://:9094,CONTROLLER://:9093"
             - name: KAFKA_ADVERTISED_LISTENERS
-              value: "PLAINTEXT://{{ include "file-simulator.fullname" . }}-kafka:9092"
+              value: "INTERNAL://{{ include "file-simulator.fullname" . }}-kafka:9092,EXTERNAL://{{ .Values.kafka.externalHost | default "file-simulator.local" }}:{{ .Values.kafka.service.externalNodePort | default .Values.kafka.service.nodePort }}"
             - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
-              value: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+              value: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT"
             - name: KAFKA_CONTROLLER_LISTENER_NAMES
               value: "CONTROLLER"
             - name: KAFKA_INTER_BROKER_LISTENER_NAME
-              value: "PLAINTEXT"
+              value: "INTERNAL"
             # Cluster ID (required for KRaft)
             - name: CLUSTER_ID
               value: "file-simulator-kafka-cluster"
@@ -117,9 +120,16 @@ spec:
     - port: {{ .Values.kafka.service.port }}
       targetPort: kafka-internal
       protocol: TCP
-      name: kafka
+      name: kafka-internal
       {{- if eq .Values.kafka.service.type "NodePort" }}
       nodePort: {{ .Values.kafka.service.nodePort }}
+      {{- end }}
+    - port: {{ .Values.kafka.service.externalPort | default 9094 }}
+      targetPort: kafka-external
+      protocol: TCP
+      name: kafka-external
+      {{- if eq .Values.kafka.service.type "NodePort" }}
+      nodePort: {{ .Values.kafka.service.externalNodePort | default 30094 }}
       {{- end }}
   selector:
     {{- include "file-simulator.selectorLabels" . | nindent 4 }}

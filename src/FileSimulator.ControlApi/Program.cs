@@ -177,15 +177,8 @@ try
         framework = "ASP.NET Core 9.0"
     });
 
-    // API: List all discovered servers
-    app.MapGet("/api/servers", async (IKubernetesDiscoveryService discovery, CancellationToken ct) =>
-    {
-        var servers = await discovery.DiscoverServersAsync(ct);
-        return Results.Ok(servers);
-    })
-    .WithName("GetServers");
-
     // API: Get current status (from broadcaster cache)
+    // Note: /api/servers endpoints are handled by ServersController
     app.MapGet("/api/status", (ServerStatusBroadcaster broadcaster) =>
     {
         var status = broadcaster.GetLatestStatus();
@@ -194,19 +187,6 @@ try
             : Results.NotFound("Status not yet available");
     })
     .WithName("GetStatus");
-
-    // API: Get specific server
-    app.MapGet("/api/servers/{name}", async (
-        string name,
-        IKubernetesDiscoveryService discovery,
-        CancellationToken ct) =>
-    {
-        var server = await discovery.GetServerAsync(name, ct);
-        return server != null
-            ? Results.Ok(server)
-            : Results.NotFound($"Server '{name}' not found");
-    })
-    .WithName("GetServer");
 
     // Graceful shutdown handling for Kubernetes
     var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
