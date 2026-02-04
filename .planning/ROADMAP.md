@@ -168,36 +168,48 @@ Plans:
   6. User can export current configuration to JSON file downloadable from browser
   7. User can import configuration JSON and simulator recreates all servers automatically
   8. ConfigMap updates when servers added/removed so applications can discover new endpoints
-**Plans**: 9 plans
+**Plans**: 10 plans
 
 Plans:
-- [ ] 11-01-PLAN.md - RBAC update and request models with FluentValidation
-- [ ] 11-02-PLAN.md - IKubernetesManagementService and FTP creation with ownerReferences
-- [ ] 11-03-PLAN.md - SFTP/NAS creation and deletion with explicit cleanup
-- [ ] 11-04-PLAN.md - ConfigMap updates and lifecycle operations (start/stop/restart)
-- [ ] 11-05-PLAN.md - Configuration export/import backend
-- [ ] 11-06-PLAN.md - Frontend types, hooks, and CreateServerModal
-- [ ] 11-07-PLAN.md - Frontend delete, multi-select, and batch operations
-- [ ] 11-08-PLAN.md - Frontend config export/import and settings panel
-- [ ] 11-09-PLAN.md - Human verification checkpoint
+- [x] 11-01-PLAN.md - RBAC update and request models with FluentValidation
+- [x] 11-02-PLAN.md - IKubernetesManagementService and FTP creation with ownerReferences
+- [x] 11-03-PLAN.md - SFTP/NAS creation and deletion with explicit cleanup
+- [x] 11-04-PLAN.md - ConfigMap updates and lifecycle operations (start/stop/restart)
+- [x] 11-05-PLAN.md - Configuration export/import backend
+- [x] 11-06-PLAN.md - Frontend types, hooks, and CreateServerModal
+- [x] 11-07-PLAN.md - Frontend delete, multi-select, and batch operations
+- [x] 11-08-PLAN.md - Frontend config export/import and settings panel
+- [x] 11-09-PLAN.md - Human verification checkpoint
+- [x] 11-10-PLAN.md - Gap closure: import validation and delete dialog fixes
 
 #### Phase 12: Alerting and Production Readiness
-**Goal**: Implement alerting system, Redis backplane for scale-out, and production hardening
+**Goal**: Implement alerting system for health/disk/Kafka monitoring, Redis backplane for SignalR scale-out, configuration persistence, AND full production containerization with automated deployment scripts
 **Depends on**: All previous phases (complete platform)
 **Requirements**: ALERT-01, ALERT-02, ALERT-03, ALERT-04, ALERT-05, BACK-08
 **Success Criteria** (what must be TRUE):
-  1. Server health degradation triggers real-time toast notification in dashboard
-  2. File system alerts warn when Windows directory space drops below 1GB
+  1. Server health degradation triggers real-time toast notification in dashboard with severity-based duration
+  2. File system alerts warn when Windows directory space drops below 1GB with auto-resolve on clear
   3. Kafka broker health alerts show when broker becomes unavailable
-  4. Alert history log shows all triggered alerts with timestamps and resolution status
-  5. Redis backplane enables multiple control plane pods to broadcast to all dashboards
-  6. Configuration persists across pod restarts (survives delete + redeploy)
+  4. Alert history log shows all triggered alerts with timestamps, resolution status, and 7-day retention
+  5. Redis backplane enables multiple control plane pods to broadcast to all dashboards (optional, disabled by default)
+  6. Dashboard and Control API run as containerized Kubernetes pods with health endpoints
   7. Comprehensive error boundaries prevent single component failure from crashing entire dashboard
-**Plans**: TBD
+  8. Deploy-Production.ps1 automates full deployment: cluster setup, image builds, Helm deploy, verification
+  9. NFS fix incorporated into Helm chart eliminating need for manual patching
+  10. All services accessible via stable DNS hostnames (file-simulator.local, kafka.file-simulator.local)
+**Plans**: 10 plans
 
 Plans:
-- [ ] 12-01: [TBD during planning]
-- [ ] 12-02: [TBD during planning]
+- [ ] 12-01-PLAN.md - Backend alert infrastructure (AlertService, health checks, AlertHub)
+- [ ] 12-02-PLAN.md - Alert REST API and Redis backplane
+- [ ] 12-03-PLAN.md - Dashboard alert UI (toast notifications and banner)
+- [ ] 12-04-PLAN.md - Alerts tab and error boundaries
+- [ ] 12-05-PLAN.md - Dashboard containerization with multi-stage Dockerfile
+- [ ] 12-06-PLAN.md - Helm dashboard deployment and NFS fix
+- [ ] 12-07-PLAN.md - Deploy-Production.ps1 automation script
+- [ ] 12-08-PLAN.md - Verify-Production.ps1 comprehensive testing script
+- [ ] 12-09-PLAN.md - Setup-Hosts.ps1 enhancement with Kafka and dynamic NAS
+- [ ] 12-10-PLAN.md - Human verification checkpoint
 
 ## Progress
 
@@ -217,7 +229,7 @@ v2.0 phases execute sequentially: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 9. Historical Metrics and Storage | v2.0 | 6/6 | Complete | 2026-02-03 |
 | 10. Kafka Integration for Event Streaming | v2.0 | 7/7 | Complete | 2026-02-03 |
 | 11. Dynamic Server Management | v2.0 | 10/10 | Complete | 2026-02-04 |
-| 12. Alerting and Production Readiness | v2.0 | 0/TBD | Not started | - |
+| 12. Alerting and Production Readiness | v2.0 | 0/10 | Not started | - |
 
 ---
-*Last updated: 2026-02-04 after Phase 11 gap closure complete*
+*Last updated: 2026-02-04 after Phase 12 planning complete*
