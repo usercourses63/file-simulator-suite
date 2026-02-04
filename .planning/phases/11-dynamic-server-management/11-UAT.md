@@ -3,7 +3,7 @@ status: complete
 phase: 11-dynamic-server-management
 source: [11-02-SUMMARY.md, 11-03-SUMMARY.md, 11-06-SUMMARY.md, 11-07-SUMMARY.md, 11-09-PLAN.md]
 started: 2026-02-03T14:00:00Z
-updated: 2026-02-04T07:35:00Z
+updated: 2026-02-04T09:15:00Z
 ---
 
 ## Tests
@@ -20,7 +20,8 @@ notes: Created test-sftp-1 successfully. Fixed server naming collision (now uses
 
 ### 3. Create NAS Server via UI
 expected: Click "+ Add Server", select NAS, enter name (test-nas-1), select "Input Directory" preset, create. Server appears with "Dynamic" badge.
-result: [skipped - time constraint]
+result: PASS
+notes: Fixed init container script using Unix newlines. Created test-nas-2, server becomes Healthy within 30s.
 
 ### 4. Verify Kubernetes Resources Created
 expected: Run `kubectl --context=file-simulator get deployments -n file-simulator | grep test-`. Deployments exist with ownerReferences pointing to control-api pod.
@@ -59,10 +60,10 @@ result: [skipped - implicit verification via UI showing Helm badges without dele
 ## Summary
 
 total: 10
-passed: 8
+passed: 9
 issues: 1
 pending: 0
-skipped: 2
+skipped: 1
 
 ## Fixes Applied During UAT
 
@@ -81,6 +82,16 @@ skipped: 2
 4. **Lifecycle Controls Fix** (App.tsx:283)
    - Added `apiBaseUrl={apiBaseUrl}` to ServerDetailsPanel
    - Enables Stop/Start/Restart buttons for dynamic servers
+
+5. **Dynamic NAS Init Container Fix** (KubernetesManagementService.cs:567-580)
+   - Changed verbatim string to explicit `\n` newlines
+   - Fixed shell script parsing error (`illegal option -` from Windows CRLF)
+   - Dynamic NAS servers now start correctly with init container sync
+
+6. **Checkbox Visibility Fix** (App.css:1635-1648)
+   - Added `opacity: 0` default and hover/selected rules
+   - Checkbox now hidden by default, visible on hover
+   - Prevents checkbox overlapping server name
 
 ## Gaps
 

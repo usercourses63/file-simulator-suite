@@ -525,7 +525,11 @@ public class KubernetesManagementService : IKubernetesManagementService
         _logger.LogDebug("Creating NAS deployment {ResourceName} with owner {OwnerPod}, directory {Directory}",
             resourceName, controlPod.Metadata.Name, directory);
 
-        // 2. Create Deployment - erichough/nfs-server with subdirectory on shared PVC
+        // 2. Create Deployment - erichough/nfs-server with emptyDir + init container sync
+        // NFS cannot export Windows-mounted paths directly, so we use:
+        // - emptyDir volume for NFS export (nfs-export)
+        // - PVC with SubPath for Windows data (windows-data)
+        // - Init container syncs from PVC to emptyDir before NFS starts
         var deployment = new V1Deployment
         {
             Metadata = new V1ObjectMeta
@@ -551,6 +555,51 @@ public class KubernetesManagementService : IKubernetesManagementService
                     Metadata = new V1ObjectMeta { Labels = labels },
                     Spec = new V1PodSpec
                     {
+                        // Init container: sync Windows data to NFS export directory
+                        InitContainers = new List<V1Container>
+                        {
+                            new V1Container
+                            {
+                                Name = "sync-windows-data",
+                                Image = "alpine:3.19",
+                                ImagePullPolicy = "IfNotPresent",
+                                Command = new List<string> { "sh", "-c" },
+                                Args = new List<string>
+                                {
+                                    "set -e\n" +
+                                    $"echo '=== NAS {request.Name} Init Container - Syncing Windows Data ==='\n" +
+                                    "echo 'Installing rsync...'\n" +
+                                    "apk add --no-cache rsync\n" +
+                                    "echo 'Creating NFS export directory...'\n" +
+                                    "mkdir -p /nfs-data\n" +
+                                    "echo 'Syncing from Windows mount to NFS export...'\n" +
+                                    "rsync -av /windows-mount/ /nfs-data/\n" +
+                                    "echo 'Sync complete. Files in export:'\n" +
+                                    "ls -la /nfs-data | head -20\n" +
+                                    "echo '=== Init Container Complete ==='"
+                                },
+                                VolumeMounts = new List<V1VolumeMount>
+                                {
+                                    new V1VolumeMount
+                                    {
+                                        Name = "windows-data",
+                                        MountPath = "/windows-mount",
+                                        SubPath = directory,  // Use subdirectory on shared PVC
+                                        ReadOnlyProperty = true
+                                    },
+                                    new V1VolumeMount
+                                    {
+                                        Name = "nfs-export",
+                                        MountPath = "/nfs-data"
+                                    }
+                                },
+                                SecurityContext = new V1SecurityContext
+                                {
+                                    RunAsNonRoot = false,
+                                    AllowPrivilegeEscalation = false
+                                }
+                            }
+                        },
                         Containers = new List<V1Container>
                         {
                             new V1Container
@@ -577,9 +626,8 @@ public class KubernetesManagementService : IKubernetesManagementService
                                 {
                                     new V1VolumeMount
                                     {
-                                        Name = "data",
-                                        MountPath = "/data",
-                                        SubPath = directory  // Use subdirectory on shared PVC
+                                        Name = "nfs-export",
+                                        MountPath = "/data"  // NFS exports from emptyDir
                                     }
                                 },
                                 SecurityContext = new V1SecurityContext
@@ -607,12 +655,22 @@ public class KubernetesManagementService : IKubernetesManagementService
                         },
                         Volumes = new List<V1Volume>
                         {
+                            // Windows data from shared PVC with subdirectory
                             new V1Volume
                             {
-                                Name = "data",
+                                Name = "windows-data",
                                 PersistentVolumeClaim = new V1PersistentVolumeClaimVolumeSource
                                 {
                                     ClaimName = _pvcName
+                                }
+                            },
+                            // NFS export directory - emptyDir avoids Windows mount issues
+                            new V1Volume
+                            {
+                                Name = "nfs-export",
+                                EmptyDir = new V1EmptyDirVolumeSource
+                                {
+                                    SizeLimit = new ResourceQuantity("500Mi")
                                 }
                             }
                         }

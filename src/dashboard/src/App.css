@@ -1631,12 +1631,24 @@ body {
   outline-offset: 2px;
 }
 
-/* Checkbox for multi-select */
+/* Checkbox for multi-select - hidden by default, shown on hover or when selected */
 .server-card-checkbox {
   position: absolute;
   top: 12px;
   left: 12px;
   z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+/* Show checkbox on hover */
+.server-card:hover .server-card-checkbox {
+  opacity: 1;
+}
+
+/* Always show checkbox when card is selected */
+.server-card--selected .server-card-checkbox {
+  opacity: 1;
 }
 
 .server-card-checkbox input {
