@@ -91,8 +91,12 @@ try
 
     // EF Core SQLite for metrics persistence
     // Use IDbContextFactory for background service compatibility
+    var dbPath = Environment.GetEnvironmentVariable("CONTROL_DATA_PATH")
+        ?? (OperatingSystem.IsWindows() ? @"C:\simulator-data\control-data" : "/mnt/control-data");
+    Directory.CreateDirectory(dbPath);
+    var connectionString = $"Data Source={Path.Combine(dbPath, "metrics.db")}";
     builder.Services.AddDbContextFactory<MetricsDbContext>(options =>
-        options.UseSqlite("Data Source=/mnt/control-data/metrics.db"));
+        options.UseSqlite(connectionString));
 
     // Services
     builder.Services.AddScoped<IMetricsService, MetricsService>();
@@ -127,7 +131,7 @@ try
         var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<MetricsDbContext>>();
         using var context = factory.CreateDbContext();
         context.Database.EnsureCreated();
-        Log.Information("Metrics database initialized at /mnt/control-data/metrics.db");
+        Log.Information("Metrics database initialized at {DbPath}", connectionString);
     }
 
     // Middleware pipeline
