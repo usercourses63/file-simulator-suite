@@ -20,7 +20,7 @@ public interface IConfigurationExportService
         CancellationToken ct = default);
 
     /// <summary>Validate import configuration without applying.</summary>
-    Task<ImportResult> ValidateImportAsync(
+    Task<ImportValidation> ValidateImportAsync(
         ServerConfigurationExport config,
         CancellationToken ct = default);
 }
@@ -206,29 +206,35 @@ public class ConfigurationExportService : IConfigurationExportService
     }
 
     /// <inheritdoc />
-    public async Task<ImportResult> ValidateImportAsync(
+    public async Task<ImportValidation> ValidateImportAsync(
         ServerConfigurationExport config,
         CancellationToken ct = default)
     {
-        var result = new ImportResult();
+        var result = new ImportValidation();
         var existingServers = await _discoveryService.DiscoverServersAsync(ct);
-        var existingNames = existingServers.Select(s => s.Name).ToHashSet();
+        var existingMap = existingServers.ToDictionary(s => s.Name, s => s);
 
         foreach (var serverConfig in config.Servers)
         {
             if (!serverConfig.IsDynamic)
             {
-                result.Skipped.Add($"{serverConfig.Name} (static/helm-managed)");
+                // Skip static servers - not importable
                 continue;
             }
 
-            if (existingNames.Contains(serverConfig.Name))
+            if (existingMap.TryGetValue(serverConfig.Name, out var existing))
             {
-                result.Skipped.Add($"{serverConfig.Name} (conflict)");
+                result.Conflicts.Add(new ConflictInfo
+                {
+                    ServerName = serverConfig.Name,
+                    Protocol = serverConfig.Protocol,
+                    ExistingNodePort = existing.NodePort,
+                    ImportNodePort = serverConfig.NodePort
+                });
             }
             else
             {
-                result.Created.Add(serverConfig.Name);
+                result.WillCreate.Add(serverConfig);
             }
         }
 

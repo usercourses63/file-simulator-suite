@@ -77,7 +77,7 @@ public class ConfigurationController : ControllerBase
     /// Validate import configuration without applying changes.
     /// </summary>
     [HttpPost("validate")]
-    public async Task<ActionResult<ImportResult>> ValidateImport(
+    public async Task<ActionResult<ImportValidation>> ValidateImport(
         [FromBody] ServerConfigurationExport config,
         CancellationToken ct)
     {

@@ -89,6 +89,26 @@ public record ImportResult
 }
 
 /// <summary>
+/// Conflict information for import validation.
+/// </summary>
+public record ConflictInfo
+{
+    public required string ServerName { get; init; }
+    public required string Protocol { get; init; }
+    public int? ExistingNodePort { get; init; }
+    public int? ImportNodePort { get; init; }
+}
+
+/// <summary>
+/// Validation result for import preview (not actual import).
+/// </summary>
+public record ImportValidation
+{
+    public List<ServerConfiguration> WillCreate { get; init; } = new();
+    public List<ConflictInfo> Conflicts { get; init; } = new();
+}
+
+/// <summary>
 /// Strategy for handling import conflicts.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]
