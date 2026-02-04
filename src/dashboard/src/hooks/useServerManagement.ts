@@ -52,6 +52,18 @@ export function useServerManagement({ apiBaseUrl }: UseServerManagementOptions):
 
   const handleApiError = async (response: Response): Promise<never> => {
     const data = await response.json().catch(() => ({})) as ApiError;
+
+    // Handle validation errors (FluentValidation format: { errors: { field: [messages] } })
+    if (data.errors && typeof data.errors === 'object') {
+      const validationMessages = Object.entries(data.errors)
+        .map(([field, messages]) => {
+          const msgList = Array.isArray(messages) ? messages : [messages];
+          return `${field}: ${msgList.join(', ')}`;
+        })
+        .join('; ');
+      throw new Error(validationMessages || 'Validation failed');
+    }
+
     const errorMessage = data.error || data.details || `HTTP ${response.status}`;
     throw new Error(errorMessage);
   };
