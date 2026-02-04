@@ -102,7 +102,7 @@ export function ServerCard({
           <input
             type="checkbox"
             checked={isSelected}
-            onChange={() => {}}
+            onChange={() => onToggleSelect?.()}
             onClick={e => e.stopPropagation()}
           />
         </div>

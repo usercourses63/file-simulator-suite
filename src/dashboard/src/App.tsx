@@ -280,6 +280,7 @@ function App() {
       <ServerDetailsPanel
         server={selectedServer}
         onClose={() => setSelectedServer(null)}
+        apiBaseUrl={apiBaseUrl}
       />
 
       <SettingsPanel
