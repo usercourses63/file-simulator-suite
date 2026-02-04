@@ -260,9 +260,18 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
             return WindowsBasePath;
         }
 
-        // For FTP/SFTP, files are stored in root of shared volume
+        // For FTP/SFTP, check for subPath in volume mounts (dynamic servers may have subdirectory)
         if (protocol == "FTP" || protocol == "SFTP")
         {
+            var subPath = pod.Spec.Containers
+                .SelectMany(c => c.VolumeMounts ?? Enumerable.Empty<V1VolumeMount>())
+                .Where(vm => vm.Name == "data" && !string.IsNullOrEmpty(vm.SubPath))
+                .Select(vm => vm.SubPath)
+                .FirstOrDefault();
+
+            if (!string.IsNullOrEmpty(subPath))
+                return $@"{WindowsBasePath}\{subPath.Replace("/", "\\")}";
+
             return WindowsBasePath;
         }
 

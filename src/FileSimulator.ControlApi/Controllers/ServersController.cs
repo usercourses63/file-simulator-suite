@@ -5,11 +5,6 @@ using FluentValidation;
 using FileSimulator.ControlApi.Models;
 using FileSimulator.ControlApi.Services;
 
-// Use Services namespace for request types (canonical location)
-using CreateFtpServerRequest = FileSimulator.ControlApi.Services.CreateFtpServerRequest;
-using CreateSftpServerRequest = FileSimulator.ControlApi.Services.CreateSftpServerRequest;
-using CreateNasServerRequest = FileSimulator.ControlApi.Services.CreateNasServerRequest;
-
 /// <summary>
 /// REST API controller for server management operations.
 /// Provides CRUD endpoints for dynamic servers and lifecycle operations (start/stop/restart).

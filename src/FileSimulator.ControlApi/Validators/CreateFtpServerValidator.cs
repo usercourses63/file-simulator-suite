@@ -1,4 +1,5 @@
 using FluentValidation;
+using FileSimulator.ControlApi.Models;
 using FileSimulator.ControlApi.Services;
 
 namespace FileSimulator.ControlApi.Validators;

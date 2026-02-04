@@ -14,6 +14,7 @@ export interface CreateFtpServerRequest extends CreateServerRequestBase {
   password: string;
   passivePortStart?: number | null;
   passivePortEnd?: number | null;
+  directory?: string | null;  // Subdirectory of shared PVC (e.g., "input", "output")
 }
 
 // SFTP server creation
@@ -22,6 +23,7 @@ export interface CreateSftpServerRequest extends CreateServerRequestBase {
   password: string;
   uid?: number;
   gid?: number;
+  directory?: string | null;  // Subdirectory of shared PVC (e.g., "input", "output")
 }
 
 // NAS server creation

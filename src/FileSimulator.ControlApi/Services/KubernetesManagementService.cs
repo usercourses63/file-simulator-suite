@@ -178,7 +178,8 @@ public class KubernetesManagementService : IKubernetesManagementService
                                     new V1VolumeMount
                                     {
                                         Name = "data",
-                                        MountPath = $"/home/vsftpd/{request.Username}"
+                                        MountPath = $"/home/vsftpd/{request.Username}",
+                                        SubPath = string.IsNullOrEmpty(request.Directory) ? null : request.Directory
                                     }
                                 },
                                 SecurityContext = new V1SecurityContext { Privileged = true },
@@ -370,7 +371,8 @@ public class KubernetesManagementService : IKubernetesManagementService
                                     new V1VolumeMount
                                     {
                                         Name = "data",
-                                        MountPath = $"/home/{request.Username}/data"
+                                        MountPath = $"/home/{request.Username}/data",
+                                        SubPath = string.IsNullOrEmpty(request.Directory) ? null : request.Directory
                                     }
                                 },
                                 SecurityContext = new V1SecurityContext

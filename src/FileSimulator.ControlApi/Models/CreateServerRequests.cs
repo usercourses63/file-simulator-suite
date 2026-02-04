@@ -33,6 +33,13 @@ public record CreateFtpServerRequest : CreateServerRequestBase
 
     /// <summary>Passive mode end port (optional, defaults to start + 10).</summary>
     public int? PassivePortEnd { get; init; }
+
+    /// <summary>
+    /// Directory path relative to shared PVC root (optional).
+    /// If specified, FTP root will be this subdirectory.
+    /// Examples: "input", "output", "mydata"
+    /// </summary>
+    public string? Directory { get; init; }
 }
 
 /// <summary>
@@ -51,6 +58,13 @@ public record CreateSftpServerRequest : CreateServerRequestBase
 
     /// <summary>User GID (default: 1000).</summary>
     public int Gid { get; init; } = 1000;
+
+    /// <summary>
+    /// Directory path relative to shared PVC root (optional).
+    /// If specified, SFTP root will be this subdirectory.
+    /// Examples: "input", "output", "mydata"
+    /// </summary>
+    public string? Directory { get; init; }
 }
 
 /// <summary>

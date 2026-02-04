@@ -17,7 +17,16 @@ interface CreateServerModalProps {
   apiBaseUrl: string;
 }
 
-// NAS directory presets
+// Directory presets for all protocols
+const DIRECTORY_PRESETS = [
+  { value: '', label: 'Root (C:\\simulator-data)' },
+  { value: 'input', label: 'Input (C:\\simulator-data\\input)' },
+  { value: 'output', label: 'Output (C:\\simulator-data\\output)' },
+  { value: 'backup', label: 'Backup (C:\\simulator-data\\backup)' },
+  { value: 'custom', label: 'Custom directory' }
+];
+
+// NAS-specific presets (required directory)
 const NAS_PRESETS = [
   { value: 'input', label: 'Input (nas-input-dynamic)' },
   { value: 'output', label: 'Output (nas-output-dynamic)' },
@@ -56,6 +65,10 @@ export function CreateServerModal({ isOpen, onClose, onCreated, apiBaseUrl }: Cr
   const [uid, setUid] = useState(1000);
   const [gid, setGid] = useState(1000);
 
+  // Directory options (for FTP/SFTP/NAS)
+  const [ftpSftpDirectory, setFtpSftpDirectory] = useState('');  // Empty = root
+  const [ftpSftpCustomDir, setFtpSftpCustomDir] = useState('');
+
   // NAS options
   const [directoryPreset, setDirectoryPreset] = useState('input');
   const [customDirectory, setCustomDirectory] = useState('');
@@ -75,6 +88,8 @@ export function CreateServerModal({ isOpen, onClose, onCreated, apiBaseUrl }: Cr
       setPassivePortEnd(null);
       setUid(1000);
       setGid(1000);
+      setFtpSftpDirectory('');
+      setFtpSftpCustomDir('');
       setDirectoryPreset('input');
       setCustomDirectory('');
       setExportOptions('rw,sync,no_subtree_check,no_root_squash');
@@ -118,23 +133,27 @@ export function CreateServerModal({ isOpen, onClose, onCreated, apiBaseUrl }: Cr
       const effectiveNodePort = useAutoNodePort ? null : nodePort;
 
       if (protocol === 'ftp') {
+        const effectiveDirectory = ftpSftpDirectory === 'custom' ? ftpSftpCustomDir : ftpSftpDirectory;
         const request: CreateFtpServerRequest = {
           name: name.trim(),
           username,
           password,
           nodePort: effectiveNodePort,
           passivePortStart,
-          passivePortEnd
+          passivePortEnd,
+          directory: effectiveDirectory || null
         };
         await createFtpServer(request);
       } else if (protocol === 'sftp') {
+        const effectiveDirectory = ftpSftpDirectory === 'custom' ? ftpSftpCustomDir : ftpSftpDirectory;
         const request: CreateSftpServerRequest = {
           name: name.trim(),
           username,
           password,
           nodePort: effectiveNodePort,
           uid,
-          gid
+          gid,
+          directory: effectiveDirectory || null
         };
         await createSftpServer(request);
       } else if (protocol === 'nas') {
@@ -305,6 +324,35 @@ export function CreateServerModal({ isOpen, onClose, onCreated, apiBaseUrl }: Cr
                 />
               </div>
               <div className="form-section">
+                <label htmlFor="ftp-directory" className="form-label">Directory (Optional)</label>
+                <select
+                  id="ftp-directory"
+                  value={ftpSftpDirectory}
+                  onChange={e => setFtpSftpDirectory(e.target.value)}
+                  className="form-select"
+                  disabled={isLoading}
+                >
+                  {DIRECTORY_PRESETS.map(preset => (
+                    <option key={preset.value} value={preset.value}>
+                      {preset.label}
+                    </option>
+                  ))}
+                </select>
+                {ftpSftpDirectory === 'custom' && (
+                  <input
+                    type="text"
+                    value={ftpSftpCustomDir}
+                    onChange={e => setFtpSftpCustomDir(e.target.value)}
+                    placeholder="e.g., mydata"
+                    className="form-input"
+                    style={{ marginTop: '8px' }}
+                    disabled={isLoading}
+                    required
+                  />
+                )}
+                <span className="form-hint">Subdirectory under C:\simulator-data to serve</span>
+              </div>
+              <div className="form-section">
                 <label className="form-label">Passive Port Range (Optional)</label>
                 <div className="port-range-inputs">
                   <input
@@ -359,6 +407,35 @@ export function CreateServerModal({ isOpen, onClose, onCreated, apiBaseUrl }: Cr
                   disabled={isLoading}
                   required
                 />
+              </div>
+              <div className="form-section">
+                <label htmlFor="sftp-directory" className="form-label">Directory (Optional)</label>
+                <select
+                  id="sftp-directory"
+                  value={ftpSftpDirectory}
+                  onChange={e => setFtpSftpDirectory(e.target.value)}
+                  className="form-select"
+                  disabled={isLoading}
+                >
+                  {DIRECTORY_PRESETS.map(preset => (
+                    <option key={preset.value} value={preset.value}>
+                      {preset.label}
+                    </option>
+                  ))}
+                </select>
+                {ftpSftpDirectory === 'custom' && (
+                  <input
+                    type="text"
+                    value={ftpSftpCustomDir}
+                    onChange={e => setFtpSftpCustomDir(e.target.value)}
+                    placeholder="e.g., mydata"
+                    className="form-input"
+                    style={{ marginTop: '8px' }}
+                    disabled={isLoading}
+                    required
+                  />
+                )}
+                <span className="form-hint">Subdirectory under C:\simulator-data to serve</span>
               </div>
               <div className="form-section">
                 <label className="form-label">UID / GID</label>
