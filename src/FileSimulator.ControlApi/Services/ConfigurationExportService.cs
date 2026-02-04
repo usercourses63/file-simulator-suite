@@ -113,7 +113,13 @@ public class ConfigurationExportService : IConfigurationExportService
     {
         try
         {
-            var deploymentName = $"{_releasePrefix}-{server.Protocol.ToLower()}-{server.Name}";
+            // Map protocol to deployment prefix (NFS protocol uses "nas" prefix in deployments)
+            var protocolPrefix = server.Protocol.ToUpper() switch
+            {
+                "NFS" => "nas",
+                _ => server.Protocol.ToLower()
+            };
+            var deploymentName = $"{_releasePrefix}-{protocolPrefix}-{server.Name}";
             var deployment = await _client.AppsV1.ReadNamespacedDeploymentAsync(
                 deploymentName, _namespace, cancellationToken: ct);
 
@@ -148,7 +154,8 @@ public class ConfigurationExportService : IConfigurationExportService
                 {
                     Nas = new NasConfiguration
                     {
-                        Directory = container.VolumeMounts?.FirstOrDefault()?.SubPath ?? "",
+                        // Directory is stored in the init container's volume mount SubPath
+                        Directory = GetNasDirectory(deployment),
                         ExportOptions = ParseExportOptions(envVars.GetValueOrDefault("NFS_EXPORT_0", ""))
                     }
                 },
@@ -167,6 +174,35 @@ public class ConfigurationExportService : IConfigurationExportService
         // NFS_EXPORT_0="/data *(rw,sync,...)" -> extract options
         var match = System.Text.RegularExpressions.Regex.Match(exportLine, @"\*\(([^)]+)\)");
         return match.Success ? match.Groups[1].Value.Replace(",fsid=0", "") : "rw,sync,no_subtree_check,no_root_squash";
+    }
+
+    /// <summary>
+    /// Gets the directory for a NAS server from the init container's volume mount.
+    /// Dynamic NAS servers store the directory in the "sync-windows-data" init container's SubPath.
+    /// </summary>
+    private static string GetNasDirectory(V1Deployment deployment)
+    {
+        // First, check init containers for the sync-windows-data container
+        var initContainer = deployment.Spec?.Template?.Spec?.InitContainers?
+            .FirstOrDefault(c => c.Name == "sync-windows-data");
+
+        if (initContainer != null)
+        {
+            // Get SubPath from the windows-data volume mount
+            var windowsDataMount = initContainer.VolumeMounts?
+                .FirstOrDefault(vm => vm.Name == "windows-data");
+
+            if (!string.IsNullOrEmpty(windowsDataMount?.SubPath))
+            {
+                return windowsDataMount.SubPath;
+            }
+        }
+
+        // Fallback: try main container volume mounts
+        var mainContainer = deployment.Spec?.Template?.Spec?.Containers?.FirstOrDefault();
+        var mountPath = mainContainer?.VolumeMounts?.FirstOrDefault()?.SubPath;
+
+        return mountPath ?? "";
     }
 
     /// <inheritdoc />
