@@ -112,6 +112,9 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
                     ? instance
                     : GetServerName(pod.Metadata.Name);
 
+                // Extract directory info based on protocol and server name
+                var directory = GetServerDirectory(serverName, protocol, pod);
+
                 servers.Add(new DiscoveredServer
                 {
                     Name = serverName,
@@ -124,7 +127,8 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
                     PodStatus = pod.Status.Phase,
                     PodReady = IsPodReady(pod),
                     IsDynamic = isDynamic,
-                    ManagedBy = managedBy
+                    ManagedBy = managedBy,
+                    Directory = directory
                 });
             }
 
@@ -211,5 +215,63 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
         var readyCondition = pod.Status.Conditions?
             .FirstOrDefault(c => c.Type == "Ready");
         return readyCondition?.Status == "True";
+    }
+
+    /// <summary>
+    /// Extract the directory/mount path this server serves.
+    /// </summary>
+    private static string? GetServerDirectory(string serverName, string protocol, V1Pod pod)
+    {
+        // For NAS servers, extract from server name pattern or volume mounts
+        if (protocol == "NFS")
+        {
+            // Check for subPath in volume mounts (dynamic servers)
+            var container = pod.Spec.Containers.FirstOrDefault();
+            var subPath = container?.VolumeMounts?
+                .Where(vm => vm.SubPath != null && !string.IsNullOrEmpty(vm.SubPath))
+                .Select(vm => vm.SubPath)
+                .FirstOrDefault();
+
+            if (!string.IsNullOrEmpty(subPath))
+                return $"/{subPath}";
+
+            // Infer from server name (Helm-managed servers)
+            if (serverName.Contains("input"))
+                return "/input";
+            if (serverName.Contains("output"))
+                return "/output";
+            if (serverName.Contains("backup"))
+                return "/backup";
+
+            return "/data";
+        }
+
+        // For FTP/SFTP, the root directory is typically /data or /home/user
+        if (protocol == "FTP" || protocol == "SFTP")
+        {
+            return "/data";
+        }
+
+        // For HTTP/WebDAV, show the served directory
+        if (protocol == "HTTP")
+        {
+            if (serverName == "management")
+                return "/files";
+            return "/webdav";
+        }
+
+        // For S3/MinIO, show the bucket concept
+        if (protocol == "S3")
+        {
+            return "/buckets";
+        }
+
+        // For SMB, show the share path
+        if (protocol == "SMB")
+        {
+            return "/share";
+        }
+
+        return null;
     }
 }

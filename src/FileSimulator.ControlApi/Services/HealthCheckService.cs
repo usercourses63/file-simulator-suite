@@ -27,7 +27,8 @@ public class HealthCheckService : IHealthCheckService
                 IsHealthy = false,
                 HealthMessage = $"Pod not ready: {server.PodStatus}",
                 IsDynamic = server.IsDynamic,
-                ManagedBy = server.ManagedBy
+                ManagedBy = server.ManagedBy,
+                Directory = server.Directory
             };
         }
 
@@ -70,7 +71,8 @@ public class HealthCheckService : IHealthCheckService
             HealthMessage = message,
             LatencyMs = (int)sw.ElapsedMilliseconds,
             IsDynamic = server.IsDynamic,
-            ManagedBy = server.ManagedBy
+            ManagedBy = server.ManagedBy,
+            Directory = server.Directory
         };
     }
 

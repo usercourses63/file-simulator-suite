@@ -22,6 +22,11 @@ public record ServerStatus
     /// Resource manager: "control-api" for dynamic, "Helm" for static.
     /// </summary>
     public string ManagedBy { get; init; } = "Helm";
+
+    /// <summary>
+    /// Directory/mount path this server serves (e.g., "/input", "/backup", "/data").
+    /// </summary>
+    public string? Directory { get; init; }
 }
 
 /// <summary>

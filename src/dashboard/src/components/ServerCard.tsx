@@ -109,7 +109,14 @@ export function ServerCard({
       )}
 
       <div className="server-card-header">
-        <span className="server-name">{server.name}</span>
+        <div className="server-name-row">
+          <span className="server-name">{server.name}</span>
+          {server.directory && (
+            <span className="server-directory" title={`Serves ${server.directory}`}>
+              {server.directory}
+            </span>
+          )}
+        </div>
         <div className="server-badges">
           <span className="server-protocol">{server.protocol}</span>
           {isDynamic ? (

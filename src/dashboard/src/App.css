@@ -303,10 +303,27 @@ body {
   margin-bottom: var(--spacing-sm);
 }
 
+.server-name-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0; /* Allow text truncation */
+}
+
 .server-name {
   font-weight: 600;
   font-size: 0.9375rem;
   word-break: break-word;
+}
+
+.server-directory {
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .server-protocol {
