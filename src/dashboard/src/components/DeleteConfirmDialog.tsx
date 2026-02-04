@@ -24,10 +24,18 @@ export function DeleteConfirmDialog({
 
   if (!isOpen) return null;
 
-  const isBatch = serverNames && serverNames.length > 1;
-  const title = isBatch
+  // Determine display mode - use serverNames if provided (even for single)
+  const useServerNames = serverNames && serverNames.length > 0;
+  const isMultiple = useServerNames && serverNames.length > 1;
+
+  // Get display name for single server delete
+  const displayName = useServerNames
+    ? serverNames[0]  // First name from batch (handles single-via-multiselect)
+    : serverName;     // Direct single delete
+
+  const title = isMultiple
     ? `Delete ${serverNames.length} servers?`
-    : `Delete server "${serverName}"?`;
+    : `Delete server "${displayName}"?`;
 
   const handleConfirm = () => {
     onConfirm(deleteFiles);
@@ -44,7 +52,7 @@ export function DeleteConfirmDialog({
 
         <h3>{title}</h3>
 
-        {isBatch && (
+        {isMultiple && serverNames && (
           <div className="server-list">
             {serverNames.map(name => (
               <span key={name} className="server-tag">{name}</span>
