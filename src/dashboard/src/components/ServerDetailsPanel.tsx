@@ -405,6 +405,22 @@ export function ServerDetailsPanel({
           </div>
         </section>
 
+        {/* Storage Section */}
+        {server.directory && (
+          <section className="panel-section">
+            <h4 className="section-heading">Storage</h4>
+            {renderCopyField('Windows Path', server.directory, 'directory')}
+            <div className="detail-field">
+              <span className="field-label">Description</span>
+              <span className="field-value field-value--message">
+                {server.directory.includes('internal')
+                  ? 'S3/MinIO uses internal object storage (not shared PVC)'
+                  : 'Files stored here are accessible via this protocol server'}
+              </span>
+            </div>
+          </section>
+        )}
+
         {/* Credentials Section (read-only for non-dynamic or when no edit support) */}
         {protocolInfo.credentials && !isDynamic && (
           <section className="panel-section">

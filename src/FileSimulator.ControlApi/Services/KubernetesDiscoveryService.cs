@@ -217,59 +217,71 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
         return readyCondition?.Status == "True";
     }
 
+    // Windows base path for simulator data (mounted in minikube)
+    private const string WindowsBasePath = @"C:\simulator-data";
+
     /// <summary>
-    /// Extract the directory/mount path this server serves.
+    /// Extract the Windows folder path this server serves.
+    /// Shows the actual Windows path where files are stored.
     /// </summary>
     private static string? GetServerDirectory(string serverName, string protocol, V1Pod pod)
     {
         // For NAS servers, extract from server name pattern or volume mounts
         if (protocol == "NFS")
         {
-            // Check for subPath in volume mounts (dynamic servers)
-            var container = pod.Spec.Containers.FirstOrDefault();
-            var subPath = container?.VolumeMounts?
-                .Where(vm => vm.SubPath != null && !string.IsNullOrEmpty(vm.SubPath))
+            // Check init containers for subPath (dynamic servers use init container)
+            var subPath = pod.Spec.InitContainers?
+                .SelectMany(c => c.VolumeMounts ?? Enumerable.Empty<V1VolumeMount>())
+                .Where(vm => !string.IsNullOrEmpty(vm.SubPath) && vm.Name == "windows-data")
                 .Select(vm => vm.SubPath)
                 .FirstOrDefault();
 
+            // Also check main container volume mounts (Helm servers)
+            if (string.IsNullOrEmpty(subPath))
+            {
+                subPath = pod.Spec.Containers
+                    .SelectMany(c => c.VolumeMounts ?? Enumerable.Empty<V1VolumeMount>())
+                    .Where(vm => !string.IsNullOrEmpty(vm.SubPath))
+                    .Select(vm => vm.SubPath)
+                    .FirstOrDefault();
+            }
+
             if (!string.IsNullOrEmpty(subPath))
-                return $"/{subPath}";
+                return $@"{WindowsBasePath}\{subPath.Replace("/", "\\")}";
 
             // Infer from server name (Helm-managed servers)
             if (serverName.Contains("input"))
-                return "/input";
+                return $@"{WindowsBasePath}\input";
             if (serverName.Contains("output"))
-                return "/output";
+                return $@"{WindowsBasePath}\output";
             if (serverName.Contains("backup"))
-                return "/backup";
+                return $@"{WindowsBasePath}\backup";
 
-            return "/data";
+            return WindowsBasePath;
         }
 
-        // For FTP/SFTP, the root directory is typically /data or /home/user
+        // For FTP/SFTP, files are stored in root of shared volume
         if (protocol == "FTP" || protocol == "SFTP")
         {
-            return "/data";
+            return WindowsBasePath;
         }
 
-        // For HTTP/WebDAV, show the served directory
+        // For HTTP/WebDAV, files are stored in root of shared volume
         if (protocol == "HTTP")
         {
-            if (serverName == "management")
-                return "/files";
-            return "/webdav";
+            return WindowsBasePath;
         }
 
-        // For S3/MinIO, show the bucket concept
+        // For S3/MinIO, uses internal storage (not shared PVC)
         if (protocol == "S3")
         {
-            return "/buckets";
+            return "(internal S3 storage)";
         }
 
-        // For SMB, show the share path
+        // For SMB, files are stored in root of shared volume
         if (protocol == "SMB")
         {
-            return "/share";
+            return WindowsBasePath;
         }
 
         return null;
