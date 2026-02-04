@@ -47,6 +47,93 @@ Without using `--context` flag, the user experienced:
 
 **ROOT CAUSE:** Using `kubectl config use-context` to switch between clusters creates hidden state that leads to mistakes.
 
+## DNS/Hostname Setup (RECOMMENDED)
+
+Use stable hostnames instead of changing Minikube IPs. This ensures consistent access from browsers and applications.
+
+### Initial Setup (Run Once as Administrator)
+
+```powershell
+# Update Windows hosts file with Minikube IP
+.\scripts\Setup-Hosts.ps1
+```
+
+This adds entries to `C:\Windows\System32\drivers\etc\hosts`:
+```
+172.25.170.231  file-simulator.local
+172.25.170.231  api.file-simulator.local
+172.25.170.231  dashboard.file-simulator.local
+```
+
+### After Minikube Restart
+
+If Minikube IP changes (e.g., after `minikube delete`), run the setup script again:
+```powershell
+.\scripts\Setup-Hosts.ps1
+```
+
+### Service URLs (Stable Hostnames)
+
+| Service         | URL                                    |
+|-----------------|----------------------------------------|
+| Dashboard       | http://file-simulator.local:30080      |
+| Control API     | http://file-simulator.local:30500      |
+| FTP             | ftp://file-simulator.local:30021       |
+| SFTP            | sftp://file-simulator.local:30022      |
+| HTTP/WebDAV     | http://file-simulator.local:30088      |
+| S3/MinIO        | http://file-simulator.local:30900      |
+| SMB             | \\\\file-simulator.local\shared        |
+| NFS             | file-simulator.local:32049:/data       |
+
+### Connection Info API
+
+Get all connection details for your applications:
+
+```bash
+# JSON format (default)
+curl http://file-simulator.local:30500/api/connection-info
+
+# Environment variables format
+curl http://file-simulator.local:30500/api/connection-info?format=env
+
+# YAML format (for Kubernetes ConfigMaps)
+curl http://file-simulator.local:30500/api/connection-info?format=yaml
+
+# .NET appsettings.json format
+curl http://file-simulator.local:30500/api/connection-info?format=dotnet
+
+# Save to file
+.\scripts\Get-ConnectionInfo.ps1 -Format env -Save .env
+```
+
+### Configuring Your Applications
+
+**Option 1: Environment Variables**
+```powershell
+# Generate .env file for your app
+.\scripts\Get-ConnectionInfo.ps1 -Format env -Save path/to/your/app/.env
+```
+
+**Option 2: appsettings.json**
+```powershell
+# Get .NET configuration
+curl http://file-simulator.local:30500/api/connection-info?format=dotnet
+```
+
+**Option 3: Kubernetes ConfigMap**
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: file-simulator-config
+data:
+  FILE_FTP_HOST: "file-simulator.local"
+  FILE_FTP_PORT: "30021"
+  FILE_SFTP_HOST: "file-simulator.local"
+  FILE_SFTP_PORT: "30022"
+  # ... see full output from connection-info API
+```
+
 ## Technology Stack
 
 - **Runtime**: .NET 9.0

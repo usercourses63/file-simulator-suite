@@ -28,7 +28,9 @@ interface ServerWithDynamic extends ServerStatus {
 
 function App() {
   // Get base URL from environment
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://172.25.170.231:30500';
+  // Use environment variable, or file-simulator.local for production, or localhost for development
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
+    || (import.meta.env.DEV ? 'http://localhost:5000' : 'http://file-simulator.local:30500');
   const statusHubUrl = import.meta.env.VITE_SIGNALR_HUB_URL || `${apiBaseUrl}/hubs/status`;
   const fileEventsHubUrl = `${apiBaseUrl}/hubs/fileevents`;
   const metricsHubUrl = `${apiBaseUrl}/hubs/metrics`;
