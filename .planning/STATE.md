@@ -6,23 +6,23 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 
 **Core value:** Development systems must connect to simulated NAS servers using identical PV/PVC configurations as production OCP, with test files written on Windows immediately visible through NFS mounts - zero deployment differences between dev and prod.
 
-**Current focus:** Phase 11 - Dynamic Server Management
+**Current focus:** Phase 12 - Alerting and Production Readiness
 
 ## Current Position
 
-Phase: 11 of 12 (Dynamic Server Management)
-Plan: 6 of 6 complete (including gap closure)
-Status: Phase complete - all UAT gaps closed
-Last activity: 2026-02-04 - Completed 11-10-PLAN.md (gap closure)
+Phase: 12 of 12 (Alerting and Production Readiness)
+Plan: 1 of 3 complete
+Status: In progress
+Last activity: 2026-02-05 - Completed 12-01-PLAN.md (Backend Alert Infrastructure)
 
-Progress: [■■■■■■■■■■■■] 100% (41 of 41 plans complete)
+Progress: [■■■■■■■■■■■■] 100% (42 of 42 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 41
+- Total plans completed: 42
 - Average duration: 5.9 min
-- Total execution time: 4.41 hours
+- Total execution time: 4.50 hours
 
 **By Phase:**
 
@@ -39,9 +39,10 @@ Progress: [■■■■■■■■■■■■] 100% (41 of 41 plans complete)
 | 9. Historical Metrics and Storage | 6 | 38.5 min | 6.4 min |
 | 10. Kafka Integration | 7 | 36 min | 5.1 min |
 | 11. Dynamic Server Management | 6 | 39 min | 6.5 min |
+| 12. Alerting and Production Readiness | 1 | 5.3 min | 5.3 min |
 
 **Recent Trend:**
-- Last 5 plans: [7.0, 7.0, 5.0, 6.0, 2.0] min
+- Last 5 plans: [7.0, 5.0, 6.0, 2.0, 5.3] min
 - Trend: Consistent execution pace
 
 *Updated after each plan completion*
@@ -146,6 +147,13 @@ Recent decisions affecting current work:
 - Phase 11-08: Settings panel accessible from header gear icon
 - Phase 11-10: ValidateImportAsync returns ImportValidation with willCreate and conflicts arrays
 - Phase 11-10: Delete dialog uses serverNames[0] for single-via-multiselect scenario
+- Phase 12-01: Three alert severity levels (Info/Warning/Critical) for operational scenarios
+- Phase 12-01: Alert deduplication by Type+Source prevents duplicate alerts
+- Phase 12-01: 3 consecutive failures (15s) threshold for server health alerts
+- Phase 12-01: 1GB disk space warning threshold for development/testing
+- Phase 12-01: TCP-based Kafka health check with 5s timeout
+- Phase 12-01: 7-day alert retention with automatic cleanup
+- Phase 12-01: EF Core Migrate() instead of EnsureCreated for schema versioning
 
 ### Pending Todos
 
@@ -162,6 +170,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-02-04
-Stopped at: Completed 11-10-PLAN.md - Gap closure for import validation and delete dialog bugs
+Last session: 2026-02-05
+Stopped at: Completed 12-01-PLAN.md - Backend Alert Infrastructure with health checks, AlertService, and SignalR
 Resume file: None
