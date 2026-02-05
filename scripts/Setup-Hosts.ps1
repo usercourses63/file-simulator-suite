@@ -54,11 +54,12 @@ $hostsPath = "$env:SystemRoot\System32\drivers\etc\hosts"
 # Read current hosts file
 $hostsContent = Get-Content $hostsPath -Raw
 
-# Define hostnames to add
+# Define hostnames to add (static infrastructure services)
 $hostnames = @(
     $Hostname,
     "api.$Hostname",
-    "dashboard.$Hostname"
+    "dashboard.$Hostname",
+    "kafka.$Hostname"
 )
 
 # Marker for our entries
