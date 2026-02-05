@@ -1,5 +1,8 @@
 # File Simulator Suite
 
+[![GitHub release](https://img.shields.io/github/v/release/usercourses63/file-simulator-suite)](https://github.com/usercourses63/file-simulator-suite/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A comprehensive file access simulator for Kubernetes development and testing. This suite provides multiple file transfer protocols (FTP, SFTP, HTTP/WebDAV, S3/MinIO, SMB, NFS) in a unified deployment, enabling seamless testing between Windows development environments and Kubernetes/OpenShift clusters.
 
 ## v2.0: Simulator Control Platform (Released: 2026-02-05)
