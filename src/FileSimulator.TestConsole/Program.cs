@@ -72,6 +72,14 @@ public class Program
 
         AnsiConsole.WriteLine();
 
+        // Check for dynamic server test mode
+        if (args.Contains("--dynamic"))
+        {
+            var includeFileOps = args.Contains("--full-dynamic-test");
+            await DynamicServerTests.TestDynamicServersAsync(apiUrl, includeFileOps);
+            return;
+        }
+
         // Check for cross-protocol test mode
         if (args.Contains("--cross-protocol") || args.Contains("-x"))
         {
@@ -79,34 +87,47 @@ public class Program
             return;
         }
 
+        // Check for NAS-only test mode
+        if (args.Contains("--nas-only"))
+        {
+            var testContent = $"Test file created at {DateTime.UtcNow:O}\nThis is a test file for NAS validation.";
+            var testFileName = $"nas-test-{DateTime.UtcNow:yyyyMMdd-HHmmss}.txt";
+
+            var nasResults = await NasServerTests.TestAllNasServersAsync(activeConfig, testContent, testFileName);
+            NasServerTests.DisplayNasResults(nasResults);
+            return;
+        }
+
         var results = new List<TestResult>();
-        var testContent = $"Test file created at {DateTime.UtcNow:O}\nThis is a test file for protocol validation.";
-        var testFileName = $"test-{DateTime.UtcNow:yyyyMMdd-HHmmss}.txt";
+        var testContent2 = $"Test file created at {DateTime.UtcNow:O}\nThis is a test file for protocol validation.";
+        var testFileName2 = $"test-{DateTime.UtcNow:yyyyMMdd-HHmmss}.txt";
+
+        var skipNas = args.Contains("--skip-nas");
 
         // Run all protocol tests
         await AnsiConsole.Status()
             .StartAsync("Running protocol tests...", async ctx =>
             {
                 ctx.Status("Testing FTP...");
-                results.Add(await TestFtpAsync(activeConfig, testContent, testFileName));
+                results.Add(await TestFtpAsync(activeConfig, testContent2, testFileName2));
 
                 ctx.Status("Testing SFTP...");
-                results.Add(await TestSftpAsync(activeConfig, testContent, testFileName));
+                results.Add(await TestSftpAsync(activeConfig, testContent2, testFileName2));
 
                 ctx.Status("Testing HTTP (Read)...");
                 results.Add(await TestHttpReadAsync(activeConfig));
 
                 ctx.Status("Testing WebDAV (Write)...");
-                results.Add(await TestWebDavAsync(activeConfig, testContent, testFileName));
+                results.Add(await TestWebDavAsync(activeConfig, testContent2, testFileName2));
 
                 ctx.Status("Testing S3/MinIO...");
-                results.Add(await TestS3Async(activeConfig, testContent, testFileName));
+                results.Add(await TestS3Async(activeConfig, testContent2, testFileName2));
 
                 ctx.Status("Testing SMB...");
-                results.Add(await TestSmbAsync(activeConfig, testContent, testFileName));
+                results.Add(await TestSmbAsync(activeConfig, testContent2, testFileName2));
 
                 ctx.Status("Testing NFS...");
-                results.Add(await TestNfsAsync(activeConfig, testContent, testFileName));
+                results.Add(await TestNfsAsync(activeConfig, testContent2, testFileName2));
             });
 
         // Display results table
@@ -114,6 +135,20 @@ public class Program
 
         // Display summary
         DisplaySummary(results);
+
+        // Run NAS tests (unless --skip-nas flag is set)
+        if (!skipNas)
+        {
+            var nasTestContent = $"Test file created at {DateTime.UtcNow:O}\nThis is a test file for NAS validation.";
+            var nasTestFileName = $"nas-test-{DateTime.UtcNow:yyyyMMdd-HHmmss}.txt";
+
+            var nasResults = await NasServerTests.TestAllNasServersAsync(activeConfig, nasTestContent, nasTestFileName);
+
+            if (nasResults.Any())
+            {
+                NasServerTests.DisplayNasResults(nasResults);
+            }
+        }
     }
 
     static async Task<TestResult> TestFtpAsync(IConfiguration config, string content, string fileName)
