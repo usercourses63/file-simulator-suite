@@ -73,7 +73,7 @@ public class ConnectionInfoController : ControllerBase
             {
                 Ftp = new CredentialInfo { Username = "simuser", Password = "simpass123", Note = "Default FTP credentials" },
                 Sftp = new CredentialInfo { Username = "simuser", Password = "simpass123", Note = "Default SFTP credentials" },
-                S3 = new CredentialInfo { Username = "minioadmin", Password = "minioadmin", Note = "MinIO root credentials" },
+                S3 = new CredentialInfo { Username = "minioadmin", Password = "minioadmin123", Note = "MinIO root credentials" },
                 Http = new CredentialInfo { Username = "admin", Password = "admin", Note = "WebDAV credentials" },
                 Smb = new CredentialInfo { Username = "simuser", Password = "simpass", Note = "SMB share credentials" },
                 Management = new CredentialInfo { Username = "admin", Password = "admin123", Note = "FileBrowser UI credentials" }
@@ -150,7 +150,7 @@ public class ConnectionInfoController : ControllerBase
             "FTP" => $"ftp://simuser:simpass123@{host}:{port}",
             "SFTP" => $"sftp://simuser:simpass123@{host}:{port}",
             "HTTP" => $"http://{host}:{port}",
-            "S3" => $"http://minioadmin:minioadmin@{host}:{port}",
+            "S3" => $"http://minioadmin:minioadmin123@{host}:{port}",
             "SMB" => $@"\\{host}\shared",
             "NFS" => $"{host}:{port}:/data",
             "MANAGEMENT" => $"http://{host}:{port}",

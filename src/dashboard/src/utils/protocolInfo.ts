@@ -105,12 +105,12 @@ export function getProtocolInfo(
         config: {
           'Bucket': 'simulator-data',
           'Region': 'us-east-1',
-          'Console Port': '9001',
+          'Console URL': 'http://file-simulator.local:30901',
           'Path Style': 'Enabled'
         },
         credentials: {
           username: 'minioadmin',
-          password: 'minioadmin'
+          password: 'minioadmin123'
         }
       };
 
