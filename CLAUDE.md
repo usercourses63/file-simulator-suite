@@ -1,8 +1,25 @@
-# CLAUDE.md - File Simulator Suite Implementation Plan
+# CLAUDE.md - File Simulator Suite Implementation Guide
 
 ## Project Overview
 
-This project implements a File Access Simulator Suite for Kubernetes/OpenShift environments. It provides multiple file transfer protocol simulators (FTP, SFTP, HTTP/WebDAV, S3/MinIO, SMB, NFS) that allow microservices in Minikube to work identically to production OCP environments, while enabling Windows-based testers to supply input files and retrieve outputs.
+**Version:** 2.0 (Released: 2026-02-05)
+
+This project implements a File Access Simulator Suite for Kubernetes/OpenShift environments. It provides:
+
+**v1.0 Features (Protocol Simulators):**
+- Multiple file transfer protocols (FTP, SFTP, HTTP/WebDAV, S3/MinIO, SMB, NFS)
+- 7-server Multi-NAS topology matching production OCP network architecture
+- Bidirectional Windows sync via init containers and sidecars
+- Production-identical PV/PVC patterns with static provisioning
+
+**v2.0 Features (Control Platform):**
+- **Control API**: REST API for server management, file operations, Kafka, alerts, and metrics
+- **Real-time Dashboard**: React-based UI with SignalR for live updates
+- **Dynamic Servers**: Create FTP, SFTP, NAS servers on-demand via API
+- **Kafka Integration**: Topic management, message produce/consume, consumer groups
+- **Alerting System**: Configurable thresholds for disk, health, and Kafka
+- **Historical Metrics**: SQLite-backed time-series with 7-day retention and hourly rollups
+- **E2E Testing**: Playwright-based browser automation for dashboard validation
 
 ## CRITICAL: Multi-Profile kubectl Safety
 
@@ -136,15 +153,65 @@ data:
 
 ## Technology Stack
 
+### Backend
 - **Runtime**: .NET 9.0
 - **Framework**: ASP.NET Core Minimal API
-- **Scheduling**: Quartz.NET
-- **Messaging**: MassTransit with RabbitMQ
+- **Real-time**: SignalR for WebSocket connections
+- **Database**: SQLite with Entity Framework Core
+- **Kafka Client**: Confluent.Kafka 2.12.0
+- **Kubernetes Client**: KubernetesClient 18.0.13
+- **Validation**: FluentValidation
+
+### Frontend
+- **Framework**: React 19 with TypeScript
+- **Build Tool**: Vite 6
+- **Charts**: Recharts for time-series visualization
+- **UI Components**: Custom components with CSS Grid/Flexbox
+- **Real-time**: @microsoft/signalr for WebSocket
+
+### Infrastructure
 - **Container Orchestration**: Kubernetes (Minikube/OCP)
 - **Deployment**: Helm 3.x
 - **File Protocols**: FTP (FluentFTP), SFTP (SSH.NET), S3 (AWSSDK.S3), HTTP (HttpClient), SMB (SMBLibrary), NFS (mounted filesystem)
+- **Event Streaming**: Apache Kafka with ZooKeeper sidecar
+
+### Testing
+- **E2E Testing**: Playwright.Xunit 1.58.0
+- **CLI Testing**: TestConsole with Spectre.Console
 
 ## Architecture
+
+### v2.0 Architecture (Control Platform)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         file-simulator namespace                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│  ┌────────────────────┐  ┌────────────────────┐  ┌────────────────────┐     │
+│  │  Dashboard (React) │  │  Control API (.NET)│  │  Kafka + ZooKeeper │     │
+│  │      :30080        │  │      :30500        │  │      :30093        │     │
+│  │                    │◄─┤ SignalR WebSocket  │  │                    │     │
+│  │  - Server grid     │  │ REST endpoints     │  │  - Topic mgmt      │     │
+│  │  - File browser    │  │ K8s discovery      │  │  - Produce/consume │     │
+│  │  - Kafka UI        │  │ SQLite metrics     │  │  - Consumer groups │     │
+│  │  - Alerts          │  │ Alert service      │  │                    │     │
+│  │  - History charts  │  │ FileWatcher        │  │                    │     │
+│  └────────────────────┘  └────────────────────┘  └────────────────────┘     │
+│                                    │                                          │
+│  ┌─────┐ ┌──────┐ ┌──────┐ ┌─────┐ ┌─────┐ ┌──────────────────────────┐    │
+│  │ FTP │ │ SFTP │ │ HTTP │ │ S3  │ │ SMB │ │   7x Multi-NAS Servers   │    │
+│  │30021│ │30022 │ │30088 │ │30900│ │ 445 │ │   :32150-32156           │    │
+│  └──┬──┘ └──┬───┘ └──┬───┘ └──┬──┘ └──┬──┘ └───────────┬──────────────┘    │
+│     └───────┴────────┴────────┴───────┴────────────────┘                     │
+│                         Shared PVC (hostPath)                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+              Windows Host: C:\simulator-data (mounted)
+```
+
+### v1.0 Architecture (Protocol Servers Only)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -164,6 +231,53 @@ data:
                               ▼
          Windows Host: C:\simulator-data (mounted)
 ```
+
+---
+
+## Control API Quick Reference
+
+The Control API provides programmatic access to all simulator features.
+
+**Base URL:** `http://file-simulator.local:30500`
+
+### Key Endpoints
+
+| Category | Endpoint | Method | Description |
+|----------|----------|--------|-------------|
+| Health | `/api/health` | GET | Health check |
+| Connection | `/api/connection-info` | GET | Get all service connection details |
+| Servers | `/api/servers` | GET | List all servers |
+| Servers | `/api/servers/ftp` | POST | Create dynamic FTP server |
+| Servers | `/api/servers/sftp` | POST | Create dynamic SFTP server |
+| Servers | `/api/servers/nas` | POST | Create dynamic NAS server |
+| Servers | `/api/servers/{name}` | DELETE | Delete dynamic server |
+| Servers | `/api/servers/{name}/start` | POST | Start stopped server |
+| Servers | `/api/servers/{name}/stop` | POST | Stop running server |
+| Files | `/api/files/tree` | GET | List directory tree |
+| Files | `/api/files/upload` | POST | Upload file (100MB limit) |
+| Files | `/api/files/download` | GET | Download file |
+| Files | `/api/files` | DELETE | Delete file/directory |
+| Kafka | `/api/kafka/topics` | GET/POST | List or create topics |
+| Kafka | `/api/kafka/topics/{name}/messages` | GET/POST | Get or produce messages |
+| Kafka | `/api/kafka/consumer-groups` | GET | List consumer groups |
+| Alerts | `/api/alerts/active` | GET | Get active alerts |
+| Alerts | `/api/alerts/history` | GET | Get alert history |
+| Metrics | `/api/metrics/samples` | GET | Get raw health samples |
+| Metrics | `/api/metrics/hourly` | GET | Get hourly aggregations |
+| Config | `/api/configuration/export` | GET | Export server configuration |
+| Config | `/api/configuration/import` | POST | Import server configuration |
+
+### SignalR Hubs
+
+| Hub | URL | Events |
+|-----|-----|--------|
+| Server Status | `/hubs/server-status` | `ServerStatusUpdate` (every 5s) |
+| File Events | `/hubs/file-events` | `FileEvent` (create/modify/delete) |
+| Kafka | `/hubs/kafka` | `KafkaMessage` (per-topic subscription) |
+| Metrics | `/hubs/metrics` | `MetricsSample` (latest health data) |
+| Alerts | `/hubs/alerts` | `AlertTriggered`, `AlertResolved` |
+
+For complete API documentation, see [docs/API-REFERENCE.md](docs/API-REFERENCE.md).
 
 ---
 
@@ -484,6 +598,41 @@ public static FileSimulatorOptions ForCluster(string @namespace = "file-simulato
 - [ ] Delete operations remove files
 - [ ] Health checks report correctly
 
+### Control API Validation (v2.0)
+- [ ] API health check returns 200: `curl http://file-simulator.local:30500/api/health`
+- [ ] Connection info returns all services: `curl http://file-simulator.local:30500/api/connection-info`
+- [ ] Server list includes all Helm-deployed servers
+- [ ] Dynamic FTP server creation works
+- [ ] Dynamic SFTP server creation works
+- [ ] Dynamic NAS server creation works
+- [ ] Server start/stop/restart operations work
+- [ ] File tree returns correct structure
+- [ ] File upload succeeds (test with small file)
+- [ ] File download returns correct content
+- [ ] Kafka topic create/list/delete works
+- [ ] Kafka message produce/consume works
+- [ ] Alerts appear for unhealthy servers
+- [ ] Metrics samples and hourly rollups available
+
+### Dashboard Validation (v2.0)
+- [ ] Dashboard loads at http://file-simulator.local:30080
+- [ ] Servers tab shows server grid with health status
+- [ ] Real-time server status updates via SignalR
+- [ ] Create Server modal opens and validates input
+- [ ] Files tab shows directory tree
+- [ ] File upload via drag-and-drop works
+- [ ] Kafka tab shows topics and allows message production
+- [ ] Alerts tab shows active and historical alerts
+- [ ] History tab shows latency charts
+
+### E2E Test Validation (v2.0)
+- [ ] Playwright browsers installed: `pwsh .\scripts\Install-PlaywrightBrowsers.ps1`
+- [ ] Smoke tests pass: `dotnet test --filter "FullyQualifiedName~SmokeTests"`
+- [ ] Dashboard tests pass: `dotnet test --filter "FullyQualifiedName~DashboardTests"`
+- [ ] Server management tests pass
+- [ ] File operations tests pass
+- [ ] Kafka tests pass
+
 ### Integration Validation
 - [ ] File uploaded via HTTP visible in S3
 - [ ] File uploaded via FTP visible in Management UI
@@ -513,14 +662,15 @@ public static FileSimulatorOptions ForCluster(string @namespace = "file-simulato
 
 ## DEPLOYMENT COMMANDS
 
-### Verified Working Configuration
+### Verified Working Configuration (v2.0)
 
 ```powershell
 # 1. Create cluster with Hyper-V driver (REQUIRED for SMB)
+# NOTE: v2.0 requires 12GB for Control API, Dashboard, and Kafka
 minikube start `
     --profile file-simulator `
     --driver=hyperv `
-    --memory=8192 `
+    --memory=12288 `
     --cpus=4 `
     --disk-size=20g `
     --mount `
@@ -532,10 +682,8 @@ helm upgrade --install file-sim ./helm-chart/file-simulator `
     --namespace file-simulator `
     --create-namespace
 
-# 3. CRITICAL: Apply NFS fix (NFS will crash without this!)
-kubectl --context=file-simulator patch deployment file-sim-file-simulator-nas `
-    -n file-simulator `
-    --patch-file nfs-fix-patch.yaml
+# 3. NFS fix is now integrated into nas.yaml - no manual patch needed!
+# (emptyDir fix applied automatically in Helm template)
 
 # 4. Start tunnel for SMB (separate Administrator terminal)
 minikube tunnel -p file-simulator
@@ -544,10 +692,34 @@ minikube tunnel -p file-simulator
 kubectl --context=file-simulator get pods -n file-simulator
 kubectl --context=file-simulator get svc -n file-simulator
 
-# All 8 pods should show: STATUS=Running, READY=1/1
+# v2.0 pods include: control-api, dashboard, kafka + all protocol servers
 
 # 6. Test connectivity
-./scripts/test-simulator.ps1
+# Quick API health check:
+curl http://file-simulator.local:30500/api/health
+
+# Full protocol tests:
+cd src/FileSimulator.TestConsole
+dotnet run
+
+# E2E dashboard tests:
+cd tests/FileSimulator.E2ETests
+$env:USE_EXISTING_SIMULATOR = "true"
+dotnet test
+```
+
+### v1.0 Configuration (Protocol Servers Only)
+
+```powershell
+# For v1.0 features only (no Control API, Dashboard, Kafka):
+minikube start `
+    --profile file-simulator `
+    --driver=hyperv `
+    --memory=8192 `
+    --cpus=4 `
+    --disk-size=20g `
+    --mount `
+    --mount-string="C:\simulator-data:/mnt/simulator-data"
 ```
 
 ### NFS Fix Patch File (REQUIRED)
@@ -586,31 +758,48 @@ helm upgrade --install file-sim ./helm-chart/file-simulator \
 
 ---
 
-## VERIFIED CONFIGURATION (TESTED ✅)
+## VERIFIED CONFIGURATION (TESTED)
+
+### v2.0 Configuration (Full Platform)
 
 **Cluster Specifications:**
 - **Minikube Profile:** file-simulator
 - **Driver:** hyperv (required for SMB LoadBalancer)
-- **Memory:** 8GB (8192 MB) - minimum for all 8 protocols
+- **Memory:** 12GB (12288 MB) - required for Kafka + Control Platform
 - **CPUs:** 4 - comfortable headroom
 - **Disk:** 20GB
 - **Mount:** C:\simulator-data:/mnt/simulator-data
 
-**Resource Utilization:**
+**v2.0 Components Verified:**
+1. Control API - REST endpoints working
+2. Dashboard - React UI loading with SignalR
+3. Kafka - Topic management and messaging
+4. Dynamic Servers - FTP/SFTP/NAS creation
+5. Alerts - Trigger and resolve cycle
+6. Metrics - SQLite storage and hourly rollups
+7. E2E Tests - Playwright tests passing
+
+### v1.0 Configuration (Protocol Servers Only)
+
+**Cluster Specifications:**
+- **Memory:** 8GB (8192 MB) - minimum for all 8 protocols
+- **CPUs:** 4
+
+**Resource Utilization (v1.0):**
 - CPU Requests: 575m (~14% of 4 CPUs)
 - CPU Limits: 1.9 CPUs (~48% of 4 CPUs)
 - Memory Requests: 706Mi (~9% of 8GB)
 - Memory Limits: 2.85Gi (~35% of 8GB)
 
 **All 8 Protocols Tested:**
-1. ✅ Management UI - HTTP 200
-2. ✅ HTTP Server - HTTP 200
-3. ✅ WebDAV - HTTP 401 (auth working)
-4. ✅ S3/MinIO - Console accessible
-5. ✅ FTP - TCP connection successful
-6. ✅ SFTP - TCP connection successful
-7. ✅ SMB - LoadBalancer active
-8. ✅ NFS - File operations verified (write/read/list)
+1. Management UI - HTTP 200
+2. HTTP Server - HTTP 200
+3. WebDAV - HTTP 401 (auth working)
+4. S3/MinIO - Console accessible
+5. FTP - TCP connection successful
+6. SFTP - TCP connection successful
+7. SMB - LoadBalancer active
+8. NFS - File operations verified (write/read/list)
 
 ## ERROR HANDLING
 
@@ -628,32 +817,42 @@ All protocol services should:
 
 ## NOTES FOR CLAUDE CODE
 
+### Critical Rules
 1. **ALWAYS use --context flag** - Never switch contexts, always explicit: `kubectl --context=file-simulator`
-2. **Apply NFS fix immediately** - NFS pod will crash without the emptyDir patch (see DEPLOYMENT COMMANDS)
-3. **Start with the Helm chart** - Deploy infrastructure first
-4. **Test each protocol individually** - Ensure connectivity before integration
-5. **Use 8GB/4CPU minimum** - Lower resources cause pod scheduling failures
-6. **Use the test scripts** - Verify everything works before moving on
-7. **Follow the patterns** - Consistency across all protocol implementations
-8. **Log extensively** - Debug issues will be easier with good logs
-9. **Handle offline network** - OCP is offline, no external dependencies
-10. **Keep profiles separate** - file-simulator (Hyper-V) for this, minikube (Docker) for ez-platform
+2. **Use 12GB memory for v2.0** - Kafka requires ~1.5-2GB additional memory
+3. **NFS fix is automatic** - v2.0 Helm chart includes emptyDir fix, no manual patch needed
+4. **Keep profiles separate** - file-simulator (Hyper-V) for this, minikube (Docker) for ez-platform
 
-## CRITICAL FIXES REQUIRED
+### Development Workflow
+5. **Start with the Helm chart** - Deploy infrastructure first
+6. **Test each protocol individually** - Ensure connectivity before integration
+7. **Use the test scripts** - Verify everything works before moving on
+8. **Follow the patterns** - Consistency across all protocol implementations
+9. **Log extensively** - Debug issues will be easier with good logs
+10. **Handle offline network** - OCP is offline, no external dependencies
 
-### NFS Server Fix (Mandatory)
+### v2.0 Testing Guidance
+11. **TestConsole for protocol tests** - `dotnet run` in src/FileSimulator.TestConsole
+12. **Playwright for dashboard tests** - Set `USE_EXISTING_SIMULATOR=true` and run `dotnet test`
+13. **Dynamic server tests modify state** - Use `--dynamic` flag with caution
+14. **SignalR debugging** - Check browser DevTools Network tab for WebSocket frames
+15. **SQLite metrics location** - `/data/metrics.db` inside control-api pod
+
+## CRITICAL FIXES AND SAFETY
+
+### NFS Server Fix (Now Automatic)
 
 **Problem:** NFS server crashes with `exportfs: /data does not support NFS export`
 
-**Solution:** Apply nfs-fix-patch.yaml after every deployment
+**Solution (v2.0):** The NFS fix is now integrated into `nas.yaml` Helm template. No manual patching required.
+
+**Solution (v1.0 or custom deployments):** Apply nfs-fix-patch.yaml after deployment:
 
 ```powershell
 kubectl --context=file-simulator patch deployment file-sim-file-simulator-nas `
     -n file-simulator `
     --patch-file nfs-fix-patch.yaml
 ```
-
-See DEPLOYMENT-NOTES.md for detailed explanation.
 
 ### Multi-Profile Safety
 
@@ -662,10 +861,25 @@ See DEPLOYMENT-NOTES.md for detailed explanation.
 **Solution:** ALWAYS use explicit context flags
 
 ```bash
-# ✅ CORRECT
+# CORRECT
 kubectl --context=file-simulator get pods -n file-simulator
 helm --kube-context=file-simulator list -n file-simulator
 
-# ❌ WRONG
+# WRONG - NEVER DO THIS
 kubectl get pods  # Which cluster? Dangerous!
+kubectl config use-context file-simulator  # Hidden state causes mistakes
+```
+
+### Dynamic Server Cleanup
+
+**Problem:** Orphaned dynamic servers if tests are interrupted
+
+**Solution:** Dynamic servers use `ownerReferences` pointing to the Control API pod. If the pod is deleted, Kubernetes garbage collection removes the dynamic resources. For manual cleanup:
+
+```bash
+# List dynamic servers
+kubectl --context=file-simulator get deployments -n file-simulator -l app.kubernetes.io/managed-by=control-api
+
+# Delete specific dynamic server via API
+curl -X DELETE http://file-simulator.local:30500/api/servers/{name}
 ```
