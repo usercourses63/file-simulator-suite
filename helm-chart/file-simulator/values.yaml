@@ -428,6 +428,33 @@ controlApi:
     mountPath: /mnt/control-data
 
 # ============================================
+# Dashboard - Web UI for File Simulator Suite
+# ============================================
+dashboard:
+  enabled: true
+
+  # Container image (built from src/FileSimulator.Dashboard)
+  image:
+    repository: localhost:5000/file-simulator-dashboard
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  # Service configuration
+  service:
+    type: NodePort
+    port: 80
+    nodePort: 30080
+
+  # Resource limits - lightweight React SPA served by nginx
+  resources:
+    requests:
+      memory: "32Mi"
+      cpu: "25m"
+    limits:
+      memory: "128Mi"
+      cpu: "200m"
+
+# ============================================
 # Kafka Message Broker (KRaft mode - no ZooKeeper)
 # ============================================
 kafka:
