@@ -8,16 +8,19 @@ import './ErrorFallback.css';
  * and recovery options.
  */
 export function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
+  // Type assertion: FallbackProps error is Error type
+  const err = error as Error;
+
   return (
     <div className="error-fallback">
       <div className="error-fallback__icon">⚠</div>
       <h2 className="error-fallback__title">Something went wrong</h2>
-      <p className="error-fallback__message">{error.message}</p>
+      <p className="error-fallback__message">{err.message}</p>
 
       <details className="error-fallback__details">
         <summary>Technical Details</summary>
         <pre className="error-fallback__stack">
-          {error.stack}
+          {err.stack}
         </pre>
       </details>
 
