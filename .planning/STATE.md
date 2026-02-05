@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 ## Current Position
 
 Phase: 12 of 12 (Alerting and Production Readiness)
-Plan: 4 of 10 complete
+Plan: 5 of 10 complete
 Status: In progress
-Last activity: 2026-02-05 - Completed 12-04-PLAN.md (Alerts Tab and Error Boundaries)
+Last activity: 2026-02-05 - Completed 12-05-PLAN.md (Dashboard Containerization)
 
-Progress: [■■■■■■■■■■■■] 100% (45 of 43 plans complete)
+Progress: [■■■■■■■■■■■■] 100% (46 of 43 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 45
-- Average duration: 5.7 min
-- Total execution time: 4.73 hours
+- Total plans completed: 46
+- Average duration: 5.5 min
+- Total execution time: 4.77 hours
 
 **By Phase:**
 
@@ -39,10 +39,10 @@ Progress: [■■■■■■■■■■■■] 100% (45 of 43 plans complete)
 | 9. Historical Metrics and Storage | 6 | 38.5 min | 6.4 min |
 | 10. Kafka Integration | 7 | 36 min | 5.1 min |
 | 11. Dynamic Server Management | 6 | 39 min | 6.5 min |
-| 12. Alerting and Production Readiness | 4 | 19.5 min | 4.9 min |
+| 12. Alerting and Production Readiness | 5 | 21.5 min | 4.3 min |
 
 **Recent Trend:**
-- Last 5 plans: [2.0, 5.3, 4.2, 4.4, 5.6] min
+- Last 5 plans: [5.3, 4.2, 4.4, 5.6, 2.0] min
 - Trend: Fast execution pace maintained
 
 *Updated after each plan completion*
@@ -165,6 +165,12 @@ Recent decisions affecting current work:
 - Phase 12-04: withErrorBoundary HOC pattern for tab-level error isolation
 - Phase 12-04: 50 alerts per page for Alerts tab pagination
 - Phase 12-04: Severity/type/search filters for alert history investigation
+- Phase 12-05: Multi-stage Docker build reduces image from ~800MB to 27.3MB
+- Phase 12-05: nginx:alpine for minimal footprint static file serving
+- Phase 12-05: VITE_API_BASE_URL build argument for environment-specific API endpoints
+- Phase 12-05: Immutable cache (1 year) for hashed assets, no-cache for index.html
+- Phase 12-05: wget-based HEALTHCHECK for Kubernetes readiness/liveness probes
+- Phase 12-05: SPA routing via try_files fallback to index.html
 
 ### Pending Todos
 
@@ -182,5 +188,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 12-04-PLAN.md - Alerts tab and error boundaries for component fault isolation
+Stopped at: Completed 12-05-PLAN.md - Dashboard containerization with multi-stage Dockerfile (27.3MB image)
 Resume file: None
