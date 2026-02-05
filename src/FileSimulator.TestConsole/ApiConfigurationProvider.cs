@@ -104,12 +104,16 @@ public class ApiConfigurationProvider
         };
 
         // Group servers by protocol (taking first of each type for simple case)
+        // For NFS (NAS servers), store all instances with unique keys
         foreach (var server in apiResponse.Servers)
         {
             var protocol = server.Protocol.ToUpperInvariant();
 
-            // Skip if we already have this protocol (unless it's dynamic)
-            if (config.Servers.ContainsKey(protocol) && !server.IsDynamic)
+            // For NFS servers, use server name as key (to store multiple NAS servers)
+            var key = protocol == "NFS" ? server.Name : protocol;
+
+            // Skip if we already have this protocol (unless it's dynamic or NFS)
+            if (config.Servers.ContainsKey(key) && !server.IsDynamic && protocol != "NFS")
                 continue;
 
             var serverConfig = new ServerConfig
@@ -172,8 +176,8 @@ public class ApiConfigurationProvider
                     break;
             }
 
-            // Use protocol as key for simple access
-            config.Servers[protocol] = serverConfig;
+            // Use protocol as key for simple access (or server name for NFS)
+            config.Servers[key] = serverConfig;
         }
 
         return config;

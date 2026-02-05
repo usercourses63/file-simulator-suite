@@ -265,35 +265,66 @@ public static class NasServerTests
     /// <summary>
     /// Filter NAS servers from configuration.
     /// </summary>
-    private static List<ServerConfig> FilterNasServers(IConfiguration config)
+    public static List<ServerConfig> FilterNasServers(IConfiguration config)
     {
         var servers = new List<ServerConfig>();
 
-        // Try to get from API-provided configuration
-        // Look for servers with Type="nas" or Protocol="NFS"
-        // For fallback, detect by port range 32150-32156
+        // Check for API-provided configuration in the format created by BuildConfigurationFromApi
+        // This will have keys like "nas-input-1", "nas-input-2", etc.
+        var configData = config.GetSection("FileSimulator").GetChildren();
 
-        // Check all configuration sections
-        var fileSimSection = config.GetSection("FileSimulator");
-        if (fileSimSection.Exists())
+        foreach (var section in configData)
         {
-            // Check for NAS section in fallback config
-            var nasSection = fileSimSection.GetSection("Nas");
-            if (nasSection.Exists())
+            // Check if this is a NAS server (has "nas" in the key name)
+            if (section.Key.Contains("nas", StringComparison.OrdinalIgnoreCase) ||
+                section.Key.Equals("Nfs", StringComparison.OrdinalIgnoreCase))
             {
-                var nasServers = nasSection.GetSection("Servers").GetChildren();
-                foreach (var serverSection in nasServers)
+                var host = section["Host"];
+                var portStr = section["Port"];
+                var name = section.Key;
+
+                if (!string.IsNullOrEmpty(host) && !string.IsNullOrEmpty(portStr))
                 {
                     var server = new ServerConfig
                     {
-                        Name = serverSection["Name"] ?? "",
-                        Host = serverSection["Host"] ?? "localhost",
-                        Port = int.Parse(serverSection["Port"] ?? "32149"),
+                        Name = name,
+                        Host = host,
+                        Port = int.Parse(portStr),
                         Type = "nas",
                         Protocol = "NFS",
-                        Directory = serverSection["Directory"] ?? ""
+                        BasePath = section["BasePath"] ?? "output",
+                        MountPath = section["MountPath"] ?? "/mnt/nfs"
                     };
                     servers.Add(server);
+                }
+            }
+        }
+
+        // If no servers found in API format, check fallback configuration
+        if (!servers.Any())
+        {
+            var fileSimSection = config.GetSection("FileSimulator");
+            if (fileSimSection.Exists())
+            {
+                // Check for NAS section in fallback config
+                var nasSection = fileSimSection.GetSection("Nas");
+                if (nasSection.Exists())
+                {
+                    var nasServers = nasSection.GetSection("Servers").GetChildren();
+                    foreach (var serverSection in nasServers)
+                    {
+                        var server = new ServerConfig
+                        {
+                            Name = serverSection["Name"] ?? "",
+                            Host = serverSection["Host"] ?? "localhost",
+                            Port = int.Parse(serverSection["Port"] ?? "32149"),
+                            Type = "nas",
+                            Protocol = "NFS",
+                            Directory = serverSection["Directory"] ?? "",
+                            BasePath = serverSection["BasePath"] ?? "output"
+                        };
+                        servers.Add(server);
+                    }
                 }
             }
         }
