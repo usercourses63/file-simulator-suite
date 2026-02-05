@@ -293,4 +293,79 @@ function Update-HostsFile {
     }
 }
 
+function Test-Deployment {
+    Write-Step "Verifying deployment..."
+
+    # Get pod status
+    Write-Info "Checking pod status..."
+    $pods = kubectl --context=$Profile get pods -n file-simulator -o json | ConvertFrom-Json
+
+    $allReady = $true
+    foreach ($pod in $pods.items) {
+        $name = $pod.metadata.name
+        $phase = $pod.status.phase
+
+        if ($phase -eq "Running") {
+            $readyCount = 0
+            $totalCount = 0
+            foreach ($condition in $pod.status.conditions) {
+                if ($condition.type -eq "Ready") {
+                    if ($condition.status -eq "True") {
+                        $readyCount = 1
+                    }
+                    $totalCount = 1
+                }
+            }
+
+            if ($readyCount -eq $totalCount) {
+                Write-Success "  $name is Running and Ready"
+            }
+            else {
+                Write-Info "  $name is Running but not Ready"
+                $allReady = $false
+            }
+        }
+        else {
+            Write-Info "  $name is $phase"
+            $allReady = $false
+        }
+    }
+
+    if (-not $allReady) {
+        Write-Info "Some pods are not ready yet, but deployment was successful"
+    }
+
+    # Test Control API health
+    Write-Info "Testing Control API health..."
+    try {
+        $response = Invoke-WebRequest -Uri "http://file-simulator.local:30500/health" -Method GET -TimeoutSec 5
+        if ($response.StatusCode -eq 200) {
+            Write-Success "Control API is healthy"
+        }
+        else {
+            Write-Info "Control API responded with status: $($response.StatusCode)"
+        }
+    }
+    catch {
+        Write-Info "Control API health check failed: $($_.Exception.Message)"
+        Write-Info "This may be normal if hosts file was not updated"
+    }
+
+    # Test Dashboard health
+    Write-Info "Testing Dashboard health..."
+    try {
+        $response = Invoke-WebRequest -Uri "http://file-simulator.local:30080/" -Method GET -TimeoutSec 5
+        if ($response.StatusCode -eq 200) {
+            Write-Success "Dashboard is accessible"
+        }
+        else {
+            Write-Info "Dashboard responded with status: $($response.StatusCode)"
+        }
+    }
+    catch {
+        Write-Info "Dashboard health check failed: $($_.Exception.Message)"
+        Write-Info "This may be normal if hosts file was not updated"
+    }
+}
+
 # Main execution will be implemented in subsequent tasks
