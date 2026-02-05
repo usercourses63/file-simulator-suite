@@ -4,6 +4,7 @@ import { useFileEvents } from './hooks/useFileEvents';
 import { useMetricsStream } from './hooks/useMetricsStream';
 import { useMultiSelect } from './hooks/useMultiSelect';
 import { useServerManagement } from './hooks/useServerManagement';
+import { useAlerts } from './hooks/useAlerts';
 import { ServerStatus, ServerStatusUpdate } from './types/server';
 import ConnectionStatus from './components/ConnectionStatus';
 import SummaryHeader from './components/SummaryHeader';
@@ -18,6 +19,8 @@ import ImportConfigDialog from './components/ImportConfigDialog';
 import DeleteConfirmDialog from './components/DeleteConfirmDialog';
 import BatchOperationsBar from './components/BatchOperationsBar';
 import CreateServerModal from './components/CreateServerModal';
+import AlertToaster from './components/AlertToaster';
+import AlertBanner from './components/AlertBanner';
 import './App.css';
 
 // Extended server info for multi-select filtering
@@ -44,6 +47,9 @@ function App() {
 
   // Connect to metrics hub for real-time sparkline data
   const { latestSamples } = useMetricsStream(metricsHubUrl);
+
+  // Connect to alerts for toast notifications and banner
+  const { activeAlerts, alertHistory, stats } = useAlerts(apiBaseUrl);
 
   // Track selected server for details panel
   const [selectedServer, setSelectedServer] = useState<ServerStatus | null>(null);
@@ -210,6 +216,8 @@ function App() {
         </div>
       </header>
 
+      <AlertBanner alerts={activeAlerts} />
+
       <main className="app-main">
         {error && !isReconnecting && (
           <div className="error-banner">
@@ -322,6 +330,8 @@ function App() {
         }}
         apiBaseUrl={apiBaseUrl}
       />
+
+      <AlertToaster />
     </div>
   );
 }
