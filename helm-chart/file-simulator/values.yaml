@@ -368,11 +368,13 @@ monitoring:
 controlApi:
   enabled: true
 
-  # Container image (will be built from src/FileSimulator.ControlApi)
+  # Container image (built from src/FileSimulator.ControlApi)
+  # Load into Minikube with: minikube -p file-simulator image load <image>
   image:
     repository: localhost:5000/file-simulator-control-api
     tag: latest
-    pullPolicy: IfNotPresent
+    # Use Never for minikube image load, IfNotPresent for registry
+    pullPolicy: Never
 
   # Service configuration
   service:
@@ -433,11 +435,13 @@ controlApi:
 dashboard:
   enabled: true
 
-  # Container image (built from src/FileSimulator.Dashboard)
+  # Container image (built from src/dashboard)
+  # Load into Minikube with: minikube -p file-simulator image load <image>
   image:
     repository: localhost:5000/file-simulator-dashboard
     tag: latest
-    pullPolicy: IfNotPresent
+    # Use Never for minikube image load, IfNotPresent for registry
+    pullPolicy: Never
 
   # Service configuration
   service:
