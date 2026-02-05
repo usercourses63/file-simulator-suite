@@ -33,8 +33,24 @@ try
         options.Limits.MaxRequestBodySize = 104857600; // 100 MB for file uploads
     });
 
-    // Add SignalR with JSON protocol
-    builder.Services.AddSignalR();
+    // Add SignalR with optional Redis backplane
+    // Check if Redis connection string is configured
+    var redisConnection = builder.Configuration.GetConnectionString("Redis");
+    if (!string.IsNullOrEmpty(redisConnection))
+    {
+        // Use Redis backplane for scale-out scenarios (multi-replica)
+        builder.Services.AddSignalR().AddStackExchangeRedis(redisConnection, options =>
+        {
+            options.Configuration.ChannelPrefix = StackExchange.Redis.RedisChannel.Literal("FileSimulator");
+        });
+        Log.Information("SignalR backplane: Redis (connection: {RedisConnection})", redisConnection);
+    }
+    else
+    {
+        // Use default in-memory backplane for single-replica deployments
+        builder.Services.AddSignalR();
+        Log.Information("SignalR backplane: In-memory (single replica)");
+    }
 
     // Add health checks with custom checks
     builder.Services.AddSingleton<DiskSpaceHealthCheck>();
