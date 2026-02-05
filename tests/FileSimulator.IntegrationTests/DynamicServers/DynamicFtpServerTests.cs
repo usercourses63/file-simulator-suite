@@ -35,10 +35,9 @@ public class DynamicFtpServerTests
             // Assert
             response.Should().NotBeNull("Server creation should return response");
             response.Name.Should().Be(serverName, "Server name should match request");
-            response.Host.Should().NotBeNullOrEmpty("Server host should be provided");
-            response.Port.Should().BeGreaterThan(0, "Server port should be valid");
-            response.Username.Should().NotBeNullOrEmpty("Username should be provided");
-            response.Password.Should().NotBeNullOrEmpty("Password should be provided");
+            response.ServiceName.Should().NotBeNullOrEmpty("Service name should be provided");
+            response.NodePort.Should().BeGreaterThan(0, "NodePort should be assigned");
+            response.IsDynamic.Should().BeTrue("Server should be marked as dynamic");
         }
         finally
         {
@@ -92,10 +91,10 @@ public class DynamicFtpServerTests
 
             // Act - Connect to FTP server
             using var ftpClient = new AsyncFtpClient(
-                status.Host!,
-                status.Username!,
-                status.Password!,
-                status.Port);
+                status.Host,
+                status.Username,
+                status.Password,
+                status.NodePort ?? status.Port);
             ftpClient.Config.ConnectTimeout = 10000;
 
             await ftpClient.Connect();
@@ -132,10 +131,10 @@ public class DynamicFtpServerTests
 
             // Act - Connect
             using var ftpClient = new AsyncFtpClient(
-                status.Host!,
-                status.Username!,
-                status.Password!,
-                status.Port);
+                status.Host,
+                status.Username,
+                status.Password,
+                status.NodePort ?? status.Port);
             ftpClient.Config.ConnectTimeout = 10000;
             await ftpClient.Connect();
 
@@ -254,10 +253,10 @@ public class DynamicFtpServerTests
 
             // Step 3: Connect
             using var ftpClient = new AsyncFtpClient(
-                status.Host!,
-                status.Username!,
-                status.Password!,
-                status.Port);
+                status.Host,
+                status.Username,
+                status.Password,
+                status.NodePort ?? status.Port);
             ftpClient.Config.ConnectTimeout = 10000;
             await ftpClient.Connect();
             ftpClient.IsConnected.Should().BeTrue("Should connect to FTP server");
