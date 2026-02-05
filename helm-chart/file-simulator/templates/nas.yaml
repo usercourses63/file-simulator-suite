@@ -69,8 +69,11 @@ spec:
             - name: NFS_LOG_LEVEL
               value: "DEBUG"
           volumeMounts:
-            - name: data
+            # NFS exports from emptyDir (not Windows hostPath). Shared storage via /shared mount.
+            - name: nfs-data
               mountPath: /data
+            - name: shared-data
+              mountPath: /shared
           securityContext:
             privileged: true
             capabilities:
@@ -90,7 +93,11 @@ spec:
           resources:
             {{- toYaml .Values.nas.resources | nindent 12 }}
       volumes:
-        - name: data
+        # NFS cannot export Windows hostPath volumes - use emptyDir for /data
+        - name: nfs-data
+          emptyDir: {}
+        # Access shared storage via /shared mount (not exported via NFS)
+        - name: shared-data
           persistentVolumeClaim:
             claimName: {{ include "file-simulator.fullname" . }}-pvc
       {{- with .Values.nodeSelector }}
