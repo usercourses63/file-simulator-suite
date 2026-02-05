@@ -62,6 +62,9 @@ public class CrossProtocolFileVisibilityTests
             ftpServer.Credentials.Username,
             ftpServer.Credentials.Password,
             ftpServer.Port);
+        ftpClient.Config.DataConnectionType = FtpDataConnectionType.AutoActive;
+        ftpClient.Config.DataConnectionConnectTimeout = 10000;
+        ftpClient.Config.ConnectTimeout = 10000;
 
         await ftpClient.Connect();
 
@@ -202,6 +205,9 @@ public class CrossProtocolFileVisibilityTests
             ftpServer.Credentials.Username,
             ftpServer.Credentials.Password,
             ftpServer.Port);
+        ftpClient.Config.DataConnectionType = FtpDataConnectionType.AutoActive;
+        ftpClient.Config.DataConnectionConnectTimeout = 10000;
+        ftpClient.Config.ConnectTimeout = 10000;
 
         await ftpClient.Connect();
 
@@ -291,6 +297,9 @@ public class CrossProtocolFileVisibilityTests
                 ftpServer.Credentials.Username,
                 ftpServer.Credentials.Password,
                 ftpServer.Port);
+            ftpClient.Config.DataConnectionType = FtpDataConnectionType.AutoActive;
+            ftpClient.Config.DataConnectionConnectTimeout = 10000;
+            ftpClient.Config.ConnectTimeout = 10000;
             await ftpClient.Connect();
 
             var fileVisible = await WaitForFileVisibility(async () =>

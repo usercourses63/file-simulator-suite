@@ -68,9 +68,8 @@ public class KafkaProduceConsumeTests
         try
         {
             // Act
-            var response = await _fixture.ApiClient.PostAsJsonAsync("/api/kafka/produce", new
+            var response = await _fixture.ApiClient.PostAsJsonAsync($"/api/kafka/topics/{topicName}/messages", new
             {
-                topic = topicName,
                 key = "test-key",
                 value = "test-value"
             });
@@ -97,9 +96,8 @@ public class KafkaProduceConsumeTests
         try
         {
             // Act - Produce message
-            var produceResponse = await _fixture.ApiClient.PostAsJsonAsync("/api/kafka/produce", new
+            var produceResponse = await _fixture.ApiClient.PostAsJsonAsync($"/api/kafka/topics/{topicName}/messages", new
             {
-                topic = topicName,
                 key = testKey,
                 value = testValue
             });
@@ -110,7 +108,7 @@ public class KafkaProduceConsumeTests
 
             // Act - Consume message
             var consumeResponse = await _fixture.ApiClient.GetAsync(
-                $"/api/kafka/consume/{topicName}?count=1&timeout=10");
+                $"/api/kafka/topics/{topicName}/messages?count=1&timeout=10");
             consumeResponse.EnsureSuccessStatusCode();
 
             var content = await consumeResponse.Content.ReadAsStringAsync();
@@ -219,9 +217,8 @@ public class KafkaProduceConsumeTests
             // Act - Produce all messages
             foreach (var (key, value) in messages)
             {
-                var response = await _fixture.ApiClient.PostAsJsonAsync("/api/kafka/produce", new
+                var response = await _fixture.ApiClient.PostAsJsonAsync($"/api/kafka/topics/{topicName}/messages", new
                 {
-                    topic = topicName,
                     key = key,
                     value = value
                 });
@@ -233,7 +230,7 @@ public class KafkaProduceConsumeTests
 
             // Act - Consume all messages
             var consumeResponse = await _fixture.ApiClient.GetAsync(
-                $"/api/kafka/consume/{topicName}?count={messageCount}&timeout=10");
+                $"/api/kafka/topics/{topicName}/messages?count={messageCount}&timeout=10");
             consumeResponse.EnsureSuccessStatusCode();
 
             var content = await consumeResponse.Content.ReadAsStringAsync();
@@ -282,9 +279,8 @@ public class KafkaProduceConsumeTests
             await Task.Delay(1000);
 
             // Act - Produce message via API
-            var produceResponse = await _fixture.ApiClient.PostAsJsonAsync("/api/kafka/produce", new
+            var produceResponse = await _fixture.ApiClient.PostAsJsonAsync($"/api/kafka/topics/{topicName}/messages", new
             {
-                topic = topicName,
                 key = "cycle-key",
                 value = "cycle-value"
             });
@@ -295,7 +291,7 @@ public class KafkaProduceConsumeTests
 
             // Act - Consume message via API
             var consumeResponse = await _fixture.ApiClient.GetAsync(
-                $"/api/kafka/consume/{topicName}?count=1&timeout=10");
+                $"/api/kafka/topics/{topicName}/messages?count=1&timeout=10");
             consumeResponse.IsSuccessStatusCode.Should().BeTrue("Message consume should succeed");
 
             var content = await consumeResponse.Content.ReadAsStringAsync();
@@ -355,9 +351,8 @@ public class KafkaProduceConsumeTests
         try
         {
             // Produce a message
-            var produceResponse = await _fixture.ApiClient.PostAsJsonAsync("/api/kafka/produce", new
+            var produceResponse = await _fixture.ApiClient.PostAsJsonAsync($"/api/kafka/topics/{topicName}/messages", new
             {
-                topic = topicName,
                 key = testKey,
                 value = testValue
             });
@@ -367,11 +362,11 @@ public class KafkaProduceConsumeTests
 
             // Act - Consume from same topic twice (should use different consumer groups)
             var consumeResponse1 = await _fixture.ApiClient.GetAsync(
-                $"/api/kafka/consume/{topicName}?count=1&timeout=10");
+                $"/api/kafka/topics/{topicName}/messages?count=1&timeout=10");
             consumeResponse1.IsSuccessStatusCode.Should().BeTrue("First consume should succeed");
 
             var consumeResponse2 = await _fixture.ApiClient.GetAsync(
-                $"/api/kafka/consume/{topicName}?count=1&timeout=10");
+                $"/api/kafka/topics/{topicName}/messages?count=1&timeout=10");
             consumeResponse2.IsSuccessStatusCode.Should().BeTrue("Second consume should succeed");
 
             // Assert - Both should receive the message (different consumer groups)
