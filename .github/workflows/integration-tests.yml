@@ -1,0 +1,76 @@
+name: Integration Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: 'Test filter (e.g., FullyQualifiedName~Protocol)'
+        required: false
+        default: ''
+
+# Note: This workflow requires a running file-simulator cluster
+# It's designed for manual execution after deployment verification
+
+jobs:
+  integration-tests:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore tests/FileSimulator.IntegrationTests
+
+      - name: Build test project
+        run: dotnet build tests/FileSimulator.IntegrationTests --no-restore --configuration Release
+
+      - name: Run integration tests
+        id: test
+        run: |
+          $filter = "${{ github.event.inputs.filter }}"
+          $args = @(
+            "test"
+            "tests/FileSimulator.IntegrationTests"
+            "--no-build"
+            "--configuration:Release"
+            "--logger:junit;LogFilePath=test-results/junit-integration-tests.xml"
+            "--logger:trx;LogFileName=test-results.trx"
+          )
+          if ($filter) {
+            $args += "--filter"
+            $args += $filter
+          }
+          & dotnet @args
+        shell: pwsh
+        continue-on-error: true
+        env:
+          # Override API URL if needed
+          CONTROL_API_URL: ${{ vars.CONTROL_API_URL || 'http://file-simulator.local:30500' }}
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action/windows@v2
+        if: always()
+        with:
+          files: test-results/*.xml
+          check_name: 'Integration Test Results'
+          comment_mode: 'off'
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            test-results/*.xml
+            test-results/*.trx
+          retention-days: 30
+
+      - name: Check test result
+        if: steps.test.outcome == 'failure'
+        run: exit 1
