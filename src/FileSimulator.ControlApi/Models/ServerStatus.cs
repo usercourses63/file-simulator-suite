@@ -6,7 +6,7 @@ namespace FileSimulator.ControlApi.Models;
 public record ServerStatus
 {
     public required string Name { get; init; }
-    public required string Protocol { get; init; }  // FTP, SFTP, NFS, HTTP, S3, SMB
+    public required string Protocol { get; init; }  // FTP, SFTP, NFS, HTTP, S3, SMB, Management
     public required string PodStatus { get; init; }  // Running, Pending, Failed
     public required bool IsHealthy { get; init; }
     public string? HealthMessage { get; init; }
@@ -27,6 +27,26 @@ public record ServerStatus
     /// Directory/mount path this server serves (e.g., "/input", "/backup", "/data").
     /// </summary>
     public string? Directory { get; init; }
+
+    /// <summary>
+    /// Kubernetes service name for cluster-internal access.
+    /// </summary>
+    public string? ServiceName { get; init; }
+
+    /// <summary>
+    /// Cluster IP address for internal access.
+    /// </summary>
+    public string? ClusterIp { get; init; }
+
+    /// <summary>
+    /// Internal cluster port number.
+    /// </summary>
+    public int Port { get; init; }
+
+    /// <summary>
+    /// NodePort for external access from outside the cluster.
+    /// </summary>
+    public int? NodePort { get; init; }
 }
 
 /// <summary>

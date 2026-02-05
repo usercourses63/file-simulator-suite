@@ -33,7 +33,11 @@ public class HealthCheckService : IHealthCheckService
                 HealthMessage = $"Pod not ready: {server.PodStatus}",
                 IsDynamic = server.IsDynamic,
                 ManagedBy = server.ManagedBy,
-                Directory = server.Directory
+                Directory = server.Directory,
+                ServiceName = server.ServiceName,
+                ClusterIp = server.ClusterIp,
+                Port = server.Port,
+                NodePort = server.NodePort
             };
         }
 
@@ -93,7 +97,11 @@ public class HealthCheckService : IHealthCheckService
             LatencyMs = (int)sw.ElapsedMilliseconds,
             IsDynamic = server.IsDynamic,
             ManagedBy = server.ManagedBy,
-            Directory = server.Directory
+            Directory = server.Directory,
+            ServiceName = server.ServiceName,
+            ClusterIp = server.ClusterIp,
+            Port = server.Port,
+            NodePort = server.NodePort
         };
     }
 

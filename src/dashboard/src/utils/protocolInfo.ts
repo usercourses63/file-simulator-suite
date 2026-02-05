@@ -147,6 +147,24 @@ export function getProtocolInfo(
         }
       };
 
+    case 'Management':
+      return {
+        displayName: 'Management UI (FileBrowser)',
+        defaultPort: 8080,
+        serviceHost: serviceBase,
+        nodePort: 30180,
+        connectionString: `http://${serviceBase}:8080`,
+        config: {
+          'Application': 'FileBrowser',
+          'Features': 'Browse, Upload, Download, Delete',
+          'Auth': 'Username/Password'
+        },
+        credentials: {
+          username: 'admin',
+          password: 'admin123'
+        }
+      };
+
     default:
       return {
         displayName: protocol,
@@ -176,7 +194,8 @@ export function getExternalConnectionString(
     'HTTP': 30088,
     'S3': 30900,
     'SMB': 30445,
-    'NFS': 32049
+    'NFS': 32049,
+    'Management': 30180
   };
 
   const port = portMap[protocol];
@@ -194,6 +213,8 @@ export function getExternalConnectionString(
       return `\\\\${minikubeIp}\\simulator-data (via tunnel)`;
     case 'NFS':
       return `${minikubeIp}:/exports/data`;
+    case 'Management':
+      return `http://${minikubeIp}:${port}`;
     default:
       return `${minikubeIp}:${port}`;
   }

@@ -75,12 +75,14 @@ public class ConnectionInfoController : ControllerBase
                 Sftp = new CredentialInfo { Username = "simuser", Password = "simpass123", Note = "Default SFTP credentials" },
                 S3 = new CredentialInfo { Username = "minioadmin", Password = "minioadmin", Note = "MinIO root credentials" },
                 Http = new CredentialInfo { Username = "admin", Password = "admin", Note = "WebDAV credentials" },
-                Smb = new CredentialInfo { Username = "simuser", Password = "simpass", Note = "SMB share credentials" }
+                Smb = new CredentialInfo { Username = "simuser", Password = "simpass", Note = "SMB share credentials" },
+                Management = new CredentialInfo { Username = "admin", Password = "admin123", Note = "FileBrowser UI credentials" }
             },
             Endpoints = new EndpointSummary
             {
                 Dashboard = $"http://{host}:30080",
                 ControlApi = $"http://{host}:30500",
+                Management = $"http://{host}:30180",
                 Ftp = $"ftp://{host}:30021",
                 Sftp = $"sftp://{host}:30022",
                 Http = $"http://{host}:30088",
@@ -151,6 +153,7 @@ public class ConnectionInfoController : ControllerBase
             "S3" => $"http://minioadmin:minioadmin@{host}:{port}",
             "SMB" => $@"\\{host}\shared",
             "NFS" => $"{host}:{port}:/data",
+            "MANAGEMENT" => $"http://{host}:{port}",
             _ => $"{host}:{port}"
         };
     }
@@ -199,7 +202,12 @@ public class ConnectionInfoController : ControllerBase
             "# NFS",
             $"FILE_NFS_SERVER={info.Hostname}",
             "FILE_NFS_PORT=32049",
-            "FILE_NFS_PATH=/data"
+            "FILE_NFS_PATH=/data",
+            "",
+            "# Management UI (FileBrowser)",
+            $"FILE_MANAGEMENT_URL=http://{info.Hostname}:30180",
+            $"FILE_MANAGEMENT_USERNAME={info.DefaultCredentials.Management.Username}",
+            $"FILE_MANAGEMENT_PASSWORD={info.DefaultCredentials.Management.Password}"
         };
         return string.Join("\n", lines);
     }
@@ -357,6 +365,7 @@ public record DefaultCredentials
     public required CredentialInfo S3 { get; init; }
     public required CredentialInfo Http { get; init; }
     public required CredentialInfo Smb { get; init; }
+    public required CredentialInfo Management { get; init; }
 }
 
 public record CredentialInfo
@@ -370,6 +379,7 @@ public record EndpointSummary
 {
     public required string Dashboard { get; init; }
     public required string ControlApi { get; init; }
+    public required string Management { get; init; }
     public required string Ftp { get; init; }
     public required string Sftp { get; init; }
     public required string Http { get; init; }

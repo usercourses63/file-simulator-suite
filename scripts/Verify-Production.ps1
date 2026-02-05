@@ -6,14 +6,14 @@
     This script performs exhaustive testing of all components:
     - Kubernetes cluster health (5 tests)
     - Management UI and Control API (6 tests)
-    - Protocol connectivity - FTP/SFTP/HTTP/S3/SMB/NFS/Kafka (7 tests)
+    - Protocol connectivity - FTP/SFTP/HTTP/S3/SMB/NFS/Kafka/FileBrowser (8 tests)
     - File operations - upload/download/delete (4 tests)
     - Kafka integration - topics/produce/consume (4 tests)
     - Dynamic server management (5 tests, optional)
     - Historical metrics (2 tests)
     - Alert system (4 tests)
 
-    Total: 37 tests (42 with -IncludeDynamic)
+    Total: 38 tests (43 with -IncludeDynamic)
 
 .PARAMETER Profile
     Minikube profile name. Default: file-simulator
@@ -307,11 +307,14 @@ Test-Endpoint -Name "Control API alerts" -Url "$BaseUrl/api/alerts" | Out-Null
 
 #endregion
 
-#region Task 4: Protocol Connectivity Tests (7 tests)
+#region Task 4: Protocol Connectivity Tests (8 tests)
 
 Write-Section "Protocol Servers"
 
-# Test 12: HTTP server
+# Test 12: FileBrowser Management UI
+Test-Endpoint -Name "FileBrowser Management UI" -Url "http://file-simulator.local:30180/" | Out-Null
+
+# Test 13: HTTP server
 Test-Endpoint -Name "HTTP server" -Url "http://file-simulator.local:30088/health" | Out-Null
 
 # Test 13: S3 API

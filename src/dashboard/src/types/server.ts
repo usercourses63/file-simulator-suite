@@ -2,7 +2,7 @@
  * Protocol types supported by the file simulator suite.
  * Matches backend Protocol enum.
  */
-export type Protocol = 'FTP' | 'SFTP' | 'HTTP' | 'S3' | 'SMB' | 'NFS';
+export type Protocol = 'FTP' | 'SFTP' | 'HTTP' | 'S3' | 'SMB' | 'NFS' | 'Management';
 
 /**
  * Kubernetes pod status.
@@ -34,6 +34,10 @@ export interface ServerStatus {
   isDynamic: boolean; // True if created via Control API
   managedBy: string; // "control-api" or "Helm"
   directory?: string; // Mount path this server serves (e.g., "/input", "/data")
+  serviceName?: string; // Kubernetes service name for cluster-internal access
+  clusterIp?: string; // Cluster IP address for internal access
+  port: number; // Internal cluster port number
+  nodePort?: number; // NodePort for external access from outside the cluster
 }
 
 /**

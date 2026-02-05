@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useServerManagement } from '../hooks/useServerManagement';
 import { ServerStatus } from '../types/server';
 import { getHealthState, getHealthStateText } from '../utils/healthStatus';
-import { getProtocolInfo, getExternalConnectionString } from '../utils/protocolInfo';
+import { getProtocolInfo } from '../utils/protocolInfo';
 import {
   UpdateFtpServerRequest,
   UpdateSftpServerRequest,
@@ -158,7 +158,6 @@ export function ServerDetailsPanel({
   const healthState = getHealthState(server);
   const healthText = getHealthStateText(healthState);
   const protocolInfo = getProtocolInfo(server.name, server.protocol);
-  const externalConnection = getExternalConnectionString(server.protocol);
 
   // Use isDynamic directly from server status (from SignalR)
   const isDynamic = server.isDynamic;
@@ -393,15 +392,19 @@ export function ServerDetailsPanel({
         {/* Connection Section */}
         <section className="panel-section">
           <h4 className="section-heading">Connection</h4>
-          {renderCopyField('Cluster Internal', protocolInfo.connectionString, 'internal')}
-          {renderCopyField('External (Minikube)', externalConnection, 'external')}
+          {server.serviceName && server.clusterIp && (
+            renderCopyField('Cluster Internal', `${server.clusterIp}:${server.port}`, 'internal')
+          )}
+          {server.nodePort && (
+            renderCopyField('External (Minikube)', `file-simulator.local:${server.nodePort}`, 'external')
+          )}
           <div className="detail-field">
             <span className="field-label">Port</span>
-            <span className="field-value">{protocolInfo.defaultPort}</span>
+            <span className="field-value">{server.port || protocolInfo.defaultPort}</span>
           </div>
           <div className="detail-field">
             <span className="field-label">NodePort</span>
-            <span className="field-value">{protocolInfo.nodePort}</span>
+            <span className="field-value">{server.nodePort || protocolInfo.nodePort}</span>
           </div>
         </section>
 

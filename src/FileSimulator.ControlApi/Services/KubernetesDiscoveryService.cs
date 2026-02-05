@@ -24,16 +24,17 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
     private const string ManagedByLabel = "app.kubernetes.io/managed-by";
 
     // Protocol detection from deployment names
-    private static readonly Dictionary<string, string> ProtocolMappings = new()
-    {
-        { "ftp", "FTP" },
-        { "sftp", "SFTP" },
-        { "nas", "NFS" },
-        { "http", "HTTP" },
-        { "s3", "S3" },
-        { "smb", "SMB" },
-        { "management", "HTTP" }  // FileBrowser
-    };
+    // Order matters: check more specific patterns first (sftp before ftp)
+    private static readonly (string Key, string Protocol)[] ProtocolMappings =
+    [
+        ("management", "Management"),  // FileBrowser UI - check before http
+        ("sftp", "SFTP"),              // Check before ftp (sftp contains ftp)
+        ("ftp", "FTP"),
+        ("nas", "NFS"),
+        ("http", "HTTP"),
+        ("s3", "S3"),
+        ("smb", "SMB")
+    ];
 
     public KubernetesDiscoveryService(
         IOptions<KubernetesOptions> options,
@@ -152,10 +153,11 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
 
     private static string? DetectProtocol(string podName)
     {
-        foreach (var (key, value) in ProtocolMappings)
+        // Array order ensures specific matches come first (sftp before ftp, management before http)
+        foreach (var (key, protocol) in ProtocolMappings)
         {
             if (podName.Contains(key, StringComparison.OrdinalIgnoreCase))
-                return value;
+                return protocol;
         }
         return null;
     }
@@ -290,6 +292,12 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
 
         // For SMB, files are stored in root of shared volume
         if (protocol == "SMB")
+        {
+            return WindowsBasePath;
+        }
+
+        // For Management UI (FileBrowser), files are stored in root of shared volume
+        if (protocol == "Management")
         {
             return WindowsBasePath;
         }
