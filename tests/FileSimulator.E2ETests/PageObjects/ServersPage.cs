@@ -197,7 +197,7 @@ public class ServersPage
         if (name != null) details["name"] = name.Trim();
 
         var protocolElement = ServerDetailsPanel.Locator(".server-details__protocol");
-        var protocol = await protocolElement.FirstOrDefaultAsync()?.TextContentAsync();
+        var protocol = await protocolElement.First.TextContentAsync();
         if (protocol != null) details["protocol"] = protocol.Trim();
 
         return details;
