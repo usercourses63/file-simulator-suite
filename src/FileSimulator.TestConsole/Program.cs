@@ -72,6 +72,13 @@ public class Program
 
         AnsiConsole.WriteLine();
 
+        // Check for Kafka test mode
+        if (args.Contains("--kafka"))
+        {
+            await KafkaTests.TestKafkaAsync(activeConfig, apiUrl);
+            return;
+        }
+
         // Check for dynamic server test mode
         if (args.Contains("--dynamic"))
         {
@@ -103,6 +110,7 @@ public class Program
         var testFileName2 = $"test-{DateTime.UtcNow:yyyyMMdd-HHmmss}.txt";
 
         var skipNas = args.Contains("--skip-nas");
+        var skipKafka = args.Contains("--skip-kafka");
 
         // Run all protocol tests
         await AnsiConsole.Status()
@@ -135,6 +143,12 @@ public class Program
 
         // Display summary
         DisplaySummary(results);
+
+        // Run Kafka tests (unless --skip-kafka flag is set)
+        if (!skipKafka)
+        {
+            await KafkaTests.TestKafkaAsync(activeConfig, apiUrl);
+        }
 
         // Run NAS tests (unless --skip-nas flag is set)
         if (!skipNas)
