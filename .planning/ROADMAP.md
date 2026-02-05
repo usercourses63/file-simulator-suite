@@ -2,8 +2,8 @@
 
 ## Milestones
 
-- **v1.0 Multi-NAS Production Topology** - Phases 1-5 (shipped 2026-02-01)
-- **v2.0 Simulator Control Platform** - Phases 6-12 (in progress)
+- ✅ **v1.0 Multi-NAS Production Topology** - Phases 1-5 (shipped 2026-02-01)
+- ✅ **v2.0 Simulator Control Platform** - Phases 6-14 (shipped 2026-02-05)
 
 ## Phases
 
@@ -53,9 +53,12 @@ Plans:
 
 </details>
 
-### v2.0 Simulator Control Platform (In Progress)
+<details>
+<summary>v2.0 Simulator Control Platform (Phases 6-14) - SHIPPED 2026-02-05</summary>
 
 **Milestone Goal:** Transform the simulator into an observable, controllable platform with real-time monitoring, dynamic server management, and Kafka integration - enabling self-service test environment orchestration.
+
+**Archive:** See `.planning/milestones/v2.0-ROADMAP.md` for full phase details.
 
 #### Phase 6: Backend API Foundation
 **Goal**: Establish backend control plane with SignalR WebSocket support and Kubernetes integration
@@ -283,7 +286,9 @@ v2.0 phases execute sequentially: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14
 | 11. Dynamic Server Management | v2.0 | 10/10 | Complete | 2026-02-04 |
 | 12. Alerting and Production Readiness | v2.0 | 10/10 | Complete | 2026-02-05 |
 | 13. TestConsole Modernization and Release | v2.0 | 8/8 | Complete | 2026-02-05 |
-| 14. Comprehensive API-Driven Integration Testing | v2.0 | 0/9 | **Ready** | - |
+| 14. Comprehensive API-Driven Integration Testing | v2.0 | 8/9 | Complete | 2026-02-05 |
+
+</details>
 
 ---
-*Last updated: 2026-02-05 - Phase 14 plans created (9 plans in 5 waves)*
+*Last updated: 2026-02-05 - v2.0 milestone shipped*

@@ -1,5 +1,34 @@
 # Project Milestones: File Simulator Suite
 
+## v2.0 Simulator Control Platform (Shipped: 2026-02-05)
+
+**Delivered:** Observable, controllable platform with React dashboard, real-time monitoring, dynamic server management, Kafka integration, and comprehensive API-driven test suite.
+
+**Phases completed:** 6-14 (62 plans total)
+
+**Key accomplishments:**
+
+- Built React 19 + SignalR dashboard with real-time monitoring of 13+ servers (5 WebSocket hubs)
+- Implemented file operations UI with FileSystemWatcher event streaming and cross-protocol visibility
+- Added SQLite metrics persistence with 7-day retention, hourly rollups, and Recharts visualization
+- Deployed Kafka broker + Zookeeper with topic management, produce/consume, and consumer group monitoring
+- Enabled dynamic FTP/SFTP/NAS server creation at runtime with Kubernetes ownerReferences for cleanup
+- Created alerting system with health degradation, disk space, and Kafka alerts with toast notifications
+- Delivered 131+ integration tests covering all protocols, dynamic servers, and Kafka with JUnit XML export
+
+**Stats:**
+
+- ~60,600 lines of code (C# + TypeScript + Tests)
+- 9 phases, 62 plans, 258 commits
+- 4 days (2026-02-02 → 2026-02-05)
+- 131 integration tests passing, 1 expected skip
+
+**Git range:** `ed44aa8 (feat 09-01)` → `04e7a15 (fix: SFTP tests)`
+
+**What's next:** Platform ready for production use. Teams can self-service test environments with dynamic server creation and configuration import/export.
+
+---
+
 ## v1.0 Multi-NAS Production Topology (Shipped: 2026-02-01)
 
 **Delivered:** 7-server NFS topology simulator replicating OpenShift network architecture with bidirectional Windows file integration.

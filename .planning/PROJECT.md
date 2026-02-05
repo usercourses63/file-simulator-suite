@@ -8,22 +8,45 @@ A Kubernetes-based file protocol simulator with real-time monitoring and control
 
 Development systems must connect to simulated NAS servers using identical PV/PVC configurations as production OCP, with test files written on Windows immediately visible through NFS mounts - zero deployment differences between dev and prod.
 
-## Current Milestone: v2.0 Simulator Control Platform
+## Current State
 
-**Goal:** Transform the simulator into an observable, controllable platform with real-time monitoring, dynamic server management, and Kafka integration - enabling self-service test environment orchestration.
+**Shipped version:** v2.0 Simulator Control Platform (2026-02-05)
 
-**Target capabilities:**
-- React-based monitoring dashboard with real-time updates (WebSockets)
-- Complete observability: health, connectivity, file events, usage metrics, historical trends
-- Dynamic control plane: add/remove servers at runtime (FTP, SFTP, NAS, Kafka topics)
-- Kafka simulator: minimal cluster for pub/sub, topic management, consumer groups
-- File operations: upload/download/delete through UI across all protocols
-- Configuration management: import/export simulator configurations
-- Alerting & notifications: proactive issue detection
+**What shipped:**
+- React 19 dashboard with real-time monitoring via SignalR (5 hubs)
+- File operations UI with FileSystemWatcher event streaming
+- SQLite metrics persistence with 7-day retention and Recharts visualization
+- Kafka broker + Zookeeper with topic management and produce/consume
+- Dynamic FTP/SFTP/NAS server creation at runtime with ownerReferences
+- Alerting system with health/disk/Kafka alerts and toast notifications
+- 131+ integration tests covering all protocols, dynamic servers, and Kafka
+
+**Tech stack:**
+- Backend: ASP.NET Core 9, SignalR, EF Core + SQLite, Confluent.Kafka
+- Frontend: React 19, Vite, TypeScript, Recharts
+- Infrastructure: Kubernetes, Helm, Docker
+- Testing: xUnit, FluentAssertions, JUnit XML
+
+**Lines of code:** ~60,600 (C# + TypeScript + Tests)
 
 ## Requirements
 
 ### Validated
+
+v2.0 Simulator Control Platform (Shipped: 2026-02-05):
+
+- ✓ React 19 monitoring dashboard with real-time updates via SignalR — v2.0
+- ✓ ASP.NET Core backend API with 5 SignalR WebSocket hubs — v2.0
+- ✓ Health/connectivity monitoring for all 13+ protocol servers — v2.0
+- ✓ File event streaming via FileSystemWatcher with 500ms debouncing — v2.0
+- ✓ File browser for Windows directories with upload/download/delete — v2.0
+- ✓ SQLite metrics with 7-day retention and Recharts visualization — v2.0
+- ✓ Alerting system with health/disk/Kafka alerts and toast notifications — v2.0
+- ✓ Dynamic FTP/SFTP/NAS server management with ownerReferences — v2.0
+- ✓ Kafka broker + Zookeeper with topic management — v2.0
+- ✓ Kafka produce/consume and consumer group monitoring — v2.0
+- ✓ Configuration import/export with validation — v2.0
+- ✓ 131+ integration tests with JUnit XML export — v2.0
 
 v1.0 Multi-NAS Production Topology (Shipped: 2026-02-01):
 
@@ -49,22 +72,7 @@ Existing capabilities (pre-v1.0):
 
 ### Active
 
-v2.0 Simulator Control Platform (In Progress):
-
-- [ ] React monitoring dashboard with real-time updates
-- [ ] Backend API with WebSocket support
-- [ ] Health/connectivity monitoring for all protocols
-- [ ] File event streaming (Windows watcher + protocol tracking)
-- [ ] File browser for Windows directories
-- [ ] Usage metrics and historical data
-- [ ] Alerting and notifications
-- [ ] Dynamic server management (add/remove at runtime)
-- [ ] Kafka simulator (single broker, minimal setup)
-- [ ] Kafka topic management
-- [ ] Consumer group support
-- [ ] File operations in UI (upload/download/delete)
-- [ ] Configuration import/export
-- [ ] Persisted configuration (survives restarts)
+(No active requirements — run /gsd:new-milestone to define next milestone)
 
 ### Out of Scope
 
@@ -103,13 +111,11 @@ v2.0 Simulator Control Platform (In Progress):
 - **No Data Loss**: Windows files persist across pod restarts
 - **Filesystem Limitation**: NFS cannot directly export Windows CIFS/9p mounted filesystems (known Linux kernel limitation)
 
-## Current State
+## Technical Context
 
-**Shipped version:** v1.0 (2026-02-01)
-**System status:** Production-ready 7-server NAS topology
-**Tech stack:** Kubernetes, Helm, unfs3, rsync, PowerShell
-**Lines of code:** ~15,000 (YAML + PowerShell)
-**Test coverage:** 57 tests across 5 phases (health, sync, isolation, persistence)
+**Platform:** Minikube with Hyper-V driver
+**Storage:** Windows directories at C:\simulator-data as source of truth
+**Production parity:** NFS configuration in dev matches production OCP exactly
 
 ## Key Decisions
 
@@ -125,4 +131,4 @@ v2.0 Simulator Control Platform (In Progress):
 | kubectl --context mandatory | Multi-profile Minikube safety; prevent cross-cluster accidents | ✓ Good - Zero accidental deletions in v1.0 |
 
 ---
-*Last updated: 2026-02-02 after v2.0 milestone initialization*
+*Last updated: 2026-02-05 after v2.0 milestone shipped*
