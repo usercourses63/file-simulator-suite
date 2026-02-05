@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 ## Current Position
 
 Phase: 14 of 14 (Comprehensive API-Driven Integration Testing)
-Plan: 2 of 9 complete
+Plan: 3 of 9 complete
 Status: In progress
-Last activity: 2026-02-05 - Completed 14-02-PLAN.md (Static Protocol Tests)
+Last activity: 2026-02-05 - Completed 14-06-PLAN.md (Cross-Protocol and Kafka Tests)
 
-Progress: [################-] 98% (60 of 67 plans complete)
+Progress: [################-] 98% (61 of 67 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 60
+- Total plans completed: 61
 - Average duration: 6.2 min
-- Total execution time: 6.7 hours
+- Total execution time: 6.8 hours
 
 **By Phase:**
 
@@ -41,11 +41,11 @@ Progress: [################-] 98% (60 of 67 plans complete)
 | 11. Dynamic Server Management | 6 | 39 min | 6.5 min |
 | 12. Alerting and Production Readiness | 9 | 35.3 min | 3.9 min |
 | 13. TestConsole Modernization | 8 | 86.6 min | 10.8 min |
-| 14. Integration Testing | 2 | 18 min | 9.0 min |
+| 14. Integration Testing | 3 | 25.5 min | 8.5 min |
 
 **Recent Trend:**
-- Last 5 plans: [47.0, 9.0, 4.0, 6.0, 12.0] min
-- Trend: Protocol tests 12 min (5 protocols, 27 tests, API compatibility fixes)
+- Last 5 plans: [9.0, 4.0, 6.0, 12.0, 7.5] min
+- Trend: Cross-protocol and Kafka tests 7.5 min (17 tests, 8 passing, infrastructure blockers documented)
 
 ## Accumulated Context
 
@@ -208,11 +208,17 @@ Recent decisions affecting current work:
 - Phase 14-02: SSH.NET UploadFile uses positional bool parameter (not named parameter)
 - Phase 14-02: MinIO requires ForcePathStyle=true in AmazonS3Config
 - Phase 14-02: WebDAV uses HTTP PUT/DELETE with Basic authentication headers
+- Phase 14-06: Polly retry pattern for cross-protocol file visibility (500ms intervals, 5s timeout)
+- Phase 14-06: Kafka bootstrap servers on port 30094 (external listener, not 30093 UI port)
+- Phase 14-06: S3 credentials stored in Username/Password fields (not AccessKey/SecretKey)
+- Phase 14-06: Unique consumer group per Kafka consume request for message replay
 
 ### Pending Todos
 
 1. **Upgrade to .NET 10 SDK** - When next working on backend (Control API), upgrade from .NET 9 to .NET 10 SDK.
 2. **Fix Verify-Production.ps1 script bugs** - Unicode characters causing parsing errors, `$Host` variable conflict, and incorrect API endpoint paths need fixing.
+3. **Configure FTP passive mode** - Cross-protocol tests blocked by FTP passive mode data port issues. Need to expose passive port range via NodePort or switch to active mode.
+4. **Implement Kafka API endpoints** - Add POST /api/kafka/produce and GET /api/kafka/consume/{topic} to Control API for full Kafka test coverage.
 
 ### Blockers/Concerns
 
@@ -221,8 +227,8 @@ No active blockers.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 14-02-PLAN.md (Static Protocol Tests)
-Resume file: .planning/phases/14-comprehensive-api-driven-integration-testing/14-03-PLAN.md
+Stopped at: Completed 14-06-PLAN.md (Cross-Protocol and Kafka Tests)
+Resume file: .planning/phases/14-comprehensive-api-driven-integration-testing/14-07-PLAN.md
 
 ## Release History
 
