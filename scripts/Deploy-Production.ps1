@@ -188,4 +188,53 @@ function Setup-Registry {
     }
 }
 
+function Build-Images {
+    Write-Step "Building Control API image..."
+
+    $controlApiImage = "localhost:5000/file-simulator-control-api:latest"
+
+    docker build `
+        -t $controlApiImage `
+        -f "$ProjectRoot/src/FileSimulator.ControlApi/Dockerfile" `
+        "$ProjectRoot/src"
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to build Control API image"
+    }
+
+    Write-Success "Control API image built"
+
+    Write-Step "Building Dashboard image..."
+
+    $dashboardImage = "localhost:5000/file-simulator-dashboard:latest"
+    $apiUrl = "http://file-simulator.local:30500"
+
+    docker build `
+        -t $dashboardImage `
+        --build-arg VITE_API_BASE_URL=$apiUrl `
+        "$ProjectRoot/src/FileSimulator.Dashboard"
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to build Dashboard image"
+    }
+
+    Write-Success "Dashboard image built"
+
+    Write-Step "Pushing images to registry..."
+
+    Write-Info "Pushing Control API..."
+    docker push $controlApiImage
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to push Control API image"
+    }
+    Write-Success "Control API pushed"
+
+    Write-Info "Pushing Dashboard..."
+    docker push $dashboardImage
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to push Dashboard image"
+    }
+    Write-Success "Dashboard pushed"
+}
+
 # Main execution will be implemented in subsequent tasks
