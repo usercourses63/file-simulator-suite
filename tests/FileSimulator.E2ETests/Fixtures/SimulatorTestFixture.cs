@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Playwright;
 using FileSimulator.E2ETests.Support;
+using Xunit;
 
 namespace FileSimulator.E2ETests.Fixtures;
 
