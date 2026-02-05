@@ -275,9 +275,9 @@ public static class NasServerTests
 
         foreach (var section in configData)
         {
-            // Check if this is a NAS server (has "nas" in the key name)
-            if (section.Key.Contains("nas", StringComparison.OrdinalIgnoreCase) ||
-                section.Key.Equals("Nfs", StringComparison.OrdinalIgnoreCase))
+            // Check if this is an actual NAS server (starts with "nas-")
+            // Skip generic "Nfs" entry which doesn't have a valid mount path
+            if (section.Key.StartsWith("nas-", StringComparison.OrdinalIgnoreCase))
             {
                 var host = section["Host"];
                 var portStr = section["Port"];
