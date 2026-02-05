@@ -32,7 +32,8 @@ public class Program
 
         // Parse command-line arguments
         var apiUrl = GetArgValue(args, "--api-url") ?? config["ControlApi:BaseUrl"] ?? "http://localhost:5000";
-        var requireApi = args.Contains("--require-api") || (config["ControlApi:RequireApi"] != null && bool.Parse(config["ControlApi:RequireApi"]));
+        var requireApiConfig = config["ControlApi:RequireApi"];
+        var requireApi = args.Contains("--require-api") || (requireApiConfig != null && bool.Parse(requireApiConfig));
 
         AnsiConsole.Write(new FigletText("File Simulator").Color(Color.Cyan1));
         AnsiConsole.Write(new Rule("[yellow]Protocol Test Suite[/]").RuleStyle("grey"));
@@ -40,7 +41,6 @@ public class Program
 
         // Try to fetch configuration from API
         IConfiguration activeConfig = config;
-        ConfigurationSource configSource = ConfigurationSource.AppSettings;
 
         using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Warning));
         var logger = loggerFactory.CreateLogger<ApiConfigurationProvider>();
@@ -52,7 +52,6 @@ public class Program
             // Success - use API configuration
             AnsiConsole.MarkupLine("[cyan]Using API-driven configuration[/]");
             AnsiConsole.MarkupLine($"[grey]API: {apiUrl}[/]");
-            configSource = ConfigurationSource.Api;
             activeConfig = BuildConfigurationFromApi(apiConfig, config);
         }
         else if (requireApi)
