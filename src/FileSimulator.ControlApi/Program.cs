@@ -36,8 +36,12 @@ try
     // Add SignalR with JSON protocol
     builder.Services.AddSignalR();
 
-    // Add health checks
-    builder.Services.AddHealthChecks();
+    // Add health checks with custom checks
+    builder.Services.AddSingleton<DiskSpaceHealthCheck>();
+    builder.Services.AddSingleton<KafkaHealthCheck>();
+    builder.Services.AddHealthChecks()
+        .AddCheck<DiskSpaceHealthCheck>("disk_space")
+        .AddCheck<KafkaHealthCheck>("kafka");
 
     // Add controllers for file operations
     builder.Services.AddControllers();
@@ -102,6 +106,9 @@ try
     builder.Services.AddHostedService<RollupGenerationService>();
     builder.Services.AddHostedService<RetentionCleanupService>();
 
+    // Alert management service
+    builder.Services.AddHostedService<AlertService>();
+
     // Kafka services
     builder.Services.AddSingleton<IKafkaAdminService, KafkaAdminService>();
     builder.Services.AddSingleton<IKafkaProducerService, KafkaProducerService>();
@@ -109,13 +116,13 @@ try
 
     var app = builder.Build();
 
-    // Ensure SQLite database exists with schema
+    // Ensure SQLite database exists with schema and apply migrations
     using (var scope = app.Services.CreateScope())
     {
         var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<MetricsDbContext>>();
         using var context = factory.CreateDbContext();
-        context.Database.EnsureCreated();
-        Log.Information("Metrics database initialized at {DbPath}", connectionString);
+        context.Database.Migrate();
+        Log.Information("Metrics database initialized and migrated at {DbPath}", connectionString);
     }
 
     // Middleware pipeline
@@ -130,6 +137,7 @@ try
     app.MapHub<FileEventsHub>("/hubs/fileevents");
     app.MapHub<MetricsHub>("/hubs/metrics");
     app.MapHub<KafkaHub>("/hubs/kafka");
+    app.MapHub<AlertHub>("/hubs/alerts");
 
     // Map REST API controllers
     app.MapControllers();
@@ -146,6 +154,7 @@ try
             "/hubs/fileevents",
             "/hubs/metrics",
             "/hubs/kafka",
+            "/hubs/alerts",
             "/api/version",
             "/api/servers",
             "/api/status",
@@ -200,6 +209,7 @@ try
     Log.Information("FileEvents hub available at /hubs/fileevents");
     Log.Information("Metrics hub available at /hubs/metrics");
     Log.Information("Kafka hub available at /hubs/kafka");
+    Log.Information("Alert hub available at /hubs/alerts");
     Log.Information("Health check available at /health");
 
     app.Run();
