@@ -57,6 +57,10 @@ spec:
               value: "true"
             - name: Kubernetes__Namespace
               value: {{ include "file-simulator.namespace" . | quote }}
+            {{- if .Values.redis.enabled }}
+            - name: ConnectionStrings__Redis
+              value: "{{ include "file-simulator.fullname" . }}-redis:6379"
+            {{- end }}
           livenessProbe:
             httpGet:
               path: {{ .Values.controlApi.healthCheck.path }}
