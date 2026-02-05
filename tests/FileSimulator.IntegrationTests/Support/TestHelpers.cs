@@ -118,15 +118,3 @@ public static class TestHelpers
         return $"{prefix} - {DateTime.UtcNow:O} - {Guid.NewGuid():N}";
     }
 }
-
-/// <summary>
-/// Server status response from /api/servers/{name} endpoint.
-/// </summary>
-public class ServerStatusResponse
-{
-    public string? Name { get; set; }
-    public string? Type { get; set; }
-    public string? Status { get; set; }
-    public bool PodReady { get; set; }
-    public string? PodPhase { get; set; }
-}
