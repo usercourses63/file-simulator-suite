@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSignalR } from './hooks/useSignalR';
 import { useFileEvents } from './hooks/useFileEvents';
 import { useMetricsStream } from './hooks/useMetricsStream';
@@ -14,6 +14,7 @@ import FileBrowser from './components/FileBrowser';
 import FileEventFeed from './components/FileEventFeed';
 import HistoryTab from './components/HistoryTab';
 import KafkaTab from './components/KafkaTab';
+import AlertsTab from './components/AlertsTab';
 import SettingsPanel from './components/SettingsPanel';
 import ImportConfigDialog from './components/ImportConfigDialog';
 import DeleteConfirmDialog from './components/DeleteConfirmDialog';
@@ -21,7 +22,14 @@ import BatchOperationsBar from './components/BatchOperationsBar';
 import CreateServerModal from './components/CreateServerModal';
 import AlertToaster from './components/AlertToaster';
 import AlertBanner from './components/AlertBanner';
+import { withErrorBoundary } from './components/ErrorBoundary';
 import './App.css';
+
+// Wrap tab components with error boundaries
+const SafeFileBrowser = withErrorBoundary(FileBrowser, 'SafeFileBrowser');
+const SafeHistoryTab = withErrorBoundary(HistoryTab, 'SafeHistoryTab');
+const SafeKafkaTab = withErrorBoundary(KafkaTab, 'SafeKafkaTab');
+const SafeAlertsTab = withErrorBoundary(AlertsTab, 'SafeAlertsTab');
 
 // Extended server info for multi-select filtering
 interface ServerWithDynamic extends ServerStatus {
@@ -49,13 +57,13 @@ function App() {
   const { latestSamples } = useMetricsStream(metricsHubUrl);
 
   // Connect to alerts for toast notifications and banner
-  const { activeAlerts } = useAlerts(apiBaseUrl);
+  const { activeAlerts, alertHistory, stats, isLoading: alertsLoading, fetchAlertHistory } = useAlerts(apiBaseUrl);
 
   // Track selected server for details panel
   const [selectedServer, setSelectedServer] = useState<ServerStatus | null>(null);
 
   // Track active tab
-  const [activeTab, setActiveTab] = useState<'servers' | 'files' | 'history' | 'kafka'>('servers');
+  const [activeTab, setActiveTab] = useState<'servers' | 'files' | 'history' | 'kafka' | 'alerts'>('servers');
 
   // Track selected server for History tab filter
   const [historyServerId, setHistoryServerId] = useState<string | undefined>();
@@ -108,6 +116,13 @@ function App() {
     setHistoryServerId(serverId);
     setActiveTab('history');
   };
+
+  // Fetch alert history when alerts tab is activated
+  useEffect(() => {
+    if (activeTab === 'alerts' && alertHistory.length === 0) {
+      fetchAlertHistory();
+    }
+  }, [activeTab, alertHistory.length, fetchAlertHistory]);
 
   // Handle single delete
   const handleDelete = (server: ServerStatus) => {
@@ -184,6 +199,13 @@ function App() {
               type="button"
             >
               Kafka
+            </button>
+            <button
+              className={`header-tab ${activeTab === 'alerts' ? 'header-tab--active' : ''}`}
+              onClick={() => setActiveTab('alerts')}
+              type="button"
+            >
+              Alerts
             </button>
           </nav>
         </div>
@@ -263,7 +285,7 @@ function App() {
         {activeTab === 'files' && (
           <div className="files-container">
             <div className="files-main">
-              <FileBrowser apiBaseUrl={apiBaseUrl} />
+              <SafeFileBrowser apiBaseUrl={apiBaseUrl} />
             </div>
             <aside className="files-sidebar">
               <FileEventFeed
@@ -276,14 +298,22 @@ function App() {
         )}
 
         {activeTab === 'history' && (
-          <HistoryTab
+          <SafeHistoryTab
             apiBaseUrl={apiBaseUrl}
             initialServerId={historyServerId}
           />
         )}
 
         {activeTab === 'kafka' && (
-          <KafkaTab apiBaseUrl={apiBaseUrl} />
+          <SafeKafkaTab apiBaseUrl={apiBaseUrl} />
+        )}
+
+        {activeTab === 'alerts' && (
+          <SafeAlertsTab
+            alerts={alertHistory}
+            stats={stats}
+            loading={alertsLoading}
+          />
         )}
       </main>
 
