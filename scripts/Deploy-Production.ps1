@@ -141,4 +141,51 @@ function Start-Cluster {
     Write-Success "Cluster started successfully"
 }
 
+function Setup-Registry {
+    Write-Step "Setting up container registry..."
+
+    # Enable registry addon
+    Write-Info "Enabling registry addon..."
+    minikube addons enable registry --profile $Profile
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to enable registry addon"
+    }
+    Write-Success "Registry addon enabled"
+
+    # Start port forwarding in background
+    Write-Info "Starting registry port forward (5000 -> registry:80)..."
+
+    # Stop any existing port-forward jobs
+    Get-Job -Name "RegistryPortForward" -ErrorAction SilentlyContinue | Stop-Job
+    Get-Job -Name "RegistryPortForward" -ErrorAction SilentlyContinue | Remove-Job
+
+    # Start new port-forward job
+    $script:RegistryJob = Start-Job -Name "RegistryPortForward" -ScriptBlock {
+        param($profileName)
+        kubectl --context=$profileName port-forward --namespace kube-system service/registry 5000:80
+    } -ArgumentList $Profile
+
+    # Wait for registry to be accessible
+    Write-Info "Waiting for registry to be accessible..."
+    $maxAttempts = 30
+    $attempt = 0
+    $registryReady = $false
+
+    while ($attempt -lt $maxAttempts -and -not $registryReady) {
+        try {
+            $null = Invoke-WebRequest -Uri "http://localhost:5000/v2/" -Method GET -TimeoutSec 2 -ErrorAction SilentlyContinue
+            $registryReady = $true
+            Write-Success "Registry is accessible at localhost:5000"
+        }
+        catch {
+            $attempt++
+            Start-Sleep -Seconds 1
+        }
+    }
+
+    if (-not $registryReady) {
+        throw "Registry did not become accessible after $maxAttempts seconds"
+    }
+}
+
 # Main execution will be implemented in subsequent tasks
