@@ -370,7 +370,7 @@ controlApi:
 
   # Container image (will be built from src/FileSimulator.ControlApi)
   image:
-    repository: file-simulator-control-api
+    repository: localhost:5000/file-simulator-control-api
     tag: latest
     pullPolicy: IfNotPresent
 
