@@ -25,6 +25,93 @@ public class KubernetesManagementService : IKubernetesManagementService
     private const string LabelInstance = "app.kubernetes.io/instance";
     private const string LabelPartOf = "app.kubernetes.io/part-of";
 
+    // FTP passive mode port configuration
+    // Each dynamic FTP server gets 5 passive ports from the range 30200-30299
+    private const int PassivePortRangeStart = 30200;
+    private const int PassivePortsPerServer = 5;
+    private const int MaxDynamicFtpServers = 20;  // 100 ports / 5 per server
+    private const string PassiveAddress = "file-simulator.local";
+
+    /// <summary>
+    /// Allocates passive mode ports for a dynamic FTP server based on the server name.
+    /// Uses a hash of the name to determine the port offset.
+    /// </summary>
+    private (int startPort, int endPort) AllocatePassivePorts(string serverName)
+    {
+        // Use hash of server name to get a deterministic offset
+        var hash = Math.Abs(serverName.GetHashCode());
+        var slot = hash % MaxDynamicFtpServers;
+        var startPort = PassivePortRangeStart + (slot * PassivePortsPerServer);
+        var endPort = startPort + PassivePortsPerServer - 1;
+
+        _logger.LogDebug("Allocated passive ports {Start}-{End} for FTP server '{Name}' (slot {Slot})",
+            startPort, endPort, serverName, slot);
+
+        return (startPort, endPort);
+    }
+
+    /// <summary>
+    /// Builds container ports for FTP including passive mode ports.
+    /// </summary>
+    private static List<V1ContainerPort> BuildFtpContainerPorts(int passiveStartPort, int passiveEndPort)
+    {
+        var ports = new List<V1ContainerPort>
+        {
+            new V1ContainerPort
+            {
+                ContainerPort = 21,
+                Protocol = "TCP",
+                Name = "ftp"
+            }
+        };
+
+        // Add passive mode ports
+        for (int port = passiveStartPort; port <= passiveEndPort; port++)
+        {
+            ports.Add(new V1ContainerPort
+            {
+                ContainerPort = port,
+                Protocol = "TCP",
+                Name = $"passive-{port}"
+            });
+        }
+
+        return ports;
+    }
+
+    /// <summary>
+    /// Builds service ports for FTP including passive mode NodePorts.
+    /// </summary>
+    private static List<V1ServicePort> BuildFtpServicePorts(int? controlNodePort, int passiveStartPort, int passiveEndPort)
+    {
+        var ports = new List<V1ServicePort>
+        {
+            new V1ServicePort
+            {
+                Port = 21,
+                TargetPort = 21,
+                Protocol = "TCP",
+                Name = "ftp",
+                NodePort = controlNodePort  // null = auto-assign
+            }
+        };
+
+        // Add passive mode ports with matching NodePorts
+        for (int port = passiveStartPort; port <= passiveEndPort; port++)
+        {
+            ports.Add(new V1ServicePort
+            {
+                Port = port,
+                TargetPort = port,
+                Protocol = "TCP",
+                Name = $"passive-{port}",
+                NodePort = port  // Use same port number for NodePort
+            });
+        }
+
+        return ports;
+    }
+
     public KubernetesManagementService(
         IKubernetes client,
         IConfigMapUpdateService configMapService,
@@ -100,6 +187,9 @@ public class KubernetesManagementService : IKubernetesManagementService
 
         var resourceName = $"{_releasePrefix}-ftp-{request.Name}";
 
+        // Allocate passive mode ports for this server
+        var (passiveStartPort, passiveEndPort) = AllocatePassivePorts(request.Name);
+
         // Standard labels for file-simulator resources
         var labels = new Dictionary<string, string>
         {
@@ -157,21 +247,17 @@ public class KubernetesManagementService : IKubernetesManagementService
                                 Name = "vsftpd",
                                 Image = "fauria/vsftpd:latest",
                                 ImagePullPolicy = "IfNotPresent",
-                                Ports = new List<V1ContainerPort>
-                                {
-                                    new V1ContainerPort
-                                    {
-                                        ContainerPort = 21,
-                                        Protocol = "TCP",
-                                        Name = "ftp"
-                                    }
-                                },
+                                Ports = BuildFtpContainerPorts(passiveStartPort, passiveEndPort),
                                 Env = new List<V1EnvVar>
                                 {
                                     new V1EnvVar { Name = "FTP_USER", Value = request.Username },
                                     new V1EnvVar { Name = "FTP_PASS", Value = request.Password },
                                     new V1EnvVar { Name = "LOG_STDOUT", Value = "YES" },
-                                    new V1EnvVar { Name = "LOCAL_UMASK", Value = "022" }
+                                    new V1EnvVar { Name = "LOCAL_UMASK", Value = "022" },
+                                    // Passive mode configuration
+                                    new V1EnvVar { Name = "PASV_ADDRESS", Value = PassiveAddress },
+                                    new V1EnvVar { Name = "PASV_MIN_PORT", Value = passiveStartPort.ToString() },
+                                    new V1EnvVar { Name = "PASV_MAX_PORT", Value = passiveEndPort.ToString() }
                                 },
                                 VolumeMounts = new List<V1VolumeMount>
                                 {
@@ -237,17 +323,7 @@ public class KubernetesManagementService : IKubernetesManagementService
                     [LabelAppName] = "file-simulator",
                     [LabelInstance] = request.Name
                 },
-                Ports = new List<V1ServicePort>
-                {
-                    new V1ServicePort
-                    {
-                        Port = 21,
-                        TargetPort = 21,
-                        Protocol = "TCP",
-                        Name = "ftp",
-                        NodePort = request.NodePort  // null = auto-assign
-                    }
-                }
+                Ports = BuildFtpServicePorts(request.NodePort, passiveStartPort, passiveEndPort)
             }
         };
 
