@@ -1,0 +1,17 @@
+{
+  "Dashboard": {
+    "BaseUrl": "http://localhost:3000",
+    "ApiUrl": "http://localhost:5000"
+  },
+  "Playwright": {
+    "Headless": true,
+    "SlowMo": 0,
+    "Timeout": 30000,
+    "BrowserType": "chromium"
+  },
+  "Simulator": {
+    "StartScript": "../../scripts/Start-Simulator.ps1",
+    "StartupTimeout": 300000,
+    "UseExistingInstance": false
+  }
+}
