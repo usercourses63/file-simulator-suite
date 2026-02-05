@@ -63,10 +63,14 @@ ftp:
     type: NodePort
     port: 21
     nodePort: 30021
-    # Passive mode port range
+    # Passive mode port range - exposed via NodePort for external access
     passivePorts:
       start: 21100
       end: 21110
+      nodePortStart: 30100  # Exposes ports 30100-30110 for passive mode
+
+  # Passive mode address for external clients
+  passiveAddress: file-simulator.local
   
   # FTP user configuration
   auth:

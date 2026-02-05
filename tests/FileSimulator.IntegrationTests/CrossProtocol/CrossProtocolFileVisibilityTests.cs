@@ -62,7 +62,7 @@ public class CrossProtocolFileVisibilityTests
             ftpServer.Credentials.Username,
             ftpServer.Credentials.Password,
             ftpServer.Port);
-        ftpClient.Config.DataConnectionType = FtpDataConnectionType.AutoActive;
+        ftpClient.Config.DataConnectionType = FtpDataConnectionType.AutoPassive;
         ftpClient.Config.DataConnectionConnectTimeout = 10000;
         ftpClient.Config.ConnectTimeout = 10000;
 
@@ -205,7 +205,7 @@ public class CrossProtocolFileVisibilityTests
             ftpServer.Credentials.Username,
             ftpServer.Credentials.Password,
             ftpServer.Port);
-        ftpClient.Config.DataConnectionType = FtpDataConnectionType.AutoActive;
+        ftpClient.Config.DataConnectionType = FtpDataConnectionType.AutoPassive;
         ftpClient.Config.DataConnectionConnectTimeout = 10000;
         ftpClient.Config.ConnectTimeout = 10000;
 
@@ -297,7 +297,7 @@ public class CrossProtocolFileVisibilityTests
                 ftpServer.Credentials.Username,
                 ftpServer.Credentials.Password,
                 ftpServer.Port);
-            ftpClient.Config.DataConnectionType = FtpDataConnectionType.AutoActive;
+            ftpClient.Config.DataConnectionType = FtpDataConnectionType.AutoPassive;
             ftpClient.Config.DataConnectionConnectTimeout = 10000;
             ftpClient.Config.ConnectTimeout = 10000;
             await ftpClient.Connect();

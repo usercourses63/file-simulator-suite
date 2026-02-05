@@ -25,12 +25,12 @@ public class FtpProtocolTests
     private static string CreateTestContent() => TestHelpers.CreateTestContent("FTP Test");
 
     /// <summary>
-    /// Configures FTP client for active mode data connections.
-    /// Active mode is required because passive mode data ports are not exposed via NodePort.
+    /// Configures FTP client for data connections.
+    /// Uses passive mode with NodePort-exposed ports (30100-30110).
     /// </summary>
-    private static void ConfigureActiveMode(AsyncFtpClient client)
+    private static void ConfigureFtpClient(AsyncFtpClient client)
     {
-        client.Config.DataConnectionType = FtpDataConnectionType.AutoActive;
+        client.Config.DataConnectionType = FtpDataConnectionType.AutoPassive;
         client.Config.DataConnectionConnectTimeout = 10000;
         client.Config.ConnectTimeout = 10000;
     }
@@ -59,7 +59,7 @@ public class FtpProtocolTests
         // Arrange
         var (host, port, username, password) = await GetFtpConfigAsync();
         using var client = new AsyncFtpClient(host, username, password, port);
-        ConfigureActiveMode(client);
+        ConfigureFtpClient(client);
 
         // Act
         await client.Connect();
@@ -77,7 +77,7 @@ public class FtpProtocolTests
         // Arrange
         var (host, port, username, password) = await GetFtpConfigAsync();
         using var client = new AsyncFtpClient(host, username, password, port);
-        ConfigureActiveMode(client);
+        ConfigureFtpClient(client);
         await client.Connect();
 
         var fileName = TestHelpers.GenerateUniqueFileName("ftp-upload");
@@ -119,7 +119,7 @@ public class FtpProtocolTests
         // Arrange
         var (host, port, username, password) = await GetFtpConfigAsync();
         using var client = new AsyncFtpClient(host, username, password, port);
-        ConfigureActiveMode(client);
+        ConfigureFtpClient(client);
         await client.Connect();
 
         var fileName = TestHelpers.GenerateUniqueFileName("ftp-download");
@@ -167,7 +167,7 @@ public class FtpProtocolTests
         // Arrange
         var (host, port, username, password) = await GetFtpConfigAsync();
         using var client = new AsyncFtpClient(host, username, password, port);
-        ConfigureActiveMode(client);
+        ConfigureFtpClient(client);
         await client.Connect();
 
         var fileName = TestHelpers.GenerateUniqueFileName("ftp-list");
@@ -213,7 +213,7 @@ public class FtpProtocolTests
         // Arrange
         var (host, port, username, password) = await GetFtpConfigAsync();
         using var client = new AsyncFtpClient(host, username, password, port);
-        ConfigureActiveMode(client);
+        ConfigureFtpClient(client);
         await client.Connect();
 
         var fileName = TestHelpers.GenerateUniqueFileName("ftp-delete");
@@ -261,7 +261,7 @@ public class FtpProtocolTests
         // Arrange
         var (host, port, username, password) = await GetFtpConfigAsync();
         using var client = new AsyncFtpClient(host, username, password, port);
-        ConfigureActiveMode(client);
+        ConfigureFtpClient(client);
         await client.Connect();
 
         var fileName = TestHelpers.GenerateUniqueFileName("ftp-crud");

@@ -96,7 +96,7 @@ public class DynamicFtpServerTests
                 status.Password,
                 status.NodePort ?? status.Port);
             ftpClient.Config.ConnectTimeout = 10000;
-            ftpClient.Config.DataConnectionType = FtpDataConnectionType.AutoActive;
+            ftpClient.Config.DataConnectionType = FtpDataConnectionType.AutoPassive;
             ftpClient.Config.DataConnectionConnectTimeout = 10000;
 
             await ftpClient.Connect();
@@ -138,7 +138,7 @@ public class DynamicFtpServerTests
                 status.Password,
                 status.NodePort ?? status.Port);
             ftpClient.Config.ConnectTimeout = 10000;
-            ftpClient.Config.DataConnectionType = FtpDataConnectionType.AutoActive;
+            ftpClient.Config.DataConnectionType = FtpDataConnectionType.AutoPassive;
             ftpClient.Config.DataConnectionConnectTimeout = 10000;
             await ftpClient.Connect();
 
@@ -262,7 +262,7 @@ public class DynamicFtpServerTests
                 status.Password,
                 status.NodePort ?? status.Port);
             ftpClient.Config.ConnectTimeout = 10000;
-            ftpClient.Config.DataConnectionType = FtpDataConnectionType.AutoActive;
+            ftpClient.Config.DataConnectionType = FtpDataConnectionType.AutoPassive;
             ftpClient.Config.DataConnectionConnectTimeout = 10000;
             await ftpClient.Connect();
             ftpClient.IsConnected.Should().BeTrue("Should connect to FTP server");

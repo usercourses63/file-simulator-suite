@@ -161,20 +161,29 @@ public class AlertApiTests
         // Try to extract an alert ID from the response
         string? alertId = null;
 
-        if (historyJson.ValueKind == JsonValueKind.Array && historyJson.GetArrayLength() > 0)
+        if (historyJson.ValueKind == JsonValueKind.Array)
         {
-            var firstAlert = historyJson[0];
-            if (firstAlert.TryGetProperty("id", out var idProp))
+            if (historyJson.GetArrayLength() > 0)
             {
-                alertId = idProp.GetString();
+                var firstAlert = historyJson[0];
+                if (firstAlert.TryGetProperty("id", out var idProp))
+                {
+                    alertId = idProp.GetString();
+                }
             }
         }
-        else if (historyJson.TryGetProperty("items", out var items) && items.GetArrayLength() > 0)
+        else if (historyJson.ValueKind == JsonValueKind.Object)
         {
-            var firstAlert = items[0];
-            if (firstAlert.TryGetProperty("id", out var idProp))
+            // Try paged response format with "items" property
+            if (historyJson.TryGetProperty("items", out var items) &&
+                items.ValueKind == JsonValueKind.Array &&
+                items.GetArrayLength() > 0)
             {
-                alertId = idProp.GetString();
+                var firstAlert = items[0];
+                if (firstAlert.TryGetProperty("id", out var idProp))
+                {
+                    alertId = idProp.GetString();
+                }
             }
         }
 
