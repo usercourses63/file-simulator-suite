@@ -406,4 +406,46 @@ function Show-AccessUrls {
     Write-Host "`n" -NoNewline
 }
 
-# Main execution will be implemented in next task
+# Main execution
+try {
+    Write-Host "`n" -NoNewline
+    Write-Host "=" * 70 -ForegroundColor Magenta
+    Write-Host "  FILE SIMULATOR SUITE - PRODUCTION DEPLOYMENT" -ForegroundColor Magenta
+    Write-Host "=" * 70 -ForegroundColor Magenta
+
+    Write-Host "`nConfiguration:" -ForegroundColor Cyan
+    Write-Host "  Profile: $Profile" -ForegroundColor White
+    Write-Host "  Memory:  $Memory MB" -ForegroundColor White
+    Write-Host "  CPUs:    $Cpus" -ForegroundColor White
+    Write-Host "  Clean:   $Clean" -ForegroundColor White
+
+    # Execute deployment steps
+    Test-Prerequisites
+    Start-Cluster
+    Setup-Registry
+    Build-Images
+    Deploy-HelmChart
+    Update-HostsFile
+    Test-Deployment
+    Stop-RegistryPortForward
+    Show-AccessUrls
+
+    exit 0
+}
+catch {
+    Write-Host "`n" -NoNewline
+    Write-Host "=" * 70 -ForegroundColor Red
+    Write-Host "  DEPLOYMENT FAILED" -ForegroundColor Red
+    Write-Host "=" * 70 -ForegroundColor Red
+    Write-Host "`nError: $_" -ForegroundColor Red
+    Write-Host "`nStack Trace:" -ForegroundColor Yellow
+    Write-Host $_.ScriptStackTrace -ForegroundColor Yellow
+
+    # Cleanup on failure
+    if ($script:RegistryJob) {
+        Stop-Job -Job $script:RegistryJob -ErrorAction SilentlyContinue
+        Remove-Job -Job $script:RegistryJob -ErrorAction SilentlyContinue
+    }
+
+    exit 1
+}
