@@ -241,22 +241,22 @@ Plans:
 **Requirements**: INT-01, INT-02, INT-03, INT-04, INT-05, INT-06, INT-07, INT-08
 **Success Criteria** (what must be TRUE):
   1. All static protocol servers pass file operations via API (FTP, SFTP, HTTP, WebDAV, S3, SMB, NFS)
-  2. Dynamic server lifecycle tests pass: create FTP → test connectivity → upload/download files → delete
-  3. Dynamic server lifecycle tests pass: create SFTP → test connectivity → upload/download files → delete
-  4. Dynamic server lifecycle tests pass: create NAS → test NFS mount → read/write files → delete
+  2. Dynamic server lifecycle tests pass: create FTP -> test connectivity -> upload/download files -> delete
+  3. Dynamic server lifecycle tests pass: create SFTP -> test connectivity -> upload/download files -> delete
+  4. Dynamic server lifecycle tests pass: create NAS -> test NFS mount -> read/write files -> delete
   5. API connection-info endpoint returns correct credentials extracted from Kubernetes for all protocols
   6. Cross-protocol file visibility test: upload via FTP, verify visible via SFTP/HTTP/NFS
-  7. Kafka integration tests pass: create topic → produce messages → consume messages → delete topic
+  7. Kafka integration tests pass: create topic -> produce messages -> consume messages -> delete topic
   8. Test suite exits with 0 (success) only when 100% of tests pass, non-zero otherwise
   9. Test results exportable as JUnit XML for CI/CD integration
   10. All 7 NAS servers (input-1/2/3, output-1/2/3, backup) pass file operations independently
-**Plans**: TBD (to be planned)
+**Plans**: 9 plans
 
 Plans:
 - [ ] 14-01-PLAN.md - API test framework setup with xUnit and test infrastructure
 - [ ] 14-02-PLAN.md - Static protocol tests (FTP, SFTP, HTTP, WebDAV, S3) with full file operations
 - [ ] 14-03-PLAN.md - Static protocol tests (SMB, NFS) with platform-specific handling
-- [ ] 14-04-PLAN.md - Dynamic FTP/SFTP server lifecycle tests (create → test → delete)
+- [ ] 14-04-PLAN.md - Dynamic FTP/SFTP server lifecycle tests (create -> test -> delete)
 - [ ] 14-05-PLAN.md - Dynamic NAS server lifecycle tests with NFS validation
 - [ ] 14-06-PLAN.md - Cross-protocol file visibility and Kafka integration tests
 - [ ] 14-07-PLAN.md - Multi-NAS server comprehensive tests (7 servers parallel)
@@ -283,7 +283,7 @@ v2.0 phases execute sequentially: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14
 | 11. Dynamic Server Management | v2.0 | 10/10 | Complete | 2026-02-04 |
 | 12. Alerting and Production Readiness | v2.0 | 10/10 | Complete | 2026-02-05 |
 | 13. TestConsole Modernization and Release | v2.0 | 8/8 | Complete | 2026-02-05 |
-| 14. Comprehensive API-Driven Integration Testing | v2.0 | 0/9 | **Not Started** | - |
+| 14. Comprehensive API-Driven Integration Testing | v2.0 | 0/9 | **Ready** | - |
 
 ---
-*Last updated: 2026-02-05 - Added Phase 14 for comprehensive API-driven integration testing*
+*Last updated: 2026-02-05 - Phase 14 plans created (9 plans in 5 waves)*
