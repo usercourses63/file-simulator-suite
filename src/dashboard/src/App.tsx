@@ -49,7 +49,7 @@ function App() {
   const { latestSamples } = useMetricsStream(metricsHubUrl);
 
   // Connect to alerts for toast notifications and banner
-  const { activeAlerts, alertHistory, stats } = useAlerts(apiBaseUrl);
+  const { activeAlerts } = useAlerts(apiBaseUrl);
 
   // Track selected server for details panel
   const [selectedServer, setSelectedServer] = useState<ServerStatus | null>(null);
