@@ -95,6 +95,17 @@ if ($IncludeDynamic) {
         $apiUrl = "http://${Hostname}:30500/api/connection-info"
         Write-Host "Querying: $apiUrl" -ForegroundColor Gray
 
+        # Expected API response format:
+        # {
+        #   "servers": [
+        #     {
+        #       "name": "server-name",
+        #       "protocol": "NFS",
+        #       "isDynamic": true,
+        #       ...
+        #     }
+        #   ]
+        # }
         $connectionInfo = Invoke-RestMethod -Uri $apiUrl -Method Get -TimeoutSec 5 -ErrorAction Stop
 
         if ($connectionInfo.servers -and $connectionInfo.servers.Count -gt 0) {
