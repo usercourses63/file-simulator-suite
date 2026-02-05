@@ -2,9 +2,28 @@
 
 A comprehensive file access simulator for Kubernetes development and testing. This suite provides multiple file transfer protocols (FTP, SFTP, HTTP/WebDAV, S3/MinIO, SMB, NFS) in a unified deployment, enabling seamless testing between Windows development environments and Kubernetes/OpenShift clusters.
 
-## 🎉 v1.0: Multi-NAS Production Topology (Shipped: 2026-02-01)
+## v2.0: Simulator Control Platform (Released: 2026-02-05)
 
-**NEW:** The v1.0 release adds a production-ready **7-server NAS topology** that replicates OpenShift network architecture:
+**NEW:** The v2.0 release adds a complete **control platform** for managing and monitoring file simulators:
+
+- **Real-time Dashboard**: React-based UI with live server status, file events, and metrics
+- **Control API**: REST API for server management, file operations, and configuration
+- **Dynamic Servers**: Create FTP, SFTP, and NAS servers on-demand via API or dashboard
+- **Kafka Integration**: Topic management, message produce/consume, consumer groups
+- **Alerting System**: Configurable thresholds for disk space, server health, and Kafka status
+- **Historical Metrics**: Time-series charts with 7-day retention and hourly rollups
+- **E2E Testing**: Playwright-based browser automation tests for dashboard validation
+
+**Dashboard**: http://file-simulator.local:30080
+**Control API**: http://file-simulator.local:30500/api
+
+See [v1.0 Multi-NAS Features](#v10-multi-nas-production-topology-shipped-2026-02-01) below for the original release notes.
+
+---
+
+## v1.0: Multi-NAS Production Topology (Shipped: 2026-02-01)
+
+The v1.0 release provides a production-ready **7-server NAS topology** that replicates OpenShift network architecture:
 
 - **7 independent NAS servers** (nas-input-1/2/3, nas-backup, nas-output-1/2/3) with unique DNS names
 - **Bidirectional Windows sync**: Files written on Windows visible via NFS (init container), files written via NFS visible on Windows (sidecar, 15-30s)
@@ -12,32 +31,38 @@ A comprehensive file access simulator for Kubernetes development and testing. Th
 - **Ready-to-use integration templates**: 14 PV/PVC manifests, ConfigMap service discovery, multi-mount examples
 - **Comprehensive test suite**: 57 tests validating health, isolation, and persistence
 
-**📖 For Multi-NAS integration**, see [`helm-chart/file-simulator/docs/NAS-INTEGRATION-GUIDE.md`](helm-chart/file-simulator/docs/NAS-INTEGRATION-GUIDE.md) (1200+ lines)
-
-**🧪 Run tests**: `./scripts/test-multi-nas.ps1` (validates all 7 servers)
+For Multi-NAS integration, see [`helm-chart/file-simulator/docs/NAS-INTEGRATION-GUIDE.md`](helm-chart/file-simulator/docs/NAS-INTEGRATION-GUIDE.md)
 
 ---
 
 ## Table of Contents
 
-- [v1.0 Multi-NAS Features](#-v10-multi-nas-production-topology-shipped-2026-02-01)
-- [Purpose](#-purpose)
-- [Architecture](#-architecture)
+- [v2.0 Control Platform](#v20-simulator-control-platform-released-2026-02-05)
+- [v1.0 Multi-NAS Features](#v10-multi-nas-production-topology-shipped-2026-02-01)
+- [Purpose](#purpose)
+- [Architecture](#architecture)
   - [Multi-NAS Topology (v1.0)](#multi-nas-topology-v10)
   - [Legacy Single-NAS + Multi-Protocol](#legacy-single-nas--multi-protocol)
-- [Prerequisites](#-prerequisites)
-- [Installation](#-installation)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
   - [Automated Installation](#automated-installation)
   - [Manual Installation](#manual-installation)
-- [Multi-Profile Setup (IMPORTANT)](#-multi-profile-setup-important)
-- [Service Endpoints](#-service-endpoints)
-- [Configuration](#-configuration)
-- [.NET Client Library](#-net-client-library)
-- [Cross-Cluster Configuration](#-cross-cluster-configuration)
-- [Testing](#-testing)
-- [Troubleshooting](#-troubleshooting)
+- [Multi-Profile Setup (IMPORTANT)](#multi-profile-setup-important)
+- [Service Endpoints](#service-endpoints)
+- [Dashboard](#dashboard)
+- [Control API](#control-api)
+- [Dynamic Server Management](#dynamic-server-management)
+- [Kafka Integration](#kafka-integration)
+- [Alerting System](#alerting-system)
+- [Configuration](#configuration)
+- [.NET Client Library](#net-client-library)
+- [Cross-Cluster Configuration](#cross-cluster-configuration)
+- [Testing](#testing)
+  - [TestConsole](#testconsole)
+  - [E2E Tests](#e2e-tests)
+- [Troubleshooting](#troubleshooting)
   - [NFS Server Fix (Critical)](#nfs-server-fix-critical)
-- [Project Structure](#-project-structure)
+- [Project Structure](#project-structure)
 
 ---
 
@@ -543,6 +568,230 @@ S3:   http://file-sim-file-simulator-s3.file-simulator.svc.cluster.local:9000
 SMB:  smb://file-sim-file-simulator-smb.file-simulator.svc.cluster.local:445
 NFS:  file-sim-file-simulator-nas.file-simulator.svc.cluster.local:2049
 ```
+
+---
+
+## Dashboard
+
+The File Simulator Suite includes a real-time dashboard for monitoring and managing simulators.
+
+### Accessing the Dashboard
+
+- **URL**: http://file-simulator.local:30080 (or http://\<minikube-ip\>:30080)
+- **No authentication required** for the dashboard
+
+### Dashboard Features
+
+| Tab | Description |
+|-----|-------------|
+| Servers | Server grid with health status, create/delete dynamic servers, start/stop/restart operations |
+| Files | File browser with tree view, drag-and-drop upload, download, batch delete operations |
+| Kafka | Topic management, message producer with key/value, real-time message viewer |
+| Alerts | Active alerts banner, alert history with severity/type/search filters |
+| History | Time-series latency charts, server sparklines, configurable time ranges |
+
+### Real-time Updates
+
+The dashboard uses SignalR for real-time updates:
+- Server health status changes (every 5 seconds)
+- File system events (create, modify, delete) with 500ms debounce
+- Kafka message notifications via streaming
+- Alert triggers and resolutions
+
+---
+
+## Control API
+
+The Control API provides programmatic access to all simulator features.
+
+### Base URL
+
+- **Local Development**: http://localhost:5000
+- **Kubernetes**: http://file-simulator.local:30500
+
+### API Endpoints Overview
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/health` | GET | Health check |
+| `/api/connection-info` | GET | Get all connection details (JSON/env/yaml/dotnet formats) |
+| `/api/servers` | GET | List all servers (static and dynamic) |
+| `/api/servers/ftp` | POST | Create dynamic FTP server |
+| `/api/servers/sftp` | POST | Create dynamic SFTP server |
+| `/api/servers/nas` | POST | Create dynamic NAS server |
+| `/api/servers/{name}` | DELETE | Delete dynamic server |
+| `/api/servers/{name}/start` | POST | Start a stopped server |
+| `/api/servers/{name}/stop` | POST | Stop a running server |
+| `/api/servers/{name}/restart` | POST | Restart a server |
+| `/api/files/tree` | GET | List files and directories |
+| `/api/files/upload` | POST | Upload file (100MB limit) |
+| `/api/files/download` | GET | Download file |
+| `/api/files` | DELETE | Delete file or directory |
+| `/api/kafka/topics` | GET/POST | List or create Kafka topics |
+| `/api/kafka/topics/{name}` | DELETE | Delete Kafka topic |
+| `/api/kafka/topics/{name}/messages` | GET/POST | Get or produce messages |
+| `/api/kafka/consumer-groups` | GET | List consumer groups |
+| `/api/alerts/active` | GET | Get active alerts |
+| `/api/alerts/history` | GET | Get alert history |
+| `/api/metrics/samples` | GET | Get raw metric samples |
+| `/api/metrics/hourly` | GET | Get hourly rollups |
+| `/api/configuration/export` | GET | Export server configuration |
+| `/api/configuration/import` | POST | Import server configuration |
+
+For complete API documentation, see [docs/API-REFERENCE.md](docs/API-REFERENCE.md).
+
+### Connection Info API
+
+Get all connection details for your applications:
+
+```powershell
+# JSON format (default)
+curl http://file-simulator.local:30500/api/connection-info
+
+# Environment variables format
+curl http://file-simulator.local:30500/api/connection-info?format=env
+
+# .NET appsettings.json format
+curl http://file-simulator.local:30500/api/connection-info?format=dotnet
+```
+
+---
+
+## Dynamic Server Management
+
+Create temporary FTP, SFTP, or NAS servers on-demand for testing scenarios.
+
+### Create Dynamic Server
+
+```powershell
+# Create FTP server
+curl -X POST http://file-simulator.local:30500/api/servers/ftp `
+  -H "Content-Type: application/json" `
+  -d '{"name": "my-ftp", "username": "user", "password": "pass123"}'
+
+# Create SFTP server
+curl -X POST http://file-simulator.local:30500/api/servers/sftp `
+  -H "Content-Type: application/json" `
+  -d '{"name": "my-sftp", "username": "user", "password": "pass123"}'
+
+# Create NAS server with directory preset
+curl -X POST http://file-simulator.local:30500/api/servers/nas `
+  -H "Content-Type: application/json" `
+  -d '{"name": "my-nas", "directory": "input"}'
+```
+
+### Server Lifecycle Operations
+
+```powershell
+# Stop a server (scale to 0 replicas)
+curl -X POST http://file-simulator.local:30500/api/servers/my-ftp/stop
+
+# Start a stopped server (scale to 1 replica)
+curl -X POST http://file-simulator.local:30500/api/servers/my-ftp/start
+
+# Restart a server (delete pod to recreate)
+curl -X POST http://file-simulator.local:30500/api/servers/my-ftp/restart
+
+# Delete a dynamic server
+curl -X DELETE http://file-simulator.local:30500/api/servers/my-ftp
+```
+
+### What Dynamic Servers Receive
+
+- Kubernetes Deployment with resource limits
+- Kubernetes Service with NodePort in 31000-31999 range
+- Labels for discovery: `app.kubernetes.io/managed-by: control-api`
+- Owner references for automatic cleanup
+
+---
+
+## Kafka Integration
+
+The simulator includes a Kafka broker for event-driven testing scenarios.
+
+### Kafka Access
+
+- **Bootstrap Server**: file-simulator.local:30093
+- **Dashboard UI**: Available in the Kafka tab
+
+### Topic Management
+
+```powershell
+# List topics
+curl http://file-simulator.local:30500/api/kafka/topics
+
+# Create topic
+curl -X POST http://file-simulator.local:30500/api/kafka/topics `
+  -H "Content-Type: application/json" `
+  -d '{"name": "my-topic", "partitions": 3, "replicationFactor": 1}'
+
+# Delete topic
+curl -X DELETE http://file-simulator.local:30500/api/kafka/topics/my-topic
+```
+
+### Message Operations
+
+```powershell
+# Produce message
+curl -X POST http://file-simulator.local:30500/api/kafka/topics/my-topic/messages `
+  -H "Content-Type: application/json" `
+  -d '{"key": "key1", "value": "hello world"}'
+
+# Consume recent messages
+curl http://file-simulator.local:30500/api/kafka/topics/my-topic/messages?count=10
+```
+
+### .NET Client Integration
+
+```csharp
+var config = new ProducerConfig
+{
+    BootstrapServers = "file-simulator.local:30093"
+};
+
+using var producer = new ProducerBuilder<string, string>(config).Build();
+await producer.ProduceAsync("my-topic", new Message<string, string>
+{
+    Key = "key1",
+    Value = "hello world"
+});
+```
+
+---
+
+## Alerting System
+
+Monitor simulator health with configurable alerts.
+
+### Alert Types
+
+| Alert Type | Trigger | Default Threshold |
+|------------|---------|-------------------|
+| DiskSpace | Low disk space on mounted volume | < 1GB free |
+| ServerHealth | Server health check failures | 3 consecutive failures (15s) |
+| KafkaBroker | Kafka broker unavailable | Connection failure (5s timeout) |
+
+### Alert Severities
+
+| Severity | Description |
+|----------|-------------|
+| Info | Informational, no action needed |
+| Warning | Attention recommended |
+| Critical | Immediate action required |
+
+### Viewing Alerts
+
+- **Dashboard**: Alerts tab shows active and historical alerts with filtering
+- **Banner**: Critical alerts display a sticky banner at the top of the dashboard
+- **API**: `GET /api/alerts/active` returns current unresolved alerts
+
+### Alert Lifecycle
+
+1. Alert triggered when threshold exceeded
+2. Alert appears in dashboard and API
+3. Alert can be acknowledged (dismissed from banner)
+4. Alert auto-resolves when condition clears
+5. Historical alerts retained for 7 days
 
 ---
 
@@ -1429,9 +1678,72 @@ nc -zv 172.25.201.3 32149                 # NFS port
 
 ## Testing
 
+The File Simulator Suite includes multiple testing approaches for different validation needs.
+
+### TestConsole
+
+The TestConsole is a CLI application that validates all simulator protocols and integrations.
+
+```powershell
+cd src/FileSimulator.TestConsole
+dotnet run
+
+# Test modes
+dotnet run -- --nas-only        # Only test NAS servers
+dotnet run -- --kafka           # Test Kafka integration
+dotnet run -- --dynamic         # Test dynamic server creation (modifies cluster)
+dotnet run -- --cross-protocol  # Test cross-protocol file visibility
+
+# Configuration options
+dotnet run -- --api-url http://file-simulator.local:30500  # Specify API URL
+dotnet run -- --require-api     # Fail if Control API unavailable
+```
+
+**TestConsole Features (v2.0):**
+- API-driven configuration: Fetches settings from `/api/connection-info`
+- Protocol validation: Tests FTP, SFTP, HTTP, WebDAV, S3, SMB, NFS connectivity
+- Multi-NAS testing: Validates all 7 NAS servers with file operations
+- Dynamic server testing: Creates/tests/deletes temporary FTP, SFTP, NAS servers
+- Kafka testing: Produce/consume message cycle validation
+- Colorful output with Spectre.Console for progress tracking
+
+### E2E Tests
+
+Browser-based tests using Playwright for dashboard validation.
+
+```powershell
+# Install Playwright browsers (one-time)
+pwsh .\scripts\Install-PlaywrightBrowsers.ps1
+
+# Run E2E tests against existing simulator
+cd tests/FileSimulator.E2ETests
+$env:USE_EXISTING_SIMULATOR = "true"
+dotnet test
+
+# Run specific test class
+dotnet test --filter "FullyQualifiedName~DashboardTests"
+dotnet test --filter "FullyQualifiedName~ServerManagementTests"
+dotnet test --filter "FullyQualifiedName~KafkaTests"
+
+# Run with headed browser for debugging
+$env:PWDEBUG = "1"
+dotnet test --filter "FullyQualifiedName~DashboardTests"
+```
+
+**E2E Test Coverage:**
+- Dashboard navigation and tab switching
+- Server grid display and real-time health updates
+- Dynamic server create/delete operations
+- File browser tree view and upload/download
+- Kafka topic management and message operations
+- Alert display and history filtering
+- Historical metrics chart rendering
+
+For detailed testing documentation, see [docs/TESTING.md](docs/TESTING.md).
+
 ### Multi-NAS Test Suite (v1.0)
 
-**Comprehensive validation** for the 7-server NAS topology:
+Comprehensive validation for the 7-server NAS topology:
 
 ```powershell
 # Run full test suite (57 tests: health, sync, isolation, persistence)
@@ -1445,12 +1757,6 @@ nc -zv 172.25.201.3 32149                 # NFS port
 - Phase 2: Storage isolation, subdirectory mounts, DNS resolution (37 tests)
 - Phase 3: Bidirectional sync, sidecar validation (10 tests)
 - Phase 5: Health checks, cross-NAS isolation, pod restart persistence (10 tests)
-
-**Expected results:**
-- All 7 NAS servers: Running and accessible
-- Storage isolation: PASS (files on nas-input-1 not on nas-input-2)
-- Sync timing: 15-30s NFS→Windows (under 60s requirement)
-- Persistence: PASS (files survive pod restart)
 
 ### Legacy Protocol Tests
 
@@ -1803,45 +2109,62 @@ file-simulator-suite/
 |       |-- Chart.yaml                 # Helm chart metadata
 |       |-- values.yaml                # Default configuration
 |       |-- values-multi-instance.yaml # Multi-server configuration
+|       |-- values-multi-nas.yaml      # Multi-NAS topology configuration
 |       +-- templates/
 |           |-- _helpers.tpl           # Template helpers
 |           |-- namespace.yaml         # Namespace definition
 |           |-- storage.yaml           # PV and PVC
-|           |-- serviceaccount.yaml    # Service account
-|           |-- management.yaml        # FileBrowser deployment
+|           |-- control-api.yaml       # Control API deployment (v2.0)
+|           |-- dashboard.yaml         # React dashboard deployment (v2.0)
+|           |-- kafka.yaml             # Kafka broker deployment (v2.0)
 |           |-- ftp.yaml               # FTP server
 |           |-- sftp.yaml              # SFTP server
 |           |-- http.yaml              # HTTP/nginx server
-|           |-- webdav.yaml            # WebDAV server
 |           |-- s3.yaml                # MinIO S3
 |           |-- smb.yaml               # Samba SMB
-|           +-- nas.yaml               # NFS server
+|           +-- nas.yaml               # NFS server (with multi-NAS support)
 |
 |-- src/
-|   |-- FileSimulator.Client/          # .NET client library
-|   |   |-- FileSimulator.Client.csproj
-|   |   |-- Services/
-|   |   |   |-- FtpFileService.cs
-|   |   |   |-- SftpFileService.cs
-|   |   |   |-- S3FileService.cs
-|   |   |   |-- SmbFileService.cs
-|   |   |   +-- HttpFileService.cs
-|   |   +-- Options/
-|   |       |-- FtpOptions.cs
-|   |       |-- SftpOptions.cs
-|   |       |-- S3Options.cs
-|   |       +-- SmbOptions.cs
+|   |-- FileSimulator.ControlApi/      # Control API (.NET 9)
+|   |   |-- Controllers/               # REST API endpoints
+|   |   |-- Services/                  # K8s discovery, health checks, Kafka
+|   |   |-- Hubs/                      # SignalR real-time hubs
+|   |   |-- Data/                      # SQLite metrics database
+|   |   +-- Models/                    # DTOs and entities
 |   |
-|   +-- FileSimulator.TestConsole/     # Test console application
-|       |-- FileSimulator.TestConsole.csproj
-|       |-- Program.cs
-|       +-- appsettings.json
+|   |-- FileSimulator.TestConsole/     # CLI test tool
+|   |   |-- Program.cs                 # Main entry point
+|   |   |-- KafkaTests.cs              # Kafka integration tests
+|   |   |-- DynamicServerTests.cs      # Dynamic server tests
+|   |   +-- NasServerTests.cs          # Multi-NAS validation
+|   |
+|   |-- FileSimulator.Client/          # .NET client library
+|   |   +-- Services/                  # Protocol service implementations
+|   |
+|   +-- dashboard/                     # React dashboard (Vite + TypeScript)
+|       |-- src/
+|       |   |-- components/            # React components
+|       |   |-- hooks/                 # Custom hooks (useSignalR, etc.)
+|       |   +-- pages/                 # Tab pages (Servers, Files, Kafka, etc.)
+|       +-- Dockerfile                 # Multi-stage build with nginx
+|
+|-- tests/
+|   +-- FileSimulator.E2ETests/        # Playwright E2E tests
+|       |-- Fixtures/                  # Test fixtures and setup
+|       |-- PageObjects/               # Page object models
+|       +-- Tests/                     # Test classes by feature
+|
+|-- docs/
+|   |-- TESTING.md                     # Testing guide
+|   +-- API-REFERENCE.md               # API documentation
 |
 |-- scripts/
 |   |-- Install-Simulator.ps1          # Automated installation
-|   |-- setup-windows.ps1              # Windows directory setup
+|   |-- Start-Simulator.ps1            # Start local dev environment
+|   |-- Setup-Hosts.ps1                # Configure Windows hosts file
+|   |-- Install-PlaywrightBrowsers.ps1 # Install Playwright browsers
 |   |-- test-simulator.ps1             # PowerShell test script
-|   +-- test-simulator.sh              # Bash test script
+|   +-- test-multi-nas.ps1             # Multi-NAS validation tests
 |
 |-- CLAUDE.md                          # Implementation guide
 +-- README.md                          # This file
@@ -1872,4 +2195,4 @@ MIT License - See LICENSE file for details.
 
 ---
 
-**Version:** v1.0 (2026-02-01) | [See MILESTONES.md](.planning/MILESTONES.md) for full release notes
+**Version:** v2.0 (2026-02-05) | [See MILESTONES.md](.planning/MILESTONES.md) for full release notes
