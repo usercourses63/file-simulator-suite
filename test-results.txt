@@ -1,0 +1,18 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  FileSimulator.Client -> C:\Users\UserC\source\repos\file-simulator-suite\src\FileSimulator.Client\bin\Debug\net9.0\FileSimulator.Client.dll
+  FileSimulator.IntegrationTests -> C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\bin\Debug\net9.0\FileSimulator.IntegrationTests.dll
+Test run for C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\bin\Debug\net9.0\FileSimulator.IntegrationTests.dll (.NETCoreApp,Version=v9.0)
+VSTest version 18.0.1 (x64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\bin\Debug\net9.0\FileSimulator.IntegrationTests.dll
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 9.0.12)
+[xUnit.net 00:00:00.09]   Discovering: FileSimulator.IntegrationTests (method display = ClassAndMethod, method display options = None)
+[xUnit.net 00:00:00.11]   Discovered:  FileSimulator.IntegrationTests (found 74 test cases)
+[xUnit.net 00:00:00.12] FileSimulator.IntegrationTests: Exception filtering tests: Incorrect format for TestCaseFilter Error: Invalid Condition 'FullyQualifiedName~Smb or FullyQualifiedName~Nfs'. Specify the correct format and try again. Note that the incorrect format can lead to no test getting executed.
+[xUnit.net 00:00:00.12]   Starting:    FileSimulator.IntegrationTests (parallel test collections = off, stop on fail = off)
+[xUnit.net 00:00:00.13]   Finished:    FileSimulator.IntegrationTests
+No test matches the given testcase filter `FullyQualifiedName~Smb or FullyQualifiedName~Nfs` in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\bin\Debug\net9.0\FileSimulator.IntegrationTests.dll
+

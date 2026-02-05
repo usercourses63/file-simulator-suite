@@ -1,0 +1,1176 @@
+<testsuites>
+  <testsuite name="FileSimulator.IntegrationTests.dll" tests="123" skipped="0" failures="23" errors="0" time="179.41044279999994" timestamp="2026-02-05T16:45:34" hostname="DEV-PC" id="0" package="FileSimulator.IntegrationTests.dll">
+    <properties />
+    <testcase classname="FileSimulator.IntegrationTests.SmokeTests" name="RetryPolicy_HandlesTransientFailures" time="0.0204434" />
+    <testcase classname="FileSimulator.IntegrationTests.SmokeTests" name="TestHelpers_GenerateUniqueFileName_CreatesUniqueNames" time="0.0018337" />
+    <testcase classname="FileSimulator.IntegrationTests.SmokeTests" name="ConnectionInfo_HasFtpServer" time="0.0539908" />
+    <testcase classname="FileSimulator.IntegrationTests.SmokeTests" name="TestHelpers_GenerateUniqueServerName_RespectsLengthLimit" time="0.0004219" />
+    <testcase classname="FileSimulator.IntegrationTests.SmokeTests" name="ConnectionInfo_HasSftpServer" time="0.0003837" />
+    <testcase classname="FileSimulator.IntegrationTests.SmokeTests" name="ConnectionInfo_HasNfsServers" time="0.0024294" />
+    <testcase classname="FileSimulator.IntegrationTests.SmokeTests" name="ConnectionInfo_HasSmbServer" time="0.0005125" />
+    <testcase classname="FileSimulator.IntegrationTests.SmokeTests" name="ConnectionInfo_HasS3Server" time="0.0003706" />
+    <testcase classname="FileSimulator.IntegrationTests.SmokeTests" name="ApiHealth_ReturnsSuccess" time="0.0032986" />
+    <testcase classname="FileSimulator.IntegrationTests.SmokeTests" name="ConnectionInfo_ReturnsValidResponse" time="0.0006796" />
+    <testcase classname="FileSimulator.IntegrationTests.SmokeTests" name="ConnectionInfo_HasEndpoints" time="0.0004302" />
+    <testcase classname="FileSimulator.IntegrationTests.SmokeTests" name="ConnectionInfo_HasHttpServer" time="0.0003490" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.FtpProtocolTests" name="FTP_Download_ReturnsCorrectContent" time="3.4699682">
+      <failure type="failure" message="FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.&#xD;&#xA;---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.">at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+   at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+   at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_Download_ReturnsCorrectContent() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs:line 121
+   at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_Download_ReturnsCorrectContent() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs:line 147
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+   at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+   at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.FtpProtocolTests" name="FTP_CanConnect" time="0.0298959" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.FtpProtocolTests" name="FTP_Delete_RemovesFile" time="2.0761583">
+      <failure type="failure" message="FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.&#xD;&#xA;---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.">at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+   at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+   at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_Delete_RemovesFile() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs:line 213
+   at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_Delete_RemovesFile() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs:line 239
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+   at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+   at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.FtpProtocolTests" name="FTP_FullCycle_CRUD" time="2.0867855">
+      <failure type="failure" message="FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.&#xD;&#xA;---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.">at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+   at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+   at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_FullCycle_CRUD() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs:line 260
+   at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_FullCycle_CRUD() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs:line 304
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+   at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+   at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.FtpProtocolTests" name="FTP_Upload_CreatesFile" time="2.0638177">
+      <failure type="failure" message="FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.&#xD;&#xA;---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.">at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+   at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+   at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_Upload_CreatesFile() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs:line 79
+   at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_Upload_CreatesFile() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs:line 100
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+   at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+   at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.FtpProtocolTests" name="FTP_List_ReturnsUploadedFile" time="2.0759259">
+      <failure type="failure" message="FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.&#xD;&#xA;---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.">at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+   at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+   at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_List_ReturnsUploadedFile() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs:line 168
+   at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_List_ReturnsUploadedFile() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs:line 192
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+   at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+   at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.HttpProtocolTests" name="HTTP_Read_OutputDirectory_ReturnsContent" time="0.0193499" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.HttpProtocolTests" name="HTTP_List_ReturnsDirectoryListing" time="0.0272179" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.HttpProtocolTests" name="HTTP_Health_ReturnsSuccess" time="0.0028481" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.NfsProtocolTests" name="NFS_LargeFile_HandlesCorrectly" time="0.0445879" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.NfsProtocolTests" name="NFS_Mount_DirectoryExists" time="0.0021701" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.NfsProtocolTests" name="NFS_TcpConnectivity_ServerReachable" time="0.0032000" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.NfsProtocolTests" name="NFS_List_ReturnsUploadedFile" time="0.0048062" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.NfsProtocolTests" name="NFS_Download_ReturnsContent" time="0.0242699" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.NfsProtocolTests" name="NFS_Delete_RemovesFile" time="0.0032381" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.NfsProtocolTests" name="NFS_Upload_CreatesFile" time="0.0025891" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.NfsProtocolTests" name="NFS_FullCycle_CRUD" time="0.0319600" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.NfsProtocolTests" name="NFS_SubdirectoryOperations_WorkCorrectly" time="0.0177632" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.S3ProtocolTests" name="S3_Delete_RemovesObject" time="0.1320182" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.S3ProtocolTests" name="S3_Download_GetObject_ReturnsContent" time="0.0179657" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.S3ProtocolTests" name="S3_List_ReturnsUploadedObject" time="0.0220866" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.S3ProtocolTests" name="S3_ListBuckets_ContainsOutputBucket" time="0.0043129" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.S3ProtocolTests" name="S3_FullCycle_CRUD" time="0.0288675" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.S3ProtocolTests" name="S3_Upload_PutObject_Succeeds" time="0.0123385" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.SftpProtocolTests" name="SFTP_CanConnect" time="0.9293905" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.SftpProtocolTests" name="SFTP_List_ReturnsUploadedFile" time="1.2657001" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.SftpProtocolTests" name="SFTP_Download_ReturnsCorrectContent" time="1.1197531" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.SftpProtocolTests" name="SFTP_Upload_CreatesFile" time="1.3403078" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.SftpProtocolTests" name="SFTP_FullCycle_CRUD" time="1.2957142" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.SftpProtocolTests" name="SFTP_Delete_RemovesFile" time="1.4108575" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.SmbProtocolTests" name="SMB_Download_ReturnsContent" time="2.0552455" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.SmbProtocolTests" name="SMB_Upload_CreatesFile" time="2.0428758" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.SmbProtocolTests" name="SMB_List_ReturnsUploadedFile" time="2.0413153" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.SmbProtocolTests" name="SMB_TreeConnect_AccessesShare" time="2.0332445" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.SmbProtocolTests" name="SMB_FullCycle_CRUD" time="2.0440316" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.SmbProtocolTests" name="SMB_Delete_RemovesFile" time="2.0431328" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.SmbProtocolTests" name="SMB_CanConnect" time="2.0402245" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests" name="WebDAV_Download_GET_ReturnsContent" time="0.0388960">
+      <failure type="failure" message="Expected getResponse.IsSuccessStatusCode to be True because File download should succeed, but found False.">at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+   at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+   at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Execution.AssertionScope.FailWith(String message, Object[] args)
+   at FluentAssertions.Primitives.BooleanAssertions`1.BeTrue(String because, Object[] becauseArgs)
+   at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_Download_GET_ReturnsContent() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs:line 132
+   at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_Download_GET_ReturnsContent() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs:line 151
+--- End of stack trace from previous location ---</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests" name="WebDAV_List_ReturnsUploadedFile" time="0.0237123">
+      <failure type="failure" message="Expected listingHtml &quot;&lt;html&gt;&#xD;&#xA;&lt;head&gt;&lt;title&gt;Index of /output/&lt;/title&gt;&lt;/head&gt;&#xD;&#xA;&lt;body&gt;&#xD;&#xA;&lt;h1&gt;Index of /output/&lt;/h1&gt;&lt;hr&gt;&lt;pre&gt;&lt;a href=&quot;../&quot;&gt;../&lt;/a&gt;&#xD;&#xA;&lt;a href=&quot;cross-test-nfs-20260115-131745.txt&quot;&gt;cross-test-nfs-20260115-131745.txt&lt;/a&gt;                 15-Jan-2026 13:17      60&#xD;&#xA;&lt;a href=&quot;http-benchmark-test.txt&quot;&gt;http-benchmark-test.txt&lt;/a&gt;                            14-Jan-2026 13:26      49&#xD;&#xA;&lt;a href=&quot;test.txt&quot;&gt;test.txt&lt;/a&gt;                                           28-Jan-2026 18:28       4&#xD;&#xA;&lt;a href=&quot;test3-http-image.png.0000000008&quot;&gt;test3-http-image.png.0000000008&lt;/a&gt;                    14-Jan-2026 13:00    111K&#xD;&#xA;&lt;a href=&quot;transferred-via-HTTP.txt.0000000004&quot;&gt;transferred-via-HTTP.txt.0000000004&lt;/a&gt;                14-Jan-2026 12:49     153&#xD;&#xA;&lt;a href=&quot;transferred-via-HTTP.txt.0000000006&quot;&gt;transferred-via-HTTP.txt.0000000006&lt;/a&gt;                14-Jan-2026 12:50      64&#xD;&#xA;&lt;a href=&quot;transferred-via-SFTP.txt&quot;&gt;transferred-via-SFTP.txt&lt;/a&gt;                           14-Jan-2026 12:50      64&#xD;&#xA;&lt;a href=&quot;transferred-via-SMB.txt&quot;&gt;transferred-via-SMB.txt&lt;/a&gt;                            14-Jan-2026 12:50      64&#xD;&#xA;&lt;a href=&quot;webdav-final-test.txt&quot;&gt;webdav-final-test.txt&lt;/a&gt;                              14-Jan-2026 13:25      47&#xD;&#xA;&lt;a href=&quot;webdav-test.txt.0000000002&quot;&gt;webdav-test.txt.0000000002&lt;/a&gt;                         14-Jan-2026 13:13      19&#xD;&#xA;&lt;a href=&quot;webdav-test.txt.0000000004&quot;&gt;webdav-test.txt.0000000004&lt;/a&gt;                         14-Jan-2026 13:15      36&#xD;&#xA;&lt;a href=&quot;webdav-test.txt.0000000006&quot;&gt;webdav-test.txt.0000000006&lt;/a&gt;                         14-Jan-2026 13:16      36&#xD;&#xA;&lt;/pre&gt;&lt;hr&gt;&lt;/body&gt;&#xD;&#xA;&lt;/html&gt;&#xD;&#xA;&quot; to contain &quot;webdav-list-94be9055944b4117ba88d4a1f6cb6412.txt&quot; because Directory listing should contain uploaded file.">at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+   at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+   at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Execution.AssertionScope.FailWith(String message, Object[] args)
+   at FluentAssertions.Primitives.StringAssertions`1.Contain(String expected, String because, Object[] becauseArgs)
+   at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_List_ReturnsUploadedFile() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs:line 179
+   at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_List_ReturnsUploadedFile() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs:line 193
+--- End of stack trace from previous location ---</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests" name="WebDAV_Delete_RemovesFile" time="0.0089504">
+      <failure type="failure" message="Expected getResponseBefore.IsSuccessStatusCode to be True because File should exist before deletion, but found False.">at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+   at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+   at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Execution.AssertionScope.FailWith(String message, Object[] args)
+   at FluentAssertions.Primitives.BooleanAssertions`1.BeTrue(String because, Object[] becauseArgs)
+   at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_Delete_RemovesFile() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs:line 216
+   at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_Delete_RemovesFile() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs:line 239
+--- End of stack trace from previous location ---</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests" name="WebDAV_Upload_PUT_CreatesFile" time="0.0057508">
+      <failure type="failure" message="Expected response.IsSuccessStatusCode to be True because File upload via PUT should succeed, but found False.">at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+   at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+   at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Execution.AssertionScope.FailWith(String message, Object[] args)
+   at FluentAssertions.Primitives.BooleanAssertions`1.BeTrue(String because, Object[] becauseArgs)
+   at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_Upload_PUT_CreatesFile() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs:line 91
+   at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_Upload_PUT_CreatesFile() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs:line 109
+--- End of stack trace from previous location ---</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests" name="WebDAV_CanConnect" time="0.0091368" />
+    <testcase classname="FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests" name="WebDAV_FullCycle_CRUD" time="0.0065549">
+      <failure type="failure" message="Expected createResponse.IsSuccessStatusCode to be True because File creation should succeed, but found False.">at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+   at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+   at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Execution.AssertionScope.FailWith(String message, Object[] args)
+   at FluentAssertions.Primitives.BooleanAssertions`1.BeTrue(String because, Object[] becauseArgs)
+   at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_FullCycle_CRUD() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs:line 260
+   at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_FullCycle_CRUD() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs:line 301
+--- End of stack trace from previous location ---</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="NasServer_FileOperations_WhenMounted(serverName: &quot;nas-output-2&quot;)" time="0.0175533" />
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="NasServer_FileOperations_WhenMounted(serverName: &quot;nas-input-3&quot;)" time="0.0114504" />
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="NasServer_FileOperations_WhenMounted(serverName: &quot;nas-input-2&quot;)" time="0.0201717" />
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="NasServer_FileOperations_WhenMounted(serverName: &quot;nas-backup&quot;)" time="0.0001880" />
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="NasServer_FileOperations_WhenMounted(serverName: &quot;nas-output-3&quot;)" time="0.0107712" />
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="NasServer_FileOperations_WhenMounted(serverName: &quot;nas-input-1&quot;)" time="0.0153110" />
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="NasServer_FileOperations_WhenMounted(serverName: &quot;nas-output-1&quot;)" time="0.0147334" />
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="NasServer_TcpReachable(serverName: &quot;nas-input-2&quot;)" time="0.0034531" />
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="NasServer_TcpReachable(serverName: &quot;nas-input-1&quot;)" time="0.0026004" />
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="NasServer_TcpReachable(serverName: &quot;nas-output-1&quot;)" time="0.0025477" />
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="NasServer_TcpReachable(serverName: &quot;nas-input-3&quot;)" time="0.0024597" />
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="NasServer_TcpReachable(serverName: &quot;nas-output-2&quot;)" time="0.0025977" />
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="NasServer_TcpReachable(serverName: &quot;nas-output-3&quot;)" time="0.0024893" />
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="NasServer_TcpReachable(serverName: &quot;nas-backup&quot;)" time="0.0029515" />
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="BackupServer_IsReadOnly" time="0.0018868" />
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="AllNasServers_TcpConnectivity" time="0.0257404" />
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="InputServers_AreWritable" time="0.0871540" />
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="OutputServers_AreWritable" time="0.1005009" />
+    <testcase classname="FileSimulator.IntegrationTests.NasServers.MultiNasServerTests" name="AllNasServers_HaveDifferentPorts" time="0.0072520" />
+    <testcase classname="FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests" name="Kafka_ProduceMultiple_ConsumeAll" time="1.4120778">
+      <failure type="failure" message="System.Net.Http.HttpRequestException : Response status code does not indicate success: 404 (Not Found).">at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_ProduceMultiple_ConsumeAll() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs:line 228
+   at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_ProduceMultiple_ConsumeAll() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs:line 261
+--- End of stack trace from previous location ---</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests" name="Kafka_ProduceConsume_DirectClient" time="4.4261187" />
+    <testcase classname="FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests" name="Kafka_FullCycle_ApiEndToEnd" time="1.0740616">
+      <failure type="failure" message="Expected produceResponse.IsSuccessStatusCode to be True because Message produce should succeed, but found False.">at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+   at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Primitives.BooleanAssertions`1.BeTrue(String because, Object[] becauseArgs)
+   at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_FullCycle_ApiEndToEnd() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs:line 291
+   at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_FullCycle_ApiEndToEnd() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs:line 344
+--- End of stack trace from previous location ---</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests" name="Kafka_ConsumerGroup_CreatedPerRequest" time="1.0619602">
+      <failure type="failure" message="System.Net.Http.HttpRequestException : Response status code does not indicate success: 404 (Not Found).">at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_ConsumerGroup_CreatedPerRequest() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs:line 364
+   at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_ConsumerGroup_CreatedPerRequest() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs:line 390
+--- End of stack trace from previous location ---</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests" name="Kafka_Consume_ViaApi" time="1.0718895">
+      <failure type="failure" message="System.Net.Http.HttpRequestException : Response status code does not indicate success: 404 (Not Found).">at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_Consume_ViaApi() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs:line 106
+   at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_Consume_ViaApi() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs:line 134
+--- End of stack trace from previous location ---</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests" name="Kafka_Produce_ViaApi" time="1.0789392">
+      <failure type="failure" message="Expected response.IsSuccessStatusCode to be True because Message produce should succeed. Status: NotFound, but found False.">at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+   at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Primitives.BooleanAssertions`1.BeTrue(String because, Object[] becauseArgs)
+   at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_Produce_ViaApi() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs:line 79
+   at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_Produce_ViaApi() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs:line 86
+--- End of stack trace from previous location ---</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.Kafka.KafkaTopicManagementTests" name="Kafka_ListTopics_ContainsCreatedTopic" time="1.0759562" />
+    <testcase classname="FileSimulator.IntegrationTests.Kafka.KafkaTopicManagementTests" name="Kafka_BrokerConnectivity" time="0.2163680" />
+    <testcase classname="FileSimulator.IntegrationTests.Kafka.KafkaTopicManagementTests" name="Kafka_CreateTopic_ViaApi" time="0.0621192" />
+    <testcase classname="FileSimulator.IntegrationTests.Kafka.KafkaTopicManagementTests" name="Kafka_CreateMultipleTopics_AllSucceed" time="2.3835292" />
+    <testcase classname="FileSimulator.IntegrationTests.Kafka.KafkaTopicManagementTests" name="Kafka_DeleteTopic_RemovesTopic" time="2.0814316" />
+    <testcase classname="FileSimulator.IntegrationTests.Kafka.KafkaTopicManagementTests" name="Kafka_CreateTopic_DirectClient" time="1.2931994" />
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests" name="FtpServer_Delete_CleansUpResources" time="4.4493634" />
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests" name="FtpServer_FileOperations_WorkCorrectly" time="7.7976835">
+      <failure type="failure" message="FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.&#xD;&#xA;---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.">at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+   at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+   at FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests.FtpServer_FileOperations_WorkCorrectly() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\DynamicServers\DynamicFtpServerTests.cs:line 145
+   at FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests.FtpServer_FileOperations_WorkCorrectly() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\DynamicServers\DynamicFtpServerTests.cs:line 152
+   at FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests.FtpServer_FileOperations_WorkCorrectly() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\DynamicServers\DynamicFtpServerTests.cs:line 192
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+   at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+   at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests" name="FtpServer_CompleteLifecycle" time="6.4533325">
+      <failure type="failure" message="FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.&#xD;&#xA;---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.">at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+   at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+   at FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests.FtpServer_CompleteLifecycle() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\DynamicServers\DynamicFtpServerTests.cs:line 268
+   at FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests.FtpServer_CompleteLifecycle() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\DynamicServers\DynamicFtpServerTests.cs:line 274
+   at FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests.FtpServer_CompleteLifecycle() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\DynamicServers\DynamicFtpServerTests.cs:line 305
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+   at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+   at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests" name="FtpServer_Create_ReturnsServerInfo" time="2.3477967" />
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests" name="FtpServer_BecomesReady_WithinTimeout" time="4.3667121" />
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests" name="FtpServer_AcceptsConnections_WhenReady" time="4.4372491" />
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.DynamicSftpServerTests" name="SftpServer_BecomesReady_WithinTimeout" time="4.4427942" />
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.DynamicSftpServerTests" name="SftpServer_CompleteLifecycle" time="6.9371495" />
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.DynamicSftpServerTests" name="SftpServer_Create_ReturnsServerInfo" time="2.3403659" />
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.DynamicSftpServerTests" name="SftpServer_Delete_CleansUpResources" time="4.5383779" />
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.DynamicSftpServerTests" name="SftpServer_AcceptsConnections_WhenReady" time="7.0304828">
+      <failure type="failure" message="System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.">at Renci.SshNet.Abstractions.SocketAbstraction.ConnectCore(Socket socket, EndPoint remoteEndpoint, TimeSpan connectTimeout, Boolean ownsSocket)
+   at Renci.SshNet.Abstractions.SocketAbstraction.Connect(Socket socket, EndPoint remoteEndpoint, TimeSpan connectTimeout)
+   at Renci.SshNet.Connection.ConnectorBase.SocketConnect(EndPoint endPoint, TimeSpan timeout)
+   at Renci.SshNet.Connection.DirectConnector.Connect(IConnectionInfo connectionInfo)
+   at Renci.SshNet.Session.Connect()
+   at Renci.SshNet.BaseClient.CreateAndConnectSession()
+   at Renci.SshNet.BaseClient.Connect()
+   at FileSimulator.IntegrationTests.DynamicServers.DynamicSftpServerTests.&lt;&gt;c__DisplayClass4_0.&lt;SftpServer_AcceptsConnections_WhenReady&gt;b__0() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\DynamicServers\DynamicSftpServerTests.cs:line 102
+   at System.Threading.Tasks.Task`1.InnerInvoke()
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task&amp; currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at FileSimulator.IntegrationTests.DynamicServers.DynamicSftpServerTests.SftpServer_AcceptsConnections_WhenReady() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\DynamicServers\DynamicSftpServerTests.cs:line 93
+   at FileSimulator.IntegrationTests.DynamicServers.DynamicSftpServerTests.SftpServer_AcceptsConnections_WhenReady() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\DynamicServers\DynamicSftpServerTests.cs:line 116
+--- End of stack trace from previous location ---</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.DynamicSftpServerTests" name="SftpServer_FileOperations_WorkCorrectly" time="5.6527059" />
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.NasServerLifecycleTests" name="NasServer_Delete_CleansUpResources" time="6.4047746" />
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.NasServerLifecycleTests" name="NasServer_ReadOnly_ConfigurationApplied" time="6.3977886" />
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.NasServerLifecycleTests" name="NasServer_FileOperations_WhenMountAvailable" time="16.7485005" />
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.NasServerLifecycleTests" name="NasServer_TcpPort_IsAccessible" time="6.5318566" />
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.NasServerLifecycleTests" name="NasServer_CompleteLifecycle" time="6.9139981" />
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.NasServerLifecycleTests" name="NasServer_Create_ReturnsServerInfo" time="2.3411264" />
+    <testcase classname="FileSimulator.IntegrationTests.DynamicServers.NasServerLifecycleTests" name="NasServer_BecomesReady_WithinTimeout" time="6.3862223" />
+    <testcase classname="FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests" name="S3ToFtp_FileVisibility" time="4.0123904">
+      <failure type="failure" message="System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.">at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+   at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+   at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.GetListingInternal(String listcmd, FtpListOption options, Boolean retry, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.GetListing(String path, FtpListOption options, CancellationToken token)
+   at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.&lt;&gt;c__DisplayClass6_0.&lt;&lt;S3ToFtp_FileVisibility&gt;b__0&gt;d.MoveNext() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs:line 298
+--- End of stack trace from previous location ---
+   at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.&lt;&gt;c__DisplayClass2_0.&lt;&lt;WaitForFileVisibility&gt;b__2&gt;d.MoveNext() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs:line 41
+--- End of stack trace from previous location ---
+   at Polly.Retry.AsyncRetryEngine.ImplementationAsync[TResult](Func`3 action, Context context, ExceptionPredicates shouldRetryExceptionPredicates, ResultPredicates`1 shouldRetryResultPredicates, Func`5 onRetryAsync, CancellationToken cancellationToken, Int32 permittedRetryCount, IEnumerable`1 sleepDurationsEnumerable, Func`4 sleepDurationProvider, Boolean continueOnCapturedContext)
+   at Polly.AsyncPolicy`1.ExecuteInternalAsync(Func`3 action, Context context, Boolean continueOnCapturedContext, CancellationToken cancellationToken)
+   at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.WaitForFileVisibility(Func`1 listFunc, String fileName, TimeSpan timeout) in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs:line 39
+   at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.S3ToFtp_FileVisibility() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs:line 296
+   at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.S3ToFtp_FileVisibility() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs:line 317
+--- End of stack trace from previous location ---</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests" name="SftpToHttp_FileVisibility" time="4.8428346">
+      <failure type="failure" message="System.Net.Http.HttpRequestException : No connection could be made because the target machine actively refused it. (file-simulator.local:80)&#xD;&#xA;---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.">at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.InjectNewHttp11ConnectionAsync(QueueItem queueItem)
+   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.&lt;SendAsync&gt;g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+   at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.&lt;&gt;c__DisplayClass4_1.&lt;&lt;SftpToHttp_FileVisibility&gt;b__2&gt;d.MoveNext() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs:line 152
+--- End of stack trace from previous location ---
+   at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.&lt;&gt;c__DisplayClass2_0.&lt;&lt;WaitForFileVisibility&gt;b__2&gt;d.MoveNext() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs:line 41
+--- End of stack trace from previous location ---
+   at Polly.Retry.AsyncRetryEngine.ImplementationAsync[TResult](Func`3 action, Context context, ExceptionPredicates shouldRetryExceptionPredicates, ResultPredicates`1 shouldRetryResultPredicates, Func`5 onRetryAsync, CancellationToken cancellationToken, Int32 permittedRetryCount, IEnumerable`1 sleepDurationsEnumerable, Func`4 sleepDurationProvider, Boolean continueOnCapturedContext)
+   at Polly.AsyncPolicy`1.ExecuteInternalAsync(Func`3 action, Context context, Boolean continueOnCapturedContext, CancellationToken cancellationToken)
+   at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.WaitForFileVisibility(Func`1 listFunc, String fileName, TimeSpan timeout) in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs:line 39
+   at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.SftpToHttp_FileVisibility() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs:line 150
+   at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.SftpToHttp_FileVisibility() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs:line 183
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Net.Sockets.Socket.&lt;ConnectAsync&gt;g__WaitForConnectWithCancellation|285_0(AwaitableSocketAsyncEventArgs saea, ValueTask connectTask, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests" name="FtpToWebDav_FileVisibility" time="2.0706492">
+      <failure type="failure" message="FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.&#xD;&#xA;---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.">at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+   at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+   at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.FtpToWebDav_FileVisibility() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs:line 213
+   at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.FtpToWebDav_FileVisibility() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs:line 248
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+   at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+   at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests" name="FtpToSftp_FileVisibility" time="2.0653606">
+      <failure type="failure" message="FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.&#xD;&#xA;---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.">at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+   at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+   at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.FtpToSftp_FileVisibility() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs:line 73
+   at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.FtpToSftp_FileVisibility() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs:line 111
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+   at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+   at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests" name="AllProtocols_SharedStorageConsistency" time="2.0621438">
+      <failure type="failure" message="FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.&#xD;&#xA;---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.">at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+   at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+   at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.AllProtocols_SharedStorageConsistency() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs:line 350
+   at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.AllProtocols_SharedStorageConsistency() in C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs:line 454
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+   at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+   at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+   at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)</failure>
+    </testcase>
+    <testcase classname="FileSimulator.IntegrationTests.Api.ConnectionInfoApiTests" name="ConnectionInfo_FtpCredentials_AreValid" time="0.0040488" />
+    <testcase classname="FileSimulator.IntegrationTests.Api.ConnectionInfoApiTests" name="ConnectionInfo_NasServers_AllPresent" time="0.0045319" />
+    <testcase classname="FileSimulator.IntegrationTests.Api.ConnectionInfoApiTests" name="ConnectionInfo_SftpCredentials_AreValid" time="0.0033075" />
+    <testcase classname="FileSimulator.IntegrationTests.Api.ConnectionInfoApiTests" name="ConnectionInfo_KafkaBootstrap_Present" time="0.0024228" />
+    <testcase classname="FileSimulator.IntegrationTests.Api.ConnectionInfoApiTests" name="ConnectionInfo_ReturnsAllProtocols" time="0.0012982" />
+    <testcase classname="FileSimulator.IntegrationTests.Api.ConnectionInfoApiTests" name="ConnectionInfo_JsonFormat_IsDeserializable" time="0.0018443" />
+    <testcase classname="FileSimulator.IntegrationTests.Api.ConnectionInfoApiTests" name="ConnectionInfo_YamlFormat_IsValidYaml" time="0.0161161" />
+    <testcase classname="FileSimulator.IntegrationTests.Api.ConnectionInfoApiTests" name="ConnectionInfo_SmbCredentials_Present" time="0.0011337" />
+    <testcase classname="FileSimulator.IntegrationTests.Api.ConnectionInfoApiTests" name="ConnectionInfo_S3Credentials_AreValid" time="0.0181836" />
+    <testcase classname="FileSimulator.IntegrationTests.Api.ConnectionInfoApiTests" name="ConnectionInfo_Formats_ReturnCorrectContentType" time="0.0550714" />
+    <testcase classname="FileSimulator.IntegrationTests.Api.ConnectionInfoApiTests" name="ConnectionInfo_DotnetFormat_IsValidAppSettings" time="0.0162909" />
+    <testcase classname="FileSimulator.IntegrationTests.Api.ConnectionInfoApiTests" name="ConnectionInfo_EnvFormat_ContainsAllProtocols" time="0.0177919" />
+    <testcase classname="FileSimulator.IntegrationTests.Api.ConnectionInfoApiTests" name="ConnectionInfo_WebDavCredentials_AreValid" time="0.0832003" />
+    <system-out>
+Test Framework Informational Messages:
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 9.0.12)
+[xUnit.net 00:00:00.08]   Discovering: FileSimulator.IntegrationTests (method display = ClassAndMethod, method display options = None)
+[xUnit.net 00:00:00.13]   Discovered:  FileSimulator.IntegrationTests (found 123 test cases)
+[xUnit.net 00:00:00.13]   Starting:    FileSimulator.IntegrationTests (parallel test collections = off, stop on fail = off)
+[Fixture] Control API health check passed
+[Fixture] SimulatorCollectionFixture initialized. API: http://file-simulator.local:30500
+[Fixture] Connection info retrieved and cached
+[xUnit.net 00:00:03.98]       FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.
+[xUnit.net 00:00:03.98]       ---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.
+[xUnit.net 00:00:03.98]       Stack Trace:
+[xUnit.net 00:00:03.98]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[xUnit.net 00:00:03.98]            at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+[xUnit.net 00:00:03.98]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs(121,0): at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_Download_ReturnsCorrectContent()
+[xUnit.net 00:00:03.98]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs(147,0): at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_Download_ReturnsCorrectContent()
+[xUnit.net 00:00:03.98]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:03.98]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:03.98]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+[xUnit.net 00:00:03.98]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+[xUnit.net 00:00:03.98]            at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+[xUnit.net 00:00:03.98]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:03.98]            at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+[xUnit.net 00:00:03.98]            at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+[xUnit.net 00:00:03.98]            at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+[xUnit.net 00:00:03.98]            at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:00:03.98]            at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:00:03.98]            at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+[xUnit.net 00:00:03.98]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[xUnit.net 00:00:06.10]       FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.
+[xUnit.net 00:00:06.10]       ---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.
+[xUnit.net 00:00:06.10]       Stack Trace:
+[xUnit.net 00:00:06.10]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[xUnit.net 00:00:06.10]            at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+[xUnit.net 00:00:06.10]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs(213,0): at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_Delete_RemovesFile()
+[xUnit.net 00:00:06.10]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs(239,0): at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_Delete_RemovesFile()
+[xUnit.net 00:00:06.10]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:06.10]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:06.10]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+[xUnit.net 00:00:06.10]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+[xUnit.net 00:00:06.10]            at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+[xUnit.net 00:00:06.10]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:06.10]            at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+[xUnit.net 00:00:06.10]            at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+[xUnit.net 00:00:06.10]            at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+[xUnit.net 00:00:06.10]            at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:00:06.10]            at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:00:06.10]            at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+[xUnit.net 00:00:06.10]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[xUnit.net 00:00:08.19]       FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.
+[xUnit.net 00:00:08.19]       ---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.
+[xUnit.net 00:00:08.19]       Stack Trace:
+[xUnit.net 00:00:08.19]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[xUnit.net 00:00:08.19]            at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+[xUnit.net 00:00:08.19]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs(260,0): at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_FullCycle_CRUD()
+[xUnit.net 00:00:08.19]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs(304,0): at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_FullCycle_CRUD()
+[xUnit.net 00:00:08.19]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:08.19]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:08.19]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+[xUnit.net 00:00:08.19]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+[xUnit.net 00:00:08.19]            at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+[xUnit.net 00:00:08.19]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:08.19]            at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+[xUnit.net 00:00:08.19]            at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+[xUnit.net 00:00:08.19]            at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+[xUnit.net 00:00:08.19]            at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:00:08.19]            at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:00:08.19]            at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+[xUnit.net 00:00:08.19]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[xUnit.net 00:00:10.26]       FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.
+[xUnit.net 00:00:10.26]       ---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.
+[xUnit.net 00:00:10.26]       Stack Trace:
+[xUnit.net 00:00:10.26]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[xUnit.net 00:00:10.26]            at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+[xUnit.net 00:00:10.26]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs(79,0): at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_Upload_CreatesFile()
+[xUnit.net 00:00:10.26]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs(100,0): at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_Upload_CreatesFile()
+[xUnit.net 00:00:10.26]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:10.26]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:10.26]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+[xUnit.net 00:00:10.26]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+[xUnit.net 00:00:10.26]            at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+[xUnit.net 00:00:10.26]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:10.26]            at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+[xUnit.net 00:00:10.26]            at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+[xUnit.net 00:00:10.26]            at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+[xUnit.net 00:00:10.26]            at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:00:10.26]            at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:00:10.26]            at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+[xUnit.net 00:00:10.26]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[xUnit.net 00:00:12.34]       FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.
+[xUnit.net 00:00:12.34]       ---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.
+[xUnit.net 00:00:12.34]       Stack Trace:
+[xUnit.net 00:00:12.34]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[xUnit.net 00:00:12.34]            at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+[xUnit.net 00:00:12.34]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs(168,0): at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_List_ReturnsUploadedFile()
+[xUnit.net 00:00:12.34]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\FtpProtocolTests.cs(192,0): at FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_List_ReturnsUploadedFile()
+[xUnit.net 00:00:12.34]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:12.34]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:12.34]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+[xUnit.net 00:00:12.34]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+[xUnit.net 00:00:12.34]            at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+[xUnit.net 00:00:12.34]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:12.34]            at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+[xUnit.net 00:00:12.34]            at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+[xUnit.net 00:00:12.34]            at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+[xUnit.net 00:00:12.34]            at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:00:12.34]            at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:00:12.34]            at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+[xUnit.net 00:00:12.34]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[PlatformHelper] TCP connection successful to file-simulator.local:32153
+[PlatformHelper] NFS mount path is accessible: C:\simulator-data
+[NfsProtocolTests] Host: file-simulator.local:32153, TCP: True, Mounted: True, Path: C:\simulator-data
+[PlatformHelper] TCP connection successful to file-simulator.local:32153
+[PlatformHelper] NFS mount path is accessible: C:\simulator-data
+[NfsProtocolTests] Host: file-simulator.local:32153, TCP: True, Mounted: True, Path: C:\simulator-data
+[PlatformHelper] TCP connection successful to file-simulator.local:32153
+[PlatformHelper] NFS mount path is accessible: C:\simulator-data
+[NfsProtocolTests] Host: file-simulator.local:32153, TCP: True, Mounted: True, Path: C:\simulator-data
+[PlatformHelper] TCP connection successful to file-simulator.local:32153
+[PlatformHelper] NFS mount path is accessible: C:\simulator-data
+[NfsProtocolTests] Host: file-simulator.local:32153, TCP: True, Mounted: True, Path: C:\simulator-data
+[PlatformHelper] TCP connection successful to file-simulator.local:32153
+[PlatformHelper] NFS mount path is accessible: C:\simulator-data
+[NfsProtocolTests] Host: file-simulator.local:32153, TCP: True, Mounted: True, Path: C:\simulator-data
+[PlatformHelper] TCP connection successful to file-simulator.local:32153
+[PlatformHelper] NFS mount path is accessible: C:\simulator-data
+[NfsProtocolTests] Host: file-simulator.local:32153, TCP: True, Mounted: True, Path: C:\simulator-data
+[PlatformHelper] TCP connection successful to file-simulator.local:32153
+[PlatformHelper] NFS mount path is accessible: C:\simulator-data
+[NfsProtocolTests] Host: file-simulator.local:32153, TCP: True, Mounted: True, Path: C:\simulator-data
+[PlatformHelper] TCP connection successful to file-simulator.local:32153
+[PlatformHelper] NFS mount path is accessible: C:\simulator-data
+[NfsProtocolTests] Host: file-simulator.local:32153, TCP: True, Mounted: True, Path: C:\simulator-data
+[PlatformHelper] TCP connection successful to file-simulator.local:32153
+[PlatformHelper] NFS mount path is accessible: C:\simulator-data
+[NfsProtocolTests] Host: file-simulator.local:32153, TCP: True, Mounted: True, Path: C:\simulator-data
+[PlatformHelper] TCP connection successful to file-simulator.local:31244
+[PlatformHelper] SMB connection returned false for file-simulator.local:31244
+[SmbProtocolTests] Host: file-simulator.local:31244, Accessible: False
+[SKIP] SMB test skipped: requires 'minikube tunnel' running in Administrator terminal. To run this test: Start 'minikube tunnel -p file-simulator' in an Administrator PowerShell terminal
+[PlatformHelper] TCP connection successful to file-simulator.local:31244
+[PlatformHelper] SMB connection returned false for file-simulator.local:31244
+[SmbProtocolTests] Host: file-simulator.local:31244, Accessible: False
+[SKIP] SMB test skipped: requires 'minikube tunnel' running in Administrator terminal. To run this test: Start 'minikube tunnel -p file-simulator' in an Administrator PowerShell terminal
+[PlatformHelper] TCP connection successful to file-simulator.local:31244
+[PlatformHelper] SMB connection returned false for file-simulator.local:31244
+[SmbProtocolTests] Host: file-simulator.local:31244, Accessible: False
+[SKIP] SMB test skipped: requires 'minikube tunnel' running in Administrator terminal. To run this test: Start 'minikube tunnel -p file-simulator' in an Administrator PowerShell terminal
+[PlatformHelper] TCP connection successful to file-simulator.local:31244
+[PlatformHelper] SMB connection returned false for file-simulator.local:31244
+[SmbProtocolTests] Host: file-simulator.local:31244, Accessible: False
+[SKIP] SMB test skipped: requires 'minikube tunnel' running in Administrator terminal. To run this test: Start 'minikube tunnel -p file-simulator' in an Administrator PowerShell terminal
+[PlatformHelper] TCP connection successful to file-simulator.local:31244
+[PlatformHelper] SMB connection returned false for file-simulator.local:31244
+[SmbProtocolTests] Host: file-simulator.local:31244, Accessible: False
+[SKIP] SMB test skipped: requires 'minikube tunnel' running in Administrator terminal. To run this test: Start 'minikube tunnel -p file-simulator' in an Administrator PowerShell terminal
+[PlatformHelper] TCP connection successful to file-simulator.local:31244
+[PlatformHelper] SMB connection returned false for file-simulator.local:31244
+[SmbProtocolTests] Host: file-simulator.local:31244, Accessible: False
+[SKIP] SMB test skipped: requires 'minikube tunnel' running in Administrator terminal. To run this test: Start 'minikube tunnel -p file-simulator' in an Administrator PowerShell terminal
+[PlatformHelper] TCP connection successful to file-simulator.local:31244
+[PlatformHelper] SMB connection returned false for file-simulator.local:31244
+[SmbProtocolTests] Host: file-simulator.local:31244, Accessible: False
+[SKIP] SMB test skipped: requires 'minikube tunnel' running in Administrator terminal. To run this test: Start 'minikube tunnel -p file-simulator' in an Administrator PowerShell terminal
+[xUnit.net 00:00:34.46]       Expected getResponse.IsSuccessStatusCode to be True because File download should succeed, but found False.
+[xUnit.net 00:00:34.46]       Stack Trace:
+[xUnit.net 00:00:34.46]            at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+[xUnit.net 00:00:34.46]            at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+[xUnit.net 00:00:34.46]            at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)
+[xUnit.net 00:00:34.46]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+[xUnit.net 00:00:34.46]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+[xUnit.net 00:00:34.46]            at FluentAssertions.Execution.AssertionScope.FailWith(String message, Object[] args)
+[xUnit.net 00:00:34.46]            at FluentAssertions.Primitives.BooleanAssertions`1.BeTrue(String because, Object[] becauseArgs)
+[xUnit.net 00:00:34.46]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs(132,0): at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_Download_GET_ReturnsContent()
+[xUnit.net 00:00:34.46]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs(151,0): at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_Download_GET_ReturnsContent()
+[xUnit.net 00:00:34.46]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:34.49]       Expected listingHtml "&lt;html&gt;
+[xUnit.net 00:00:34.49]       &lt;head&gt;&lt;title&gt;Index of /output/&lt;/title&gt;&lt;/head&gt;
+[xUnit.net 00:00:34.49]       &lt;body&gt;
+[xUnit.net 00:00:34.49]       &lt;h1&gt;Index of /output/&lt;/h1&gt;&lt;hr&gt;&lt;pre&gt;&lt;a href="../"&gt;../&lt;/a&gt;
+[xUnit.net 00:00:34.49]       &lt;a href="cross-test-nfs-20260115-131745.txt"&gt;cross-test-nfs-20260115-131745.txt&lt;/a&gt;                 15-Jan-2026 13:17      60
+[xUnit.net 00:00:34.49]       &lt;a href="http-benchmark-test.txt"&gt;http-benchmark-test.txt&lt;/a&gt;                            14-Jan-2026 13:26      49
+[xUnit.net 00:00:34.49]       &lt;a href="test.txt"&gt;test.txt&lt;/a&gt;                                           28-Jan-2026 18:28       4
+[xUnit.net 00:00:34.49]       &lt;a href="test3-http-image.png.0000000008"&gt;test3-http-image.png.0000000008&lt;/a&gt;                    14-Jan-2026 13:00    111K
+[xUnit.net 00:00:34.49]       &lt;a href="transferred-via-HTTP.txt.0000000004"&gt;transferred-via-HTTP.txt.0000000004&lt;/a&gt;                14-Jan-2026 12:49     153
+[xUnit.net 00:00:34.49]       &lt;a href="transferred-via-HTTP.txt.0000000006"&gt;transferred-via-HTTP.txt.0000000006&lt;/a&gt;                14-Jan-2026 12:50      64
+[xUnit.net 00:00:34.49]       &lt;a href="transferred-via-SFTP.txt"&gt;transferred-via-SFTP.txt&lt;/a&gt;                           14-Jan-2026 12:50      64
+[xUnit.net 00:00:34.49]       &lt;a href="transferred-via-SMB.txt"&gt;transferred-via-SMB.txt&lt;/a&gt;                            14-Jan-2026 12:50      64
+[xUnit.net 00:00:34.49]       &lt;a href="webdav-final-test.txt"&gt;webdav-final-test.txt&lt;/a&gt;                              14-Jan-2026 13:25      47
+[xUnit.net 00:00:34.49]       &lt;a href="webdav-test.txt.0000000002"&gt;webdav-test.txt.0000000002&lt;/a&gt;                         14-Jan-2026 13:13      19
+[xUnit.net 00:00:34.49]       &lt;a href="webdav-test.txt.0000000004"&gt;webdav-test.txt.0000000004&lt;/a&gt;                         14-Jan-2026 13:15      36
+[xUnit.net 00:00:34.49]       &lt;a href="webdav-test.txt.0000000006"&gt;webdav-test.txt.0000000006&lt;/a&gt;                         14-Jan-2026 13:16      36
+[xUnit.net 00:00:34.49]       &lt;/pre&gt;&lt;hr&gt;&lt;/body&gt;
+[xUnit.net 00:00:34.49]       &lt;/html&gt;
+[xUnit.net 00:00:34.49]       " to contain "webdav-list-94be9055944b4117ba88d4a1f6cb6412.txt" because Directory listing should contain uploaded file.
+[xUnit.net 00:00:34.49]       Stack Trace:
+[xUnit.net 00:00:34.49]            at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+[xUnit.net 00:00:34.49]            at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+[xUnit.net 00:00:34.49]            at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)
+[xUnit.net 00:00:34.49]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+[xUnit.net 00:00:34.49]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+[xUnit.net 00:00:34.49]            at FluentAssertions.Execution.AssertionScope.FailWith(String message, Object[] args)
+[xUnit.net 00:00:34.49]            at FluentAssertions.Primitives.StringAssertions`1.Contain(String expected, String because, Object[] becauseArgs)
+[xUnit.net 00:00:34.49]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs(179,0): at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_List_ReturnsUploadedFile()
+[xUnit.net 00:00:34.49]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs(193,0): at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_List_ReturnsUploadedFile()
+[xUnit.net 00:00:34.49]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:34.50]       Expected getResponseBefore.IsSuccessStatusCode to be True because File should exist before deletion, but found False.
+[xUnit.net 00:00:34.50]       Stack Trace:
+[xUnit.net 00:00:34.50]            at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+[xUnit.net 00:00:34.50]            at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+[xUnit.net 00:00:34.50]            at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)
+[xUnit.net 00:00:34.50]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+[xUnit.net 00:00:34.50]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+[xUnit.net 00:00:34.50]            at FluentAssertions.Execution.AssertionScope.FailWith(String message, Object[] args)
+[xUnit.net 00:00:34.50]            at FluentAssertions.Primitives.BooleanAssertions`1.BeTrue(String because, Object[] becauseArgs)
+[xUnit.net 00:00:34.50]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs(216,0): at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_Delete_RemovesFile()
+[xUnit.net 00:00:34.50]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs(239,0): at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_Delete_RemovesFile()
+[xUnit.net 00:00:34.50]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:34.50]       Expected response.IsSuccessStatusCode to be True because File upload via PUT should succeed, but found False.
+[xUnit.net 00:00:34.50]       Stack Trace:
+[xUnit.net 00:00:34.50]            at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+[xUnit.net 00:00:34.51]            at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+[xUnit.net 00:00:34.51]            at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)
+[xUnit.net 00:00:34.51]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+[xUnit.net 00:00:34.51]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+[xUnit.net 00:00:34.51]            at FluentAssertions.Execution.AssertionScope.FailWith(String message, Object[] args)
+[xUnit.net 00:00:34.51]            at FluentAssertions.Primitives.BooleanAssertions`1.BeTrue(String because, Object[] becauseArgs)
+[xUnit.net 00:00:34.51]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs(91,0): at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_Upload_PUT_CreatesFile()
+[xUnit.net 00:00:34.51]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs(109,0): at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_Upload_PUT_CreatesFile()
+[xUnit.net 00:00:34.51]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:34.52]       Expected createResponse.IsSuccessStatusCode to be True because File creation should succeed, but found False.
+[xUnit.net 00:00:34.52]       Stack Trace:
+[xUnit.net 00:00:34.52]            at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+[xUnit.net 00:00:34.52]            at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+[xUnit.net 00:00:34.52]            at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)
+[xUnit.net 00:00:34.52]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+[xUnit.net 00:00:34.52]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+[xUnit.net 00:00:34.52]            at FluentAssertions.Execution.AssertionScope.FailWith(String message, Object[] args)
+[xUnit.net 00:00:34.52]            at FluentAssertions.Primitives.BooleanAssertions`1.BeTrue(String because, Object[] becauseArgs)
+[xUnit.net 00:00:34.52]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs(260,0): at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_FullCycle_CRUD()
+[xUnit.net 00:00:34.52]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Protocols\WebDavProtocolTests.cs(301,0): at FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_FullCycle_CRUD()
+[xUnit.net 00:00:34.52]         --- End of stack trace from previous location ---
+INFO: nas-backup is read-only (backup server), skipping write tests
+INFO: Backup server is read-only. Found 2 files.
+=== NAS Server TCP Connectivity Results ===
+Server               Status     Latency      Error
+--------------------------------------------------------------------------------
+nas-backup           CONNECTED  2ms          
+nas-input-1          CONNECTED  1ms          
+nas-input-2          CONNECTED  1ms          
+nas-input-3          CONNECTED  1ms          
+nas-output-1         CONNECTED  1ms          
+nas-output-2         CONNECTED  1ms          
+nas-output-3         CONNECTED  1ms          
+=== Input Server Write Test Results ===
+nas-input-1: WRITABLE 
+nas-input-2: WRITABLE 
+nas-input-3: WRITABLE 
+=== Output Server Write Test Results ===
+nas-output-1: WRITABLE 
+nas-output-2: WRITABLE 
+nas-output-3: WRITABLE 
+=== NAS Server Port Assignments ===
+nas-input-1          Port: 32150
+nas-input-2          Port: 32151
+nas-input-3          Port: 32152
+nas-backup           Port: 32153
+nas-output-1         Port: 32154
+nas-output-2         Port: 32155
+nas-output-3         Port: 32156
+[xUnit.net 00:00:36.28]       System.Net.Http.HttpRequestException : Response status code does not indicate success: 404 (Not Found).
+[xUnit.net 00:00:36.28]       Stack Trace:
+[xUnit.net 00:00:36.28]            at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+[xUnit.net 00:00:36.28]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs(228,0): at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_ProduceMultiple_ConsumeAll()
+[xUnit.net 00:00:36.28]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs(261,0): at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_ProduceMultiple_ConsumeAll()
+[xUnit.net 00:00:36.28]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:41.78]       Expected produceResponse.IsSuccessStatusCode to be True because Message produce should succeed, but found False.
+[xUnit.net 00:00:41.78]       Stack Trace:
+[xUnit.net 00:00:41.78]            at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+[xUnit.net 00:00:41.78]            at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+[xUnit.net 00:00:41.78]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+[xUnit.net 00:00:41.78]            at FluentAssertions.Primitives.BooleanAssertions`1.BeTrue(String because, Object[] becauseArgs)
+[xUnit.net 00:00:41.78]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs(291,0): at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_FullCycle_ApiEndToEnd()
+[xUnit.net 00:00:41.78]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs(344,0): at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_FullCycle_ApiEndToEnd()
+[xUnit.net 00:00:41.78]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:42.84]       System.Net.Http.HttpRequestException : Response status code does not indicate success: 404 (Not Found).
+[xUnit.net 00:00:42.84]       Stack Trace:
+[xUnit.net 00:00:42.84]            at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+[xUnit.net 00:00:42.84]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs(364,0): at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_ConsumerGroup_CreatedPerRequest()
+[xUnit.net 00:00:42.84]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs(390,0): at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_ConsumerGroup_CreatedPerRequest()
+[xUnit.net 00:00:42.84]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:43.92]       System.Net.Http.HttpRequestException : Response status code does not indicate success: 404 (Not Found).
+[xUnit.net 00:00:43.92]       Stack Trace:
+[xUnit.net 00:00:43.92]            at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+[xUnit.net 00:00:43.92]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs(106,0): at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_Consume_ViaApi()
+[xUnit.net 00:00:43.92]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs(134,0): at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_Consume_ViaApi()
+[xUnit.net 00:00:43.92]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:45.00]       Expected response.IsSuccessStatusCode to be True because Message produce should succeed. Status: NotFound, but found False.
+[xUnit.net 00:00:45.00]       Stack Trace:
+[xUnit.net 00:00:45.00]            at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+[xUnit.net 00:00:45.00]            at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+[xUnit.net 00:00:45.00]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+[xUnit.net 00:00:45.00]            at FluentAssertions.Primitives.BooleanAssertions`1.BeTrue(String because, Object[] becauseArgs)
+[xUnit.net 00:00:45.00]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs(79,0): at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_Produce_ViaApi()
+[xUnit.net 00:00:45.00]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\Kafka\KafkaProduceConsumeTests.cs(86,0): at FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_Produce_ViaApi()
+[xUnit.net 00:00:45.00]         --- End of stack trace from previous location ---
+[DynamicServerHelper] Creating FTP server: test-ftp-bf7a7779
+[DynamicServerHelper] FTP server created: test-ftp-bf7a7779 at file-simulator.local:31695
+[DynamicServerHelper] Waiting for server 'test-ftp-bf7a7779' to become ready (timeout: 60s)
+[DynamicServerHelper] Attempt 1: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 2: Status=Running, PodReady=True
+[DynamicServerHelper] Server 'test-ftp-bf7a7779' is ready after 2 attempts
+[DynamicServerHelper] Deleting server: test-ftp-bf7a7779
+[DynamicServerHelper] Delete request accepted for 'test-ftp-bf7a7779'
+[DynamicServerHelper] Server 'test-ftp-bf7a7779' deletion verified
+[DynamicServerHelper] Creating FTP server: test-ftp-40d65f52
+[DynamicServerHelper] FTP server created: test-ftp-40d65f52 at file-simulator.local:30965
+[DynamicServerHelper] Waiting for server 'test-ftp-40d65f52' to become ready (timeout: 60s)
+[DynamicServerHelper] Attempt 1: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 2: Status=Running, PodReady=True
+[DynamicServerHelper] Server 'test-ftp-40d65f52' is ready after 2 attempts
+[DynamicServerHelper] Deleting server: test-ftp-40d65f52
+[DynamicServerHelper] Delete request accepted for 'test-ftp-40d65f52'
+[DynamicServerHelper] Server 'test-ftp-40d65f52' deletion verified
+[xUnit.net 00:01:04.36]       FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.
+[xUnit.net 00:01:04.36]       ---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.
+[xUnit.net 00:01:04.36]       Stack Trace:
+[xUnit.net 00:01:04.36]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[xUnit.net 00:01:04.36]            at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+[xUnit.net 00:01:04.36]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\DynamicServers\DynamicFtpServerTests.cs(145,0): at FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests.FtpServer_FileOperations_WorkCorrectly()
+[xUnit.net 00:01:04.36]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\DynamicServers\DynamicFtpServerTests.cs(152,0): at FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests.FtpServer_FileOperations_WorkCorrectly()
+[xUnit.net 00:01:04.36]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\DynamicServers\DynamicFtpServerTests.cs(192,0): at FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests.FtpServer_FileOperations_WorkCorrectly()
+[xUnit.net 00:01:04.36]         --- End of stack trace from previous location ---
+[xUnit.net 00:01:04.36]         ----- Inner Stack Trace -----
+[xUnit.net 00:01:04.36]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+[xUnit.net 00:01:04.36]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+[xUnit.net 00:01:04.36]            at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+[xUnit.net 00:01:04.36]         --- End of stack trace from previous location ---
+[xUnit.net 00:01:04.36]            at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+[xUnit.net 00:01:04.36]            at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+[xUnit.net 00:01:04.36]            at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+[xUnit.net 00:01:04.37]            at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:01:04.37]            at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:01:04.37]            at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+[xUnit.net 00:01:04.37]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[DynamicServerHelper] Creating FTP server: test-ftp-f2ef3cdb
+[DynamicServerHelper] FTP server created: test-ftp-f2ef3cdb at file-simulator.local:32408
+[DynamicServerHelper] Waiting for server 'test-ftp-f2ef3cdb' to become ready (timeout: 60s)
+[DynamicServerHelper] Attempt 1: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 2: Status=Running, PodReady=True
+[DynamicServerHelper] Server 'test-ftp-f2ef3cdb' is ready after 2 attempts
+[DynamicServerHelper] Deleting server: test-ftp-f2ef3cdb
+[DynamicServerHelper] Delete request accepted for 'test-ftp-f2ef3cdb'
+[DynamicServerHelper] Server 'test-ftp-f2ef3cdb' deletion verified
+[xUnit.net 00:01:10.82]       FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.
+[xUnit.net 00:01:10.82]       ---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.
+[xUnit.net 00:01:10.82]       Stack Trace:
+[xUnit.net 00:01:10.82]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[xUnit.net 00:01:10.82]            at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+[xUnit.net 00:01:10.82]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\DynamicServers\DynamicFtpServerTests.cs(268,0): at FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests.FtpServer_CompleteLifecycle()
+[xUnit.net 00:01:10.82]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\DynamicServers\DynamicFtpServerTests.cs(274,0): at FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests.FtpServer_CompleteLifecycle()
+[xUnit.net 00:01:10.82]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\DynamicServers\DynamicFtpServerTests.cs(305,0): at FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests.FtpServer_CompleteLifecycle()
+[xUnit.net 00:01:10.82]         --- End of stack trace from previous location ---
+[xUnit.net 00:01:10.82]         ----- Inner Stack Trace -----
+[xUnit.net 00:01:10.82]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+[xUnit.net 00:01:10.82]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+[xUnit.net 00:01:10.82]            at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+[xUnit.net 00:01:10.82]         --- End of stack trace from previous location ---
+[xUnit.net 00:01:10.82]            at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+[xUnit.net 00:01:10.82]            at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+[xUnit.net 00:01:10.82]            at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+[xUnit.net 00:01:10.82]            at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:01:10.82]            at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:01:10.82]            at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+[xUnit.net 00:01:10.82]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[DynamicServerHelper] Creating FTP server: test-ftp-cad64bb5
+[DynamicServerHelper] FTP server created: test-ftp-cad64bb5 at file-simulator.local:31381
+[DynamicServerHelper] Deleting server: test-ftp-cad64bb5
+[DynamicServerHelper] Delete request accepted for 'test-ftp-cad64bb5'
+[DynamicServerHelper] Server 'test-ftp-cad64bb5' deletion verified
+[DynamicServerHelper] Creating FTP server: test-ftp-4fb0d456
+[DynamicServerHelper] FTP server created: test-ftp-4fb0d456 at file-simulator.local:31126
+[DynamicServerHelper] Waiting for server 'test-ftp-4fb0d456' to become ready (timeout: 60s)
+[DynamicServerHelper] Attempt 1: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 2: Status=Running, PodReady=True
+[DynamicServerHelper] Server 'test-ftp-4fb0d456' is ready after 2 attempts
+[DynamicServerHelper] Deleting server: test-ftp-4fb0d456
+[DynamicServerHelper] Delete request accepted for 'test-ftp-4fb0d456'
+[DynamicServerHelper] Server 'test-ftp-4fb0d456' deletion verified
+[DynamicServerHelper] Creating FTP server: test-ftp-cd2e95e9
+[DynamicServerHelper] FTP server created: test-ftp-cd2e95e9 at file-simulator.local:30938
+[DynamicServerHelper] Waiting for server 'test-ftp-cd2e95e9' to become ready (timeout: 60s)
+[DynamicServerHelper] Attempt 1: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 2: Status=Running, PodReady=True
+[DynamicServerHelper] Server 'test-ftp-cd2e95e9' is ready after 2 attempts
+[DynamicServerHelper] Deleting server: test-ftp-cd2e95e9
+[DynamicServerHelper] Delete request accepted for 'test-ftp-cd2e95e9'
+[DynamicServerHelper] Server 'test-ftp-cd2e95e9' deletion verified
+[DynamicServerHelper] Creating SFTP server: test-sftp-dc09879e
+[DynamicServerHelper] SFTP server created: test-sftp-dc09879e at file-simulator.local:31301
+[DynamicServerHelper] Waiting for server 'test-sftp-dc09879e' to become ready (timeout: 60s)
+[DynamicServerHelper] Attempt 1: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 2: Status=Running, PodReady=True
+[DynamicServerHelper] Server 'test-sftp-dc09879e' is ready after 2 attempts
+[DynamicServerHelper] Deleting server: test-sftp-dc09879e
+[DynamicServerHelper] Delete request accepted for 'test-sftp-dc09879e'
+[DynamicServerHelper] Server 'test-sftp-dc09879e' deletion verified
+[DynamicServerHelper] Creating SFTP server: test-sftp-0a9cb11e
+[DynamicServerHelper] SFTP server created: test-sftp-0a9cb11e at file-simulator.local:31588
+[DynamicServerHelper] Waiting for server 'test-sftp-0a9cb11e' to become ready (timeout: 60s)
+[DynamicServerHelper] Attempt 1: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 2: Status=Running, PodReady=True
+[DynamicServerHelper] Server 'test-sftp-0a9cb11e' is ready after 2 attempts
+[DynamicServerHelper] Deleting server: test-sftp-0a9cb11e
+[DynamicServerHelper] Delete request accepted for 'test-sftp-0a9cb11e'
+[DynamicServerHelper] Server 'test-sftp-0a9cb11e' deletion verified
+[Test] Complete lifecycle test passed for test-sftp-0a9cb11e
+[DynamicServerHelper] Creating SFTP server: test-sftp-7f81229f
+[DynamicServerHelper] SFTP server created: test-sftp-7f81229f at file-simulator.local:31942
+[DynamicServerHelper] Deleting server: test-sftp-7f81229f
+[DynamicServerHelper] Delete request accepted for 'test-sftp-7f81229f'
+[DynamicServerHelper] Server 'test-sftp-7f81229f' deletion verified
+[DynamicServerHelper] Creating SFTP server: test-sftp-277500d4
+[DynamicServerHelper] SFTP server created: test-sftp-277500d4 at file-simulator.local:32640
+[DynamicServerHelper] Waiting for server 'test-sftp-277500d4' to become ready (timeout: 60s)
+[DynamicServerHelper] Attempt 1: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 2: Status=Running, PodReady=True
+[DynamicServerHelper] Server 'test-sftp-277500d4' is ready after 2 attempts
+[DynamicServerHelper] Deleting server: test-sftp-277500d4
+[DynamicServerHelper] Delete request accepted for 'test-sftp-277500d4'
+[DynamicServerHelper] Server 'test-sftp-277500d4' deletion verified
+[DynamicServerHelper] Creating SFTP server: test-sftp-c892c055
+[DynamicServerHelper] SFTP server created: test-sftp-c892c055 at file-simulator.local:30584
+[DynamicServerHelper] Waiting for server 'test-sftp-c892c055' to become ready (timeout: 60s)
+[DynamicServerHelper] Attempt 1: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 2: Status=Running, PodReady=True
+[DynamicServerHelper] Server 'test-sftp-c892c055' is ready after 2 attempts
+[DynamicServerHelper] Deleting server: test-sftp-c892c055
+[DynamicServerHelper] Delete request accepted for 'test-sftp-c892c055'
+[DynamicServerHelper] Server 'test-sftp-c892c055' deletion verified
+[xUnit.net 00:01:47.27]       System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.
+[xUnit.net 00:01:47.27]       Stack Trace:
+[xUnit.net 00:01:47.27]            at Renci.SshNet.Abstractions.SocketAbstraction.ConnectCore(Socket socket, EndPoint remoteEndpoint, TimeSpan connectTimeout, Boolean ownsSocket)
+[xUnit.net 00:01:47.27]            at Renci.SshNet.Abstractions.SocketAbstraction.Connect(Socket socket, EndPoint remoteEndpoint, TimeSpan connectTimeout)
+[xUnit.net 00:01:47.27]            at Renci.SshNet.Connection.ConnectorBase.SocketConnect(EndPoint endPoint, TimeSpan timeout)
+[xUnit.net 00:01:47.27]            at Renci.SshNet.Connection.DirectConnector.Connect(IConnectionInfo connectionInfo)
+[xUnit.net 00:01:47.27]            at Renci.SshNet.Session.Connect()
+[xUnit.net 00:01:47.27]            at Renci.SshNet.BaseClient.CreateAndConnectSession()
+[xUnit.net 00:01:47.27]            at Renci.SshNet.BaseClient.Connect()
+[xUnit.net 00:01:47.27]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\DynamicServers\DynamicSftpServerTests.cs(102,0): at FileSimulator.IntegrationTests.DynamicServers.DynamicSftpServerTests.&lt;&gt;c__DisplayClass4_0.&lt;SftpServer_AcceptsConnections_WhenReady&gt;b__0()
+[xUnit.net 00:01:47.27]            at System.Threading.Tasks.Task`1.InnerInvoke()
+[xUnit.net 00:01:47.27]            at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+[xUnit.net 00:01:47.27]         --- End of stack trace from previous location ---
+[xUnit.net 00:01:47.27]            at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+[xUnit.net 00:01:47.27]            at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task&amp; currentTaskSlot, Thread threadPoolThread)
+[xUnit.net 00:01:47.27]         --- End of stack trace from previous location ---
+[xUnit.net 00:01:47.27]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\DynamicServers\DynamicSftpServerTests.cs(93,0): at FileSimulator.IntegrationTests.DynamicServers.DynamicSftpServerTests.SftpServer_AcceptsConnections_WhenReady()
+[xUnit.net 00:01:47.27]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\DynamicServers\DynamicSftpServerTests.cs(116,0): at FileSimulator.IntegrationTests.DynamicServers.DynamicSftpServerTests.SftpServer_AcceptsConnections_WhenReady()
+[xUnit.net 00:01:47.27]         --- End of stack trace from previous location ---
+[DynamicServerHelper] Creating SFTP server: test-sftp-1bc5150e
+[DynamicServerHelper] SFTP server created: test-sftp-1bc5150e at file-simulator.local:32714
+[DynamicServerHelper] Waiting for server 'test-sftp-1bc5150e' to become ready (timeout: 60s)
+[DynamicServerHelper] Attempt 1: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 2: Status=Running, PodReady=True
+[DynamicServerHelper] Server 'test-sftp-1bc5150e' is ready after 2 attempts
+[DynamicServerHelper] Deleting server: test-sftp-1bc5150e
+[DynamicServerHelper] Delete request accepted for 'test-sftp-1bc5150e'
+[DynamicServerHelper] Server 'test-sftp-1bc5150e' deletion verified
+[DynamicServerHelper] Creating NAS server: test-nas-2a93c364
+[DynamicServerHelper] NAS server created: test-nas-2a93c364 at file-simulator.local:31285
+[DynamicServerHelper] Waiting for server 'test-nas-2a93c364' to become ready (timeout: 60s)
+[DynamicServerHelper] Attempt 1: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 2: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 3: Status=Running, PodReady=True
+[DynamicServerHelper] Server 'test-nas-2a93c364' is ready after 3 attempts
+[DynamicServerHelper] Deleting server: test-nas-2a93c364
+[DynamicServerHelper] Delete request accepted for 'test-nas-2a93c364'
+[DynamicServerHelper] Server 'test-nas-2a93c364' deletion verified
+[DynamicServerHelper] Creating NAS server: test-nas-2d6df239
+[DynamicServerHelper] NAS server created: test-nas-2d6df239 at file-simulator.local:31869
+[DynamicServerHelper] Waiting for server 'test-nas-2d6df239' to become ready (timeout: 60s)
+[DynamicServerHelper] Attempt 1: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 2: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 3: Status=Running, PodReady=True
+[DynamicServerHelper] Server 'test-nas-2d6df239' is ready after 3 attempts
+[DynamicServerHelper] Deleting server: test-nas-2d6df239
+[DynamicServerHelper] Delete request accepted for 'test-nas-2d6df239'
+[DynamicServerHelper] Server 'test-nas-2d6df239' deletion verified
+[DynamicServerHelper] Creating NAS server: test-nas-560350f2
+[DynamicServerHelper] NAS server created: test-nas-560350f2 at file-simulator.local:31552
+[DynamicServerHelper] Waiting for server 'test-nas-560350f2' to become ready (timeout: 60s)
+[DynamicServerHelper] Attempt 1: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 2: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 3: Status=Running, PodReady=True
+[DynamicServerHelper] Server 'test-nas-560350f2' is ready after 3 attempts
+[Skip] NAS mount path not available at C:\simulator-data\test-nas-560350f2. Skipping file operations test.
+[DynamicServerHelper] Deleting server: test-nas-560350f2
+[DynamicServerHelper] Delete request accepted for 'test-nas-560350f2'
+[DynamicServerHelper] Server 'test-nas-560350f2' deletion verified
+[DynamicServerHelper] Creating NAS server: test-nas-fa9f4959
+[DynamicServerHelper] NAS server created: test-nas-fa9f4959 at file-simulator.local:32450
+[DynamicServerHelper] Waiting for server 'test-nas-fa9f4959' to become ready (timeout: 60s)
+[DynamicServerHelper] Attempt 1: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 2: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 3: Status=Running, PodReady=True
+[DynamicServerHelper] Server 'test-nas-fa9f4959' is ready after 3 attempts
+[DynamicServerHelper] Deleting server: test-nas-fa9f4959
+[DynamicServerHelper] Delete request accepted for 'test-nas-fa9f4959'
+[DynamicServerHelper] Server 'test-nas-fa9f4959' deletion verified
+[DynamicServerHelper] Creating NAS server: test-nas-0da0482e
+[DynamicServerHelper] NAS server created: test-nas-0da0482e at file-simulator.local:32724
+[DynamicServerHelper] Waiting for server 'test-nas-0da0482e' to become ready (timeout: 60s)
+[DynamicServerHelper] Attempt 1: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 2: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 3: Status=Running, PodReady=True
+[DynamicServerHelper] Server 'test-nas-0da0482e' is ready after 3 attempts
+[DynamicServerHelper] Deleting server: test-nas-0da0482e
+[DynamicServerHelper] Delete request accepted for 'test-nas-0da0482e'
+[DynamicServerHelper] Server 'test-nas-0da0482e' deletion verified
+[DynamicServerHelper] Deleting server: test-nas-0da0482e
+[DynamicServerHelper] Delete request failed: BadRequest - {"error":"Server 'test-nas-0da0482e' not found or is managed by Helm (cannot delete static servers via API)"}
+[DynamicServerHelper] Creating NAS server: test-nas-d6696a16
+[DynamicServerHelper] NAS server created: test-nas-d6696a16 at file-simulator.local:31458
+[DynamicServerHelper] Deleting server: test-nas-d6696a16
+[DynamicServerHelper] Delete request accepted for 'test-nas-d6696a16'
+[DynamicServerHelper] Server 'test-nas-d6696a16' deletion verified
+[DynamicServerHelper] Creating NAS server: test-nas-d651a8e2
+[DynamicServerHelper] NAS server created: test-nas-d651a8e2 at file-simulator.local:30419
+[DynamicServerHelper] Waiting for server 'test-nas-d651a8e2' to become ready (timeout: 60s)
+[DynamicServerHelper] Attempt 1: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 2: Status=Pending, PodReady=False
+[DynamicServerHelper] Attempt 3: Status=Running, PodReady=True
+[DynamicServerHelper] Server 'test-nas-d651a8e2' is ready after 3 attempts
+[DynamicServerHelper] Deleting server: test-nas-d651a8e2
+[DynamicServerHelper] Delete request accepted for 'test-nas-d651a8e2'
+[DynamicServerHelper] Server 'test-nas-d651a8e2' deletion verified
+[xUnit.net 00:02:48.67]       System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.
+[xUnit.net 00:02:48.67]       Stack Trace:
+[xUnit.net 00:02:48.67]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+[xUnit.net 00:02:48.67]            at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+[xUnit.net 00:02:48.67]         --- End of stack trace from previous location ---
+[xUnit.net 00:02:48.67]            at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+[xUnit.net 00:02:48.67]            at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+[xUnit.net 00:02:48.67]            at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+[xUnit.net 00:02:48.67]            at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:02:48.67]            at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:02:48.67]            at FluentFTP.AsyncFtpClient.GetListingInternal(String listcmd, FtpListOption options, Boolean retry, CancellationToken token)
+[xUnit.net 00:02:48.67]            at FluentFTP.AsyncFtpClient.GetListing(String path, FtpListOption options, CancellationToken token)
+[xUnit.net 00:02:48.67]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs(298,0): at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.&lt;&gt;c__DisplayClass6_0.&lt;&lt;S3ToFtp_FileVisibility&gt;b__0&gt;d.MoveNext()
+[xUnit.net 00:02:48.67]         --- End of stack trace from previous location ---
+[xUnit.net 00:02:48.67]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs(41,0): at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.&lt;&gt;c__DisplayClass2_0.&lt;&lt;WaitForFileVisibility&gt;b__2&gt;d.MoveNext()
+[xUnit.net 00:02:48.67]         --- End of stack trace from previous location ---
+[xUnit.net 00:02:48.67]            at Polly.Retry.AsyncRetryEngine.ImplementationAsync[TResult](Func`3 action, Context context, ExceptionPredicates shouldRetryExceptionPredicates, ResultPredicates`1 shouldRetryResultPredicates, Func`5 onRetryAsync, CancellationToken cancellationToken, Int32 permittedRetryCount, IEnumerable`1 sleepDurationsEnumerable, Func`4 sleepDurationProvider, Boolean continueOnCapturedContext)
+[xUnit.net 00:02:48.67]            at Polly.AsyncPolicy`1.ExecuteInternalAsync(Func`3 action, Context context, Boolean continueOnCapturedContext, CancellationToken cancellationToken)
+[xUnit.net 00:02:48.67]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs(39,0): at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.WaitForFileVisibility(Func`1 listFunc, String fileName, TimeSpan timeout)
+[xUnit.net 00:02:48.67]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs(296,0): at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.S3ToFtp_FileVisibility()
+[xUnit.net 00:02:48.67]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs(317,0): at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.S3ToFtp_FileVisibility()
+[xUnit.net 00:02:48.67]         --- End of stack trace from previous location ---
+[xUnit.net 00:02:53.52]       System.Net.Http.HttpRequestException : No connection could be made because the target machine actively refused it. (file-simulator.local:80)
+[xUnit.net 00:02:53.52]       ---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.
+[xUnit.net 00:02:53.52]       Stack Trace:
+[xUnit.net 00:02:53.52]            at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)
+[xUnit.net 00:02:53.52]            at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+[xUnit.net 00:02:53.52]            at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+[xUnit.net 00:02:53.52]            at System.Net.Http.HttpConnectionPool.InjectNewHttp11ConnectionAsync(QueueItem queueItem)
+[xUnit.net 00:02:53.52]            at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+[xUnit.net 00:02:53.52]            at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+[xUnit.net 00:02:53.52]            at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+[xUnit.net 00:02:53.52]            at System.Net.Http.HttpClient.&lt;SendAsync&gt;g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+[xUnit.net 00:02:53.52]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs(152,0): at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.&lt;&gt;c__DisplayClass4_1.&lt;&lt;SftpToHttp_FileVisibility&gt;b__2&gt;d.MoveNext()
+[xUnit.net 00:02:53.52]         --- End of stack trace from previous location ---
+[xUnit.net 00:02:53.52]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs(41,0): at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.&lt;&gt;c__DisplayClass2_0.&lt;&lt;WaitForFileVisibility&gt;b__2&gt;d.MoveNext()
+[xUnit.net 00:02:53.52]         --- End of stack trace from previous location ---
+[xUnit.net 00:02:53.52]            at Polly.Retry.AsyncRetryEngine.ImplementationAsync[TResult](Func`3 action, Context context, ExceptionPredicates shouldRetryExceptionPredicates, ResultPredicates`1 shouldRetryResultPredicates, Func`5 onRetryAsync, CancellationToken cancellationToken, Int32 permittedRetryCount, IEnumerable`1 sleepDurationsEnumerable, Func`4 sleepDurationProvider, Boolean continueOnCapturedContext)
+[xUnit.net 00:02:53.52]            at Polly.AsyncPolicy`1.ExecuteInternalAsync(Func`3 action, Context context, Boolean continueOnCapturedContext, CancellationToken cancellationToken)
+[xUnit.net 00:02:53.52]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs(39,0): at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.WaitForFileVisibility(Func`1 listFunc, String fileName, TimeSpan timeout)
+[xUnit.net 00:02:53.52]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs(150,0): at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.SftpToHttp_FileVisibility()
+[xUnit.net 00:02:53.52]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs(183,0): at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.SftpToHttp_FileVisibility()
+[xUnit.net 00:02:53.52]         --- End of stack trace from previous location ---
+[xUnit.net 00:02:53.52]         ----- Inner Stack Trace -----
+[xUnit.net 00:02:53.52]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+[xUnit.net 00:02:53.52]            at System.Net.Sockets.Socket.&lt;ConnectAsync&gt;g__WaitForConnectWithCancellation|285_0(AwaitableSocketAsyncEventArgs saea, ValueTask connectTask, CancellationToken cancellationToken)
+[xUnit.net 00:02:53.52]            at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)
+[xUnit.net 00:02:55.59]       FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.
+[xUnit.net 00:02:55.59]       ---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.
+[xUnit.net 00:02:55.59]       Stack Trace:
+[xUnit.net 00:02:55.59]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[xUnit.net 00:02:55.59]            at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+[xUnit.net 00:02:55.59]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs(213,0): at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.FtpToWebDav_FileVisibility()
+[xUnit.net 00:02:55.59]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs(248,0): at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.FtpToWebDav_FileVisibility()
+[xUnit.net 00:02:55.59]         --- End of stack trace from previous location ---
+[xUnit.net 00:02:55.59]         ----- Inner Stack Trace -----
+[xUnit.net 00:02:55.59]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+[xUnit.net 00:02:55.59]            at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+[xUnit.net 00:02:55.59]         --- End of stack trace from previous location ---
+[xUnit.net 00:02:55.59]            at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+[xUnit.net 00:02:55.59]            at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+[xUnit.net 00:02:55.59]            at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+[xUnit.net 00:02:55.59]            at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:02:55.59]            at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:02:55.59]            at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+[xUnit.net 00:02:55.59]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[xUnit.net 00:02:57.66]       FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.
+[xUnit.net 00:02:57.66]       ---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.
+[xUnit.net 00:02:57.66]       Stack Trace:
+[xUnit.net 00:02:57.66]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[xUnit.net 00:02:57.66]            at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+[xUnit.net 00:02:57.66]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs(73,0): at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.FtpToSftp_FileVisibility()
+[xUnit.net 00:02:57.66]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs(111,0): at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.FtpToSftp_FileVisibility()
+[xUnit.net 00:02:57.66]         --- End of stack trace from previous location ---
+[xUnit.net 00:02:57.66]         ----- Inner Stack Trace -----
+[xUnit.net 00:02:57.66]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+[xUnit.net 00:02:57.66]            at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+[xUnit.net 00:02:57.66]         --- End of stack trace from previous location ---
+[xUnit.net 00:02:57.66]            at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+[xUnit.net 00:02:57.66]            at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+[xUnit.net 00:02:57.66]            at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+[xUnit.net 00:02:57.66]            at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:02:57.66]            at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:02:57.66]            at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+[xUnit.net 00:02:57.66]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[xUnit.net 00:02:59.73]       FluentFTP.Exceptions.FtpException : Error while uploading the file to the server. See InnerException for more info.
+[xUnit.net 00:02:59.73]       ---- System.Net.Sockets.SocketException : No connection could be made because the target machine actively refused it.
+[xUnit.net 00:02:59.73]       Stack Trace:
+[xUnit.net 00:02:59.73]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+[xUnit.net 00:02:59.73]            at FluentFTP.AsyncFtpClient.UploadStream(Stream fileStream, String remotePath, FtpRemoteExists existsMode, Boolean createRemoteDir, IProgress`1 progress, CancellationToken token)
+[xUnit.net 00:02:59.73]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs(350,0): at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.AllProtocols_SharedStorageConsistency()
+[xUnit.net 00:02:59.73]         C:\Users\UserC\source\repos\file-simulator-suite\tests\FileSimulator.IntegrationTests\CrossProtocol\CrossProtocolFileVisibilityTests.cs(454,0): at FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.AllProtocols_SharedStorageConsistency()
+[xUnit.net 00:02:59.73]         --- End of stack trace from previous location ---
+[xUnit.net 00:02:59.73]         ----- Inner Stack Trace -----
+[xUnit.net 00:02:59.73]            at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+[xUnit.net 00:02:59.73]            at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.&lt;&gt;c.&lt;.cctor&gt;b__4_0(Object state)
+[xUnit.net 00:02:59.73]         --- End of stack trace from previous location ---
+[xUnit.net 00:02:59.73]            at FluentFTP.FtpSocketStream.EnableCancellation(Task task, CancellationToken token, Action action)
+[xUnit.net 00:02:59.73]            at FluentFTP.FtpSocketStream.ConnectHelperAsync(IPAddress ipad, Int32 port, CancellationToken token)
+[xUnit.net 00:02:59.73]            at FluentFTP.FtpSocketStream.ConnectAsync(String host, Int32 port, FtpIpVersion ipVersions, CancellationToken token)
+[xUnit.net 00:02:59.73]            at FluentFTP.AsyncFtpClient.OpenPassiveDataStreamAsync(FtpDataConnectionType type, String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:02:59.73]            at FluentFTP.AsyncFtpClient.OpenDataStreamAsync(String command, Int64 restart, CancellationToken token)
+[xUnit.net 00:02:59.73]            at FluentFTP.AsyncFtpClient.OpenWriteInternal(String path, FtpDataType type, Int64 fileLen, Boolean ignoreStaleData, CancellationToken token)
+[xUnit.net 00:02:59.73]            at FluentFTP.AsyncFtpClient.UploadFileInternalAsync(Stream fileData, String localPath, String remotePath, Boolean createRemoteDir, FtpRemoteExists existsMode, Boolean fileExists, Boolean fileExistsKnown, IProgress`1 progress, CancellationToken token, FtpProgress metaProgress)
+FTP: file-simulator.local:30021 (user: ftpuser)
+Found 7 NAS servers:
+  - nas-input-1: FOUND
+  - nas-input-2: FOUND
+  - nas-input-3: FOUND
+  - nas-output-1: FOUND
+  - nas-output-2: FOUND
+  - nas-output-3: FOUND
+  - nas-backup: FOUND
+SFTP: file-simulator.local:30022 (user: sftpuser)
+Kafka info endpoint returned NotFound - Kafka may not be deployed
+Protocols found: FTP, HTTP, MANAGEMENT, NFS, S3, SFTP, SMB, WEBDAV
+Hostname: file-simulator.local
+Generated at: 2026-02-05T16:45:35.8143505Z
+Total servers: 14
+Endpoints: Dashboard=http://file-simulator.local:30080, ControlApi=http://file-simulator.local:30500
+YAML format contains 42 lines
+SMB: \\file-simulator.local\shared (user: smbuser)
+S3: http://file-simulator.local:30900 (accessKey: minioadmin)
+S3 server responded with status: Forbidden
+Env format sample (first 200 chars): # File Simulator Connection Settings
+# Generated: 2026-02-05T16:48:35.2183202Z
+FILE_SIMULATOR_HOST=file-simulator.local
+# Endpoints
+FILE_SIMULATOR_DASHBOARD_URL=http://file-simulator.local:30080
+FIL
+YAML format sample (first 200 chars): # File Simulator Connection Settings
+# Generated: 2026-02-05T16:48:35.2321473Z
+fileSimulator:
+  host: file-simulator.local
+  endpoints:
+    dashboard: http://file-simulator.local:30080
+    api: http
+Dotnet format sample (first 200 chars): // File Simulator Connection Settings for .NET
+// Generated: 2026-02-05T16:48:35.2459558Z
+// appsettings.json configuration:
+{
+  "FileSimulator": {
+    "Host": "file-simulator.local",
+    "Ftp": {
+Dotnet format sample (first 300 chars): // File Simulator Connection Settings for .NET
+// Generated: 2026-02-05T16:48:35.2625554Z
+// appsettings.json configuration:
+{
+  "FileSimulator": {
+    "Host": "file-simulator.local",
+    "Ftp": {
+      "Host": "file-simulator.local",
+      "Port": 30021,
+      "Username": "ftpuser",
+      "Passwor
+Env format contains 46 lines
+WebDAV: http://file-simulator.local:30088
+WebDAV server responded with status: OK
+[Fixture] SimulatorCollectionFixture disposed
+[xUnit.net 00:02:59.97]   Finished:    FileSimulator.IntegrationTests
+</system-out>
+    <system-err>Error - [xUnit.net 00:00:03.98]     FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_Download_ReturnsCorrectContent [FAIL]
+Error - [xUnit.net 00:00:06.10]     FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_Delete_RemovesFile [FAIL]
+Error - [xUnit.net 00:00:08.19]     FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_FullCycle_CRUD [FAIL]
+Error - [xUnit.net 00:00:10.26]     FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_Upload_CreatesFile [FAIL]
+Error - [xUnit.net 00:00:12.34]     FileSimulator.IntegrationTests.Protocols.FtpProtocolTests.FTP_List_ReturnsUploadedFile [FAIL]
+Error - [xUnit.net 00:00:34.46]     FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_Download_GET_ReturnsContent [FAIL]
+Error - [xUnit.net 00:00:34.49]     FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_List_ReturnsUploadedFile [FAIL]
+Error - [xUnit.net 00:00:34.50]     FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_Delete_RemovesFile [FAIL]
+Error - [xUnit.net 00:00:34.50]     FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_Upload_PUT_CreatesFile [FAIL]
+Error - [xUnit.net 00:00:34.52]     FileSimulator.IntegrationTests.Protocols.WebDavProtocolTests.WebDAV_FullCycle_CRUD [FAIL]
+Error - [xUnit.net 00:00:36.28]     FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_ProduceMultiple_ConsumeAll [FAIL]
+Error - [xUnit.net 00:00:41.78]     FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_FullCycle_ApiEndToEnd [FAIL]
+Error - [xUnit.net 00:00:42.84]     FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_ConsumerGroup_CreatedPerRequest [FAIL]
+Error - [xUnit.net 00:00:43.92]     FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_Consume_ViaApi [FAIL]
+Error - [xUnit.net 00:00:45.00]     FileSimulator.IntegrationTests.Kafka.KafkaProduceConsumeTests.Kafka_Produce_ViaApi [FAIL]
+Error - [xUnit.net 00:01:04.36]     FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests.FtpServer_FileOperations_WorkCorrectly [FAIL]
+Error - [xUnit.net 00:01:10.82]     FileSimulator.IntegrationTests.DynamicServers.DynamicFtpServerTests.FtpServer_CompleteLifecycle [FAIL]
+Error - [xUnit.net 00:01:47.27]     FileSimulator.IntegrationTests.DynamicServers.DynamicSftpServerTests.SftpServer_AcceptsConnections_WhenReady [FAIL]
+Error - [xUnit.net 00:02:48.67]     FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.S3ToFtp_FileVisibility [FAIL]
+Error - [xUnit.net 00:02:53.52]     FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.SftpToHttp_FileVisibility [FAIL]
+Error - [xUnit.net 00:02:55.59]     FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.FtpToWebDav_FileVisibility [FAIL]
+Error - [xUnit.net 00:02:57.66]     FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.FtpToSftp_FileVisibility [FAIL]
+Error - [xUnit.net 00:02:59.73]     FileSimulator.IntegrationTests.CrossProtocol.CrossProtocolFileVisibilityTests.AllProtocols_SharedStorageConsistency [FAIL]
+</system-err>
+  </testsuite>
+</testsuites>

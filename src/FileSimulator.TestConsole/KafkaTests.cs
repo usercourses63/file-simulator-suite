@@ -19,7 +19,7 @@ public static class KafkaTests
         var results = new List<KafkaTestResult>();
 
         // Get Kafka configuration
-        var bootstrapServers = config["Kafka:BootstrapServers"] ?? "file-simulator.local:30093";
+        var bootstrapServers = config["Kafka:BootstrapServers"] ?? "file-simulator.local:30094";
 
         AnsiConsole.MarkupLine($"[grey]Bootstrap Servers: {bootstrapServers}[/]");
         AnsiConsole.MarkupLine($"[grey]Control API: {apiBaseUrl}[/]");
