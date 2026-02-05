@@ -146,7 +146,7 @@ function Write-TestResult {
 function Write-Section {
     param([string]$Title)
 
-    Write-Host "`n" -NoNewline
+    Write-Host ""
     Write-Host "═══ $Title ═══" -ForegroundColor Cyan
 }
 
@@ -181,7 +181,7 @@ function Test-TcpPort {
 
 #region Main Script
 
-Write-Host "`n" -NoNewline
+Write-Host ""
 Write-Host "=" * 80 -ForegroundColor Magenta
 Write-Host "  FILE SIMULATOR SUITE - PRODUCTION VERIFICATION" -ForegroundColor Magenta
 Write-Host "=" * 80 -ForegroundColor Magenta
@@ -548,7 +548,7 @@ Write-Section "Historical Metrics"
 # Test 32: Metrics query
 $endTime = [DateTimeOffset]::UtcNow
 $startTime = $endTime.AddHours(-1)
-$metricsUrl = "$BaseUrl/api/metrics?start=$($startTime.ToString('o'))&end=$($endTime.ToString('o'))"
+$metricsUrl = "$BaseUrl/api/metrics/samples?startTime=$($startTime.ToString('o'))`&endTime=$($endTime.ToString('o'))"
 
 $metricsResponse = Test-Endpoint -Name "Metrics query" -Url $metricsUrl
 $script:hasMetrics = $null -ne $metricsResponse
@@ -597,7 +597,7 @@ else {
     0
 }
 
-Write-Host "`n" -NoNewline
+Write-Host ""
 Write-Host "Results:" -ForegroundColor Cyan
 Write-Host "  Total Tests:  $script:totalTests" -ForegroundColor White
 
@@ -629,7 +629,7 @@ if ($script:failedTests -gt 0) {
     }
 }
 
-Write-Host "`n" -NoNewline
+Write-Host ""
 if ($script:failedTests -eq 0) {
     Write-Host "=" * 80 -ForegroundColor Green
     Write-Host "  ALL TESTS PASSED - PRODUCTION READY" -ForegroundColor Green
@@ -641,7 +641,7 @@ else {
     Write-Host "=" * 80 -ForegroundColor Red
 }
 
-Write-Host "`n" -NoNewline
+Write-Host ""
 
 # Exit with appropriate code
 exit $(if ($script:failedTests -eq 0) { 0 } else { 1 })

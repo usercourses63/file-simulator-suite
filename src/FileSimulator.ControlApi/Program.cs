@@ -70,7 +70,7 @@ try
         options.AddDefaultPolicy(policy =>
         {
             policy.SetIsOriginAllowed(origin =>
-                    new Uri(origin).Host is "localhost" or "127.0.0.1")
+                    new Uri(origin).Host is "localhost" or "127.0.0.1" or "file-simulator.local")
                   .AllowAnyMethod()
                   .AllowAnyHeader()
                   .AllowCredentials();
