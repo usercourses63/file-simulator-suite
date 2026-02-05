@@ -93,6 +93,29 @@ Requirements for real-time monitoring and control platform enabling observable, 
 - [ ] **ALERT-05**: Real-time notification display in dashboard (toast notifications)
 - [ ] **ALERT-06**: Alert history log (what triggered, when resolved)
 
+### Integration Testing
+
+- [ ] **INT-01**: API-driven test framework that validates all simulator functionality
+- [ ] **INT-02**: Static protocol tests covering all file operations (upload, download, list, delete) for FTP, SFTP, HTTP, WebDAV, S3, SMB, NFS
+- [ ] **INT-03**: Dynamic server lifecycle tests: create server → test connectivity → perform file operations → delete server
+- [ ] **INT-04**: API credential validation: /api/connection-info returns correct credentials extracted from Kubernetes
+- [ ] **INT-05**: Cross-protocol file visibility tests (file uploaded via one protocol visible via others)
+- [ ] **INT-06**: Kafka integration tests: topic management and produce/consume operations
+- [ ] **INT-07**: Multi-NAS server tests: all 7 NAS servers (input-1/2/3, output-1/2/3, backup) tested independently
+- [ ] **INT-08**: JUnit XML export for CI/CD integration with 100% pass rate requirement
+
+### Testing Console
+
+- [ ] **TEST-01**: TestConsole fetches configuration from /api/connection-info API
+- [ ] **TEST-02**: TestConsole tests all static protocol servers with proper credentials
+- [ ] **TEST-03**: TestConsole tests dynamic server lifecycle (create → test → delete)
+- [ ] **TEST-04**: TestConsole produces JUnit-compatible test reports
+
+### Documentation & Release
+
+- [ ] **DOC-01**: Comprehensive v2.0 documentation in README.md
+- [ ] **REL-01**: GitHub tagged release with full changelog
+
 ## Future Requirements (v2.1+)
 
 Deferred to future releases. Tracked but not in current roadmap.
