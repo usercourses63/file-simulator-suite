@@ -6,22 +6,45 @@
     Gets the current Minikube IP and updates the Windows hosts file with
     stable hostnames for file-simulator services. Requires Administrator privileges.
 
+    Optionally discovers dynamic NAS servers via the control API and adds their
+    hostnames to the hosts file for consistent access.
+
 .PARAMETER Profile
     Minikube profile name. Default: file-simulator
 
 .PARAMETER Hostname
     Base hostname to use. Default: file-simulator.local
 
+.PARAMETER IncludeDynamic
+    Query the control API to discover dynamic NAS servers and add their hostnames.
+    Requires the control API to be running on port 30500.
+
 .EXAMPLE
     .\Setup-Hosts.ps1
 
+    Updates hosts file with static infrastructure hostnames only.
+
 .EXAMPLE
     .\Setup-Hosts.ps1 -Profile "my-cluster" -Hostname "simulator.local"
+
+    Uses a custom Minikube profile and hostname.
+
+.EXAMPLE
+    .\Setup-Hosts.ps1 -IncludeDynamic
+
+    Updates hosts file with static hostnames AND dynamically discovered NAS servers.
+
+.NOTES
+    Dynamic server discovery requires:
+    - Control API running on http://$Hostname:30500
+    - Network connectivity to the API endpoint
+    - At least one dynamic NAS server created via the control API
 #>
 
 param(
     [string]$Profile = "file-simulator",
-    [string]$Hostname = "file-simulator.local"
+    [string]$Hostname = "file-simulator.local",
+    [switch]$IncludeDynamic
 )
 
 $ErrorActionPreference = "Stop"
