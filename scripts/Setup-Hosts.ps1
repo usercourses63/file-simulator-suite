@@ -85,6 +85,48 @@ $hostnames = @(
     "kafka.$Hostname"
 )
 
+$staticCount = $hostnames.Count
+
+# Discover dynamic NAS servers if requested
+if ($IncludeDynamic) {
+    Write-Host "`nDiscovering dynamic NAS servers..." -ForegroundColor Cyan
+
+    try {
+        $apiUrl = "http://${Hostname}:30500/api/connection-info"
+        Write-Host "Querying: $apiUrl" -ForegroundColor Gray
+
+        $connectionInfo = Invoke-RestMethod -Uri $apiUrl -Method Get -TimeoutSec 5 -ErrorAction Stop
+
+        if ($connectionInfo.servers -and $connectionInfo.servers.Count -gt 0) {
+            # Filter for dynamic NAS servers only
+            $dynamicNasServers = $connectionInfo.servers | Where-Object {
+                $_.protocol -eq 'NFS' -and $_.isDynamic -eq $true
+            }
+
+            if ($dynamicNasServers.Count -gt 0) {
+                foreach ($nas in $dynamicNasServers) {
+                    $nasHostname = "nas-$($nas.name).$Hostname"
+                    $hostnames += $nasHostname
+                    Write-Host "  Added dynamic NAS: $nasHostname" -ForegroundColor Green
+                }
+                Write-Host "Discovered $($dynamicNasServers.Count) dynamic NAS server(s)" -ForegroundColor Green
+            } else {
+                Write-Host "No dynamic NAS servers found (only static servers exist)" -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "No servers returned from connection-info API" -ForegroundColor Yellow
+        }
+    }
+    catch {
+        Write-Host "Warning: Could not query connection-info API" -ForegroundColor Yellow
+        Write-Host "  Error: $($_.Exception.Message)" -ForegroundColor Gray
+        Write-Host "  Make sure the control API is running and accessible" -ForegroundColor Gray
+        Write-Host "  Continuing with static hostnames only..." -ForegroundColor Yellow
+    }
+}
+
+$dynamicCount = $hostnames.Count - $staticCount
+
 # Marker for our entries
 $markerStart = "# BEGIN file-simulator"
 $markerEnd = "# END file-simulator"
@@ -112,6 +154,7 @@ $hostsContent = $hostsContent.TrimEnd() + "`r`n`r`n" + ($newEntries -join "`r`n"
 Set-Content -Path $hostsPath -Value $hostsContent -Force -NoNewline
 
 Write-Host "`nHosts file updated successfully!" -ForegroundColor Green
+Write-Host "  Total hostnames: $($hostnames.Count) ($staticCount static, $dynamicCount dynamic)" -ForegroundColor Cyan
 Write-Host "`nAdded entries:" -ForegroundColor Cyan
 foreach ($host in $hostnames) {
     Write-Host "  $minikubeIp  $host" -ForegroundColor White
