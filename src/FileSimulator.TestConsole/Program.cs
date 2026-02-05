@@ -836,7 +836,7 @@ public class Program
             AnsiConsole.MarkupLine("[yellow]Failed protocols:[/]");
             foreach (var r in results.Where(r => !string.IsNullOrEmpty(r.Error) || r.Connected == false))
             {
-                AnsiConsole.MarkupLine($"  [red]- {r.Protocol}[/]: {r.Error ?? "Connection failed"}");
+                AnsiConsole.MarkupLine($"  [red]- {r.Protocol}[/]: {Markup.Escape(r.Error ?? "Connection failed")}");
             }
         }
 

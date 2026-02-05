@@ -51,6 +51,9 @@ public class ConnectionInfoController : ControllerBase
 
         var servers = await _discoveryService.DiscoverServersAsync(ct);
 
+        // Build default credentials from discovered servers (dynamic extraction from K8s)
+        var defaultCreds = BuildDefaultCredentials(servers);
+
         var connectionInfo = new ConnectionInfoResponse
         {
             Hostname = host,
@@ -67,17 +70,15 @@ public class ConnectionInfoController : ControllerBase
                 IsDynamic = s.IsDynamic,
                 Status = s.PodReady ? "healthy" : "down",
                 Directory = s.Directory,
-                ConnectionString = BuildConnectionString(s, host)
+                ConnectionString = BuildConnectionString(s, host),
+                Credentials = s.Credentials != null ? new CredentialInfo
+                {
+                    Username = s.Credentials.Username ?? "",
+                    Password = s.Credentials.Password ?? "",
+                    Note = s.Credentials.Note
+                } : null
             }).ToList(),
-            DefaultCredentials = new DefaultCredentials
-            {
-                Ftp = new CredentialInfo { Username = "simuser", Password = "simpass123", Note = "Default FTP credentials" },
-                Sftp = new CredentialInfo { Username = "simuser", Password = "simpass123", Note = "Default SFTP credentials" },
-                S3 = new CredentialInfo { Username = "minioadmin", Password = "minioadmin123", Note = "MinIO root credentials" },
-                Http = new CredentialInfo { Username = "admin", Password = "admin", Note = "WebDAV credentials" },
-                Smb = new CredentialInfo { Username = "simuser", Password = "simpass", Note = "SMB share credentials" },
-                Management = new CredentialInfo { Username = "admin", Password = "admin123", Note = "FileBrowser UI credentials" }
-            },
+            DefaultCredentials = defaultCreds,
             Endpoints = new EndpointSummary
             {
                 Dashboard = $"http://{host}:30080",
@@ -145,16 +146,92 @@ public class ConnectionInfoController : ControllerBase
     private static string BuildConnectionString(Models.DiscoveredServer server, string host)
     {
         var port = server.NodePort ?? server.Port;
+        var creds = server.Credentials;
+        var user = creds?.Username ?? "";
+        var pass = creds?.Password ?? "";
+
         return server.Protocol.ToUpper() switch
         {
-            "FTP" => $"ftp://simuser:simpass123@{host}:{port}",
-            "SFTP" => $"sftp://simuser:simpass123@{host}:{port}",
+            "FTP" => !string.IsNullOrEmpty(user) ? $"ftp://{user}:{pass}@{host}:{port}" : $"ftp://{host}:{port}",
+            "SFTP" => !string.IsNullOrEmpty(user) ? $"sftp://{user}:{pass}@{host}:{port}" : $"sftp://{host}:{port}",
             "HTTP" => $"http://{host}:{port}",
-            "S3" => $"http://minioadmin:minioadmin123@{host}:{port}",
+            "S3" => !string.IsNullOrEmpty(user) ? $"http://{user}:{pass}@{host}:{port}" : $"http://{host}:{port}",
             "SMB" => $@"\\{host}\shared",
             "NFS" => $"{host}:{port}:/data",
             "MANAGEMENT" => $"http://{host}:{port}",
             _ => $"{host}:{port}"
+        };
+    }
+
+    /// <summary>
+    /// Build default credentials from discovered servers.
+    /// Extracts credentials dynamically from Kubernetes deployments.
+    /// </summary>
+    private static DefaultCredentials BuildDefaultCredentials(IReadOnlyList<Models.DiscoveredServer> servers)
+    {
+        var ftpServer = servers.FirstOrDefault(s => s.Protocol.Equals("FTP", StringComparison.OrdinalIgnoreCase));
+        var sftpServer = servers.FirstOrDefault(s => s.Protocol.Equals("SFTP", StringComparison.OrdinalIgnoreCase));
+        var s3Server = servers.FirstOrDefault(s => s.Protocol.Equals("S3", StringComparison.OrdinalIgnoreCase));
+        // WebDAV has the credentials for HTTP write operations
+        var webdavServer = servers.FirstOrDefault(s => s.Protocol.Equals("WebDAV", StringComparison.OrdinalIgnoreCase));
+        var smbServer = servers.FirstOrDefault(s => s.Protocol.Equals("SMB", StringComparison.OrdinalIgnoreCase));
+        var mgmtServer = servers.FirstOrDefault(s => s.Protocol.Equals("Management", StringComparison.OrdinalIgnoreCase));
+
+        return new DefaultCredentials
+        {
+            Ftp = ftpServer?.Credentials != null
+                ? new CredentialInfo
+                {
+                    Username = ftpServer.Credentials.Username ?? "",
+                    Password = ftpServer.Credentials.Password ?? "",
+                    Note = ftpServer.Credentials.Note ?? "FTP credentials from Kubernetes"
+                }
+                : new CredentialInfo { Username = "", Password = "", Note = "FTP server not found" },
+
+            Sftp = sftpServer?.Credentials != null
+                ? new CredentialInfo
+                {
+                    Username = sftpServer.Credentials.Username ?? "",
+                    Password = sftpServer.Credentials.Password ?? "",
+                    Note = sftpServer.Credentials.Note ?? "SFTP credentials from Kubernetes"
+                }
+                : new CredentialInfo { Username = "", Password = "", Note = "SFTP server not found" },
+
+            S3 = s3Server?.Credentials != null
+                ? new CredentialInfo
+                {
+                    Username = s3Server.Credentials.Username ?? "",
+                    Password = s3Server.Credentials.Password ?? "",
+                    Note = s3Server.Credentials.Note ?? "S3/MinIO credentials from Kubernetes"
+                }
+                : new CredentialInfo { Username = "", Password = "", Note = "S3 server not found" },
+
+            Http = webdavServer?.Credentials != null
+                ? new CredentialInfo
+                {
+                    Username = webdavServer.Credentials.Username ?? "",
+                    Password = webdavServer.Credentials.Password ?? "",
+                    Note = webdavServer.Credentials.Note ?? "WebDAV credentials from Kubernetes"
+                }
+                : new CredentialInfo { Username = "", Password = "", Note = "WebDAV server not found" },
+
+            Smb = smbServer?.Credentials != null
+                ? new CredentialInfo
+                {
+                    Username = smbServer.Credentials.Username ?? "",
+                    Password = smbServer.Credentials.Password ?? "",
+                    Note = smbServer.Credentials.Note ?? "SMB credentials from Kubernetes"
+                }
+                : new CredentialInfo { Username = "", Password = "", Note = "SMB server not found" },
+
+            Management = mgmtServer?.Credentials != null
+                ? new CredentialInfo
+                {
+                    Username = mgmtServer.Credentials.Username ?? "",
+                    Password = mgmtServer.Credentials.Password ?? "",
+                    Note = mgmtServer.Credentials.Note ?? "Management UI credentials"
+                }
+                : new CredentialInfo { Username = "admin", Password = "admin123", Note = "Management UI default credentials" }
         };
     }
 
@@ -356,6 +433,10 @@ public record ServerConnectionInfo
     public required string Status { get; init; }
     public string? Directory { get; init; }
     public string? ConnectionString { get; init; }
+    /// <summary>
+    /// Server-specific credentials extracted from Kubernetes deployment.
+    /// </summary>
+    public CredentialInfo? Credentials { get; init; }
 }
 
 public record DefaultCredentials

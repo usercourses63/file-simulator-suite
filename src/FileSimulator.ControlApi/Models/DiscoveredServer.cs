@@ -30,4 +30,19 @@ public record DiscoveredServer
     /// Directory/mount path this server serves (e.g., "/input", "/backup", "/data").
     /// </summary>
     public string? Directory { get; init; }
+
+    /// <summary>
+    /// Credentials extracted from deployment environment variables or container args.
+    /// </summary>
+    public ServerCredentials? Credentials { get; init; }
+}
+
+/// <summary>
+/// Credentials for a protocol server, extracted from Kubernetes deployment configuration.
+/// </summary>
+public record ServerCredentials
+{
+    public string? Username { get; init; }
+    public string? Password { get; init; }
+    public string? Note { get; init; }
 }

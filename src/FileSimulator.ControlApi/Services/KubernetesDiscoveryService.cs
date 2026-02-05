@@ -24,14 +24,15 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
     private const string ManagedByLabel = "app.kubernetes.io/managed-by";
 
     // Protocol detection from deployment names
-    // Order matters: check more specific patterns first (sftp before ftp)
+    // Order matters: check more specific patterns first (sftp before ftp, webdav before http)
     private static readonly (string Key, string Protocol)[] ProtocolMappings =
     [
         ("management", "Management"),  // FileBrowser UI - check before http
         ("sftp", "SFTP"),              // Check before ftp (sftp contains ftp)
         ("ftp", "FTP"),
         ("nas", "NFS"),
-        ("http", "HTTP"),
+        ("webdav", "WebDAV"),          // Check before http (for write operations)
+        ("http", "HTTP"),              // Read-only HTTP server
         ("s3", "S3"),
         ("smb", "SMB")
     ];
@@ -76,8 +77,14 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
                 labelSelector: $"{AppLabel}={AppValue}",
                 cancellationToken: ct);
 
-            _logger.LogDebug("Found {PodCount} pods and {ServiceCount} services",
-                pods.Items.Count, services.Items.Count);
+            // Get all deployments to extract credentials from env vars and args
+            var deployments = await _client.AppsV1.ListNamespacedDeploymentAsync(
+                _options.Namespace,
+                labelSelector: $"{AppLabel}={AppValue}",
+                cancellationToken: ct);
+
+            _logger.LogDebug("Found {PodCount} pods, {ServiceCount} services, {DeploymentCount} deployments",
+                pods.Items.Count, services.Items.Count, deployments.Items.Count);
 
             // Match pods to services
             foreach (var pod in pods.Items)
@@ -117,6 +124,10 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
                 // Extract directory info based on protocol and server name
                 var directory = GetServerDirectory(serverName, protocol, pod);
 
+                // Extract credentials from matching deployment
+                var deployment = FindMatchingDeployment(pod, deployments.Items);
+                var credentials = ExtractCredentials(protocol, deployment);
+
                 servers.Add(new DiscoveredServer
                 {
                     Name = serverName,
@@ -130,7 +141,8 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
                     PodReady = IsPodReady(pod),
                     IsDynamic = isDynamic,
                     ManagedBy = managedBy,
-                    Directory = directory
+                    Directory = directory,
+                    Credentials = credentials
                 });
             }
 
@@ -300,6 +312,176 @@ public class KubernetesDiscoveryService : IKubernetesDiscoveryService
         if (protocol == "Management")
         {
             return WindowsBasePath;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Find the deployment that owns a pod by matching labels.
+    /// </summary>
+    private static V1Deployment? FindMatchingDeployment(V1Pod pod, IList<V1Deployment> deployments)
+    {
+        var podLabels = pod.Metadata.Labels ?? new Dictionary<string, string>();
+
+        foreach (var deployment in deployments)
+        {
+            var selector = deployment.Spec.Selector?.MatchLabels;
+            if (selector == null) continue;
+
+            bool matches = selector.All(kv =>
+                podLabels.TryGetValue(kv.Key, out var value) && value == kv.Value);
+
+            if (matches)
+                return deployment;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Extract credentials from deployment based on protocol.
+    /// Reads environment variables and container args to get actual credentials.
+    /// </summary>
+    private static ServerCredentials? ExtractCredentials(string protocol, V1Deployment? deployment)
+    {
+        if (deployment == null)
+            return null;
+
+        var containers = deployment.Spec.Template.Spec.Containers;
+        if (containers == null || containers.Count == 0)
+            return null;
+
+        var container = containers[0];
+        var envVars = container.Env ?? new List<V1EnvVar>();
+        var args = container.Args ?? new List<string>();
+
+        return protocol.ToUpperInvariant() switch
+        {
+            "FTP" => ExtractFtpCredentials(envVars),
+            "SFTP" => ExtractSftpCredentials(args),
+            "HTTP" => new ServerCredentials { Note = "HTTP server (read-only, no authentication)" },
+            "WEBDAV" => ExtractWebDavCredentials(envVars),
+            "S3" => ExtractS3Credentials(envVars),
+            "SMB" => ExtractSmbCredentials(args),
+            "MANAGEMENT" => new ServerCredentials
+            {
+                Username = "admin",
+                Password = "admin123",
+                Note = "FileBrowser UI credentials (configured via database)"
+            },
+            "NFS" => new ServerCredentials
+            {
+                Note = "NFS uses anonymous access (no authentication required)"
+            },
+            _ => null
+        };
+    }
+
+    /// <summary>
+    /// Extract FTP credentials from FTP_USER and FTP_PASS environment variables.
+    /// </summary>
+    private static ServerCredentials? ExtractFtpCredentials(IList<V1EnvVar> envVars)
+    {
+        var username = envVars.FirstOrDefault(e => e.Name == "FTP_USER")?.Value;
+        var password = envVars.FirstOrDefault(e => e.Name == "FTP_PASS")?.Value;
+
+        if (string.IsNullOrEmpty(username))
+            return null;
+
+        return new ServerCredentials
+        {
+            Username = username,
+            Password = password ?? "",
+            Note = "FTP credentials from deployment environment"
+        };
+    }
+
+    /// <summary>
+    /// Extract SFTP credentials from container args (format: username:password:uid:gid).
+    /// </summary>
+    private static ServerCredentials? ExtractSftpCredentials(IList<string> args)
+    {
+        // atmoz/sftp uses args like "sftpuser:sftppass123:1000:1000"
+        foreach (var arg in args)
+        {
+            var parts = arg.Split(':');
+            if (parts.Length >= 2)
+            {
+                return new ServerCredentials
+                {
+                    Username = parts[0],
+                    Password = parts[1],
+                    Note = "SFTP credentials from container args"
+                };
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Extract WebDAV credentials from USERNAME and PASSWORD environment variables.
+    /// </summary>
+    private static ServerCredentials? ExtractWebDavCredentials(IList<V1EnvVar> envVars)
+    {
+        var username = envVars.FirstOrDefault(e => e.Name == "USERNAME")?.Value;
+        var password = envVars.FirstOrDefault(e => e.Name == "PASSWORD")?.Value;
+
+        if (!string.IsNullOrEmpty(username))
+        {
+            return new ServerCredentials
+            {
+                Username = username,
+                Password = password ?? "",
+                Note = "WebDAV credentials from deployment environment"
+            };
+        }
+
+        return new ServerCredentials { Note = "WebDAV (no credentials found)" };
+    }
+
+    /// <summary>
+    /// Extract S3/MinIO credentials from MINIO_ROOT_USER and MINIO_ROOT_PASSWORD.
+    /// </summary>
+    private static ServerCredentials? ExtractS3Credentials(IList<V1EnvVar> envVars)
+    {
+        var username = envVars.FirstOrDefault(e => e.Name == "MINIO_ROOT_USER")?.Value;
+        var password = envVars.FirstOrDefault(e => e.Name == "MINIO_ROOT_PASSWORD")?.Value;
+
+        if (string.IsNullOrEmpty(username))
+            return null;
+
+        return new ServerCredentials
+        {
+            Username = username,
+            Password = password ?? "",
+            Note = "MinIO root credentials from deployment environment"
+        };
+    }
+
+    /// <summary>
+    /// Extract SMB credentials from container args (format: -u username;password).
+    /// </summary>
+    private static ServerCredentials? ExtractSmbCredentials(IList<string> args)
+    {
+        // dperson/samba uses -u "username;password" args
+        for (int i = 0; i < args.Count - 1; i++)
+        {
+            if (args[i] == "-u")
+            {
+                var userArg = args[i + 1];
+                var parts = userArg.Split(';');
+                if (parts.Length >= 2)
+                {
+                    return new ServerCredentials
+                    {
+                        Username = parts[0],
+                        Password = parts[1],
+                        Note = "SMB credentials from container args"
+                    };
+                }
+            }
         }
 
         return null;

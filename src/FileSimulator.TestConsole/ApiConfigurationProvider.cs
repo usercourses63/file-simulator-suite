@@ -33,7 +33,7 @@ public class ApiConfigurationProvider
         try
         {
             // Check API health first
-            var healthUrl = $"{_apiBaseUrl}/api/health";
+            var healthUrl = $"{_apiBaseUrl}/health";
             var healthResponse = await _httpClient.GetAsync(healthUrl, ct);
 
             if (!healthResponse.IsSuccessStatusCode)
