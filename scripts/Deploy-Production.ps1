@@ -368,4 +368,42 @@ function Test-Deployment {
     }
 }
 
-# Main execution will be implemented in subsequent tasks
+function Stop-RegistryPortForward {
+    Write-Step "Cleaning up..."
+
+    if ($script:RegistryJob) {
+        Write-Info "Stopping registry port-forward..."
+        Stop-Job -Job $script:RegistryJob -ErrorAction SilentlyContinue
+        Remove-Job -Job $script:RegistryJob -ErrorAction SilentlyContinue
+        Write-Success "Port-forward stopped"
+    }
+}
+
+function Show-AccessUrls {
+    Write-Host "`n" -NoNewline
+    Write-Host "=" * 70 -ForegroundColor Green
+    Write-Host "  DEPLOYMENT SUCCESSFUL" -ForegroundColor Green
+    Write-Host "=" * 70 -ForegroundColor Green
+
+    Write-Host "`nAccess URLs:" -ForegroundColor Cyan
+    Write-Host "  Dashboard:   http://file-simulator.local:30080" -ForegroundColor White
+    Write-Host "  Control API: http://file-simulator.local:30500" -ForegroundColor White
+    Write-Host "  Health:      http://file-simulator.local:30500/health" -ForegroundColor White
+
+    Write-Host "`nProtocol Endpoints:" -ForegroundColor Cyan
+    Write-Host "  FTP:         ftp://file-simulator.local:30021" -ForegroundColor White
+    Write-Host "  SFTP:        sftp://file-simulator.local:30022" -ForegroundColor White
+    Write-Host "  HTTP/WebDAV: http://file-simulator.local:30088" -ForegroundColor White
+    Write-Host "  S3/MinIO:    http://file-simulator.local:30900" -ForegroundColor White
+    Write-Host "  SMB:         \\\\file-simulator.local\\shared" -ForegroundColor White
+    Write-Host "  NFS:         file-simulator.local:32049:/data" -ForegroundColor White
+
+    Write-Host "`nUseful Commands:" -ForegroundColor Cyan
+    Write-Host "  View pods:   kubectl --context=$Profile get pods -n file-simulator" -ForegroundColor White
+    Write-Host "  View logs:   kubectl --context=$Profile logs -n file-simulator <pod-name>" -ForegroundColor White
+    Write-Host "  Get info:    .\scripts\Get-ConnectionInfo.ps1" -ForegroundColor White
+
+    Write-Host "`n" -NoNewline
+}
+
+# Main execution will be implemented in next task
