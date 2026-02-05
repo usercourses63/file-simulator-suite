@@ -6,10 +6,12 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using FluentFTP;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Renci.SshNet;
 using SMBLibrary;
 using SMBLibrary.Client;
 using Spectre.Console;
+using FileSimulator.TestConsole.Models;
 
 namespace FileSimulator.TestConsole;
 
@@ -28,18 +30,53 @@ public class Program
             .AddCommandLine(args)
             .Build();
 
-        // Debug: Show which config is loaded
-        AnsiConsole.MarkupLine($"[grey]Config loaded from: {basePath}[/]");
-        AnsiConsole.MarkupLine($"[grey]HTTP BaseUrl: {config["FileSimulator:Http:BaseUrl"]}[/]");
+        // Parse command-line arguments
+        var apiUrl = GetArgValue(args, "--api-url") ?? config["ControlApi:BaseUrl"] ?? "http://localhost:5000";
+        var requireApi = args.Contains("--require-api") || (config["ControlApi:RequireApi"] != null && bool.Parse(config["ControlApi:RequireApi"]));
 
         AnsiConsole.Write(new FigletText("File Simulator").Color(Color.Cyan1));
         AnsiConsole.Write(new Rule("[yellow]Protocol Test Suite[/]").RuleStyle("grey"));
         AnsiConsole.WriteLine();
 
+        // Try to fetch configuration from API
+        IConfiguration activeConfig = config;
+        ConfigurationSource configSource = ConfigurationSource.AppSettings;
+
+        using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Warning));
+        var logger = loggerFactory.CreateLogger<ApiConfigurationProvider>();
+        var apiProvider = new ApiConfigurationProvider(apiUrl, logger);
+
+        var apiConfig = await apiProvider.GetConfigurationAsync();
+        if (apiConfig != null)
+        {
+            // Success - use API configuration
+            AnsiConsole.MarkupLine("[cyan]Using API-driven configuration[/]");
+            AnsiConsole.MarkupLine($"[grey]API: {apiUrl}[/]");
+            configSource = ConfigurationSource.Api;
+            activeConfig = BuildConfigurationFromApi(apiConfig, config);
+        }
+        else if (requireApi)
+        {
+            // API required but unavailable
+            AnsiConsole.MarkupLine($"[red]Error: Control API unavailable at {apiUrl}[/]");
+            AnsiConsole.MarkupLine("[red]Use --api-url to specify a different endpoint, or remove --require-api flag to use fallback configuration.[/]");
+            Environment.Exit(1);
+            return;
+        }
+        else
+        {
+            // Fallback to appsettings.json
+            AnsiConsole.MarkupLine("[yellow]Using fallback configuration (API unavailable)[/]");
+            AnsiConsole.MarkupLine($"[grey]Config loaded from: {basePath}[/]");
+            AnsiConsole.MarkupLine($"[grey]HTTP BaseUrl: {config["FileSimulator:Http:BaseUrl"]}[/]");
+        }
+
+        AnsiConsole.WriteLine();
+
         // Check for cross-protocol test mode
         if (args.Contains("--cross-protocol") || args.Contains("-x"))
         {
-            await CrossProtocolTest.RunAsync(config);
+            await CrossProtocolTest.RunAsync(activeConfig);
             return;
         }
 
@@ -52,25 +89,25 @@ public class Program
             .StartAsync("Running protocol tests...", async ctx =>
             {
                 ctx.Status("Testing FTP...");
-                results.Add(await TestFtpAsync(config, testContent, testFileName));
+                results.Add(await TestFtpAsync(activeConfig, testContent, testFileName));
 
                 ctx.Status("Testing SFTP...");
-                results.Add(await TestSftpAsync(config, testContent, testFileName));
+                results.Add(await TestSftpAsync(activeConfig, testContent, testFileName));
 
                 ctx.Status("Testing HTTP (Read)...");
-                results.Add(await TestHttpReadAsync(config));
+                results.Add(await TestHttpReadAsync(activeConfig));
 
                 ctx.Status("Testing WebDAV (Write)...");
-                results.Add(await TestWebDavAsync(config, testContent, testFileName));
+                results.Add(await TestWebDavAsync(activeConfig, testContent, testFileName));
 
                 ctx.Status("Testing S3/MinIO...");
-                results.Add(await TestS3Async(config, testContent, testFileName));
+                results.Add(await TestS3Async(activeConfig, testContent, testFileName));
 
                 ctx.Status("Testing SMB...");
-                results.Add(await TestSmbAsync(config, testContent, testFileName));
+                results.Add(await TestSmbAsync(activeConfig, testContent, testFileName));
 
                 ctx.Status("Testing NFS...");
-                results.Add(await TestNfsAsync(config, testContent, testFileName));
+                results.Add(await TestNfsAsync(activeConfig, testContent, testFileName));
             });
 
         // Display results table
@@ -756,6 +793,68 @@ public class Program
         }
 
         AnsiConsole.WriteLine();
+    }
+
+    /// <summary>
+    /// Get command-line argument value.
+    /// </summary>
+    static string? GetArgValue(string[] args, string key)
+    {
+        for (int i = 0; i < args.Length - 1; i++)
+        {
+            if (args[i].Equals(key, StringComparison.OrdinalIgnoreCase))
+            {
+                return args[i + 1];
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Build IConfiguration from API-provided TestConfiguration.
+    /// </summary>
+    static IConfiguration BuildConfigurationFromApi(TestConfiguration apiConfig, IConfiguration fallbackConfig)
+    {
+        var configData = new Dictionary<string, string?>();
+
+        // Map API config to IConfiguration format
+        foreach (var (protocol, server) in apiConfig.Servers)
+        {
+            var prefix = $"FileSimulator:{protocol}";
+
+            configData[$"{prefix}:Host"] = server.Host;
+            configData[$"{prefix}:Port"] = server.Port.ToString();
+
+            if (!string.IsNullOrEmpty(server.Username))
+                configData[$"{prefix}:Username"] = server.Username;
+
+            if (!string.IsNullOrEmpty(server.Password))
+                configData[$"{prefix}:Password"] = server.Password;
+
+            if (!string.IsNullOrEmpty(server.BasePath))
+                configData[$"{prefix}:BasePath"] = server.BasePath;
+
+            if (!string.IsNullOrEmpty(server.ServiceUrl))
+                configData[$"{prefix}:ServiceUrl"] = server.ServiceUrl;
+
+            if (!string.IsNullOrEmpty(server.BaseUrl))
+                configData[$"{prefix}:BaseUrl"] = server.BaseUrl;
+
+            if (!string.IsNullOrEmpty(server.BucketName))
+                configData[$"{prefix}:BucketName"] = server.BucketName;
+
+            if (!string.IsNullOrEmpty(server.ShareName))
+                configData[$"{prefix}:ShareName"] = server.ShareName;
+
+            if (!string.IsNullOrEmpty(server.MountPath))
+                configData[$"{prefix}:MountPath"] = server.MountPath;
+        }
+
+        // Build new configuration with API data + fallback
+        return new ConfigurationBuilder()
+            .AddConfiguration(fallbackConfig)
+            .AddInMemoryCollection(configData!)
+            .Build();
     }
 }
 
