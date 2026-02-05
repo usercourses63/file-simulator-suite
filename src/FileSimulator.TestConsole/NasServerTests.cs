@@ -165,7 +165,7 @@ public static class NasServerTests
                 // - File was written to mount path successfully
                 // - TCP connection to NFS port succeeded
                 // Full NFS mount verification requires Linux/WSL
-                result.SyncVerified = result.WriteSuccess && result.TcpConnected;
+                result.SyncVerified = (result.WriteSuccess ?? false) && result.TcpConnected;
             }
         }
         catch (Exception ex)
