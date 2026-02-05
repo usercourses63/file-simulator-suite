@@ -267,4 +267,30 @@ function Deploy-HelmChart {
     Write-Success "Deployment stabilized"
 }
 
+function Update-HostsFile {
+    Write-Step "Updating hosts file..."
+
+    # Check if running as Administrator
+    $isAdmin = ([Security.Principal.WindowsPrincipal] `
+        [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+            [Security.Principal.WindowsBuiltInRole]::Administrator)
+
+    if (-not $isAdmin) {
+        Write-Info "Not running as Administrator - skipping hosts file update"
+        Write-Info "Run as Administrator to automatically update hosts file"
+        Write-Info "Or manually run: .\scripts\Setup-Hosts.ps1"
+        return
+    }
+
+    Write-Info "Running Setup-Hosts.ps1..."
+    & "$ScriptDir\Setup-Hosts.ps1"
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Success "Hosts file updated"
+    }
+    else {
+        Write-Info "Hosts file update skipped (may already be configured)"
+    }
+}
+
 # Main execution will be implemented in subsequent tasks
