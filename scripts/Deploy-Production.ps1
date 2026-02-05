@@ -237,4 +237,34 @@ function Build-Images {
     Write-Success "Dashboard pushed"
 }
 
+function Deploy-HelmChart {
+    Write-Step "Deploying Helm chart..."
+
+    $helmChart = "$ProjectRoot/helm-chart/file-simulator"
+    $releaseName = "file-sim"
+    $namespace = "file-simulator"
+
+    Write-Info "Chart: $helmChart"
+    Write-Info "Release: $releaseName"
+    Write-Info "Namespace: $namespace"
+
+    helm upgrade --install $releaseName $helmChart `
+        --kube-context=$Profile `
+        --namespace $namespace `
+        --create-namespace `
+        --wait `
+        --timeout 5m
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Helm deployment failed"
+    }
+
+    Write-Success "Helm chart deployed"
+
+    # Wait additional time for pods to stabilize
+    Write-Info "Waiting 30 seconds for pods to stabilize..."
+    Start-Sleep -Seconds 30
+    Write-Success "Deployment stabilized"
+}
+
 # Main execution will be implemented in subsequent tasks
