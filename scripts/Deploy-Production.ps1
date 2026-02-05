@@ -103,4 +103,42 @@ function Test-Prerequisites {
     }
 }
 
+function Start-Cluster {
+    Write-Step "Managing Minikube cluster..."
+
+    if ($Clean) {
+        Write-Info "Deleting existing cluster..."
+        minikube delete --profile $Profile 2>$null
+        Write-Success "Existing cluster deleted"
+    }
+
+    # Check if cluster exists and is running
+    $status = minikube status --profile $Profile 2>$null
+    if ($LASTEXITCODE -eq 0 -and $status -match "Running") {
+        Write-Success "Cluster '$Profile' is already running"
+        return
+    }
+
+    Write-Info "Starting new cluster..."
+    Write-Info "  Profile: $Profile"
+    Write-Info "  Memory: $Memory MB"
+    Write-Info "  CPUs: $Cpus"
+    Write-Info "  Driver: hyperv"
+
+    minikube start `
+        --profile $Profile `
+        --driver=hyperv `
+        --memory=$Memory `
+        --cpus=$Cpus `
+        --disk-size=20g `
+        --mount `
+        --mount-string="C:\simulator-data:/mnt/simulator-data"
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to start Minikube cluster"
+    }
+
+    Write-Success "Cluster started successfully"
+}
+
 # Main execution will be implemented in subsequent tasks
