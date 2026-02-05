@@ -200,21 +200,45 @@ Plans:
 **Plans**: 10 plans
 
 Plans:
-- [ ] 12-01-PLAN.md - Backend alert infrastructure (AlertService, health checks, AlertHub)
-- [ ] 12-02-PLAN.md - Alert REST API and Redis backplane
-- [ ] 12-03-PLAN.md - Dashboard alert UI (toast notifications and banner)
-- [ ] 12-04-PLAN.md - Alerts tab and error boundaries
-- [ ] 12-05-PLAN.md - Dashboard containerization with multi-stage Dockerfile
-- [ ] 12-06-PLAN.md - Helm dashboard deployment and NFS fix
-- [ ] 12-07-PLAN.md - Deploy-Production.ps1 automation script
-- [ ] 12-08-PLAN.md - Verify-Production.ps1 comprehensive testing script
-- [ ] 12-09-PLAN.md - Setup-Hosts.ps1 enhancement with Kafka and dynamic NAS
-- [ ] 12-10-PLAN.md - Human verification checkpoint
+- [x] 12-01-PLAN.md - Backend alert infrastructure (AlertService, health checks, AlertHub)
+- [x] 12-02-PLAN.md - Alert REST API and Redis backplane
+- [x] 12-03-PLAN.md - Dashboard alert UI (toast notifications and banner)
+- [x] 12-04-PLAN.md - Alerts tab and error boundaries
+- [x] 12-05-PLAN.md - Dashboard containerization with multi-stage Dockerfile
+- [x] 12-06-PLAN.md - Helm dashboard deployment and NFS fix
+- [x] 12-07-PLAN.md - Deploy-Production.ps1 automation script
+- [x] 12-08-PLAN.md - Verify-Production.ps1 comprehensive testing script
+- [x] 12-09-PLAN.md - Setup-Hosts.ps1 enhancement with Kafka and dynamic NAS
+- [x] 12-10-PLAN.md - Human verification checkpoint
+
+#### Phase 13: TestConsole Modernization and Release
+**Goal**: Modernize TestConsole to use Control API for configuration, test all NAS servers and dynamic servers, add Playwright E2E UI testing, update documentation, and create GitHub release
+**Depends on**: Phase 12 (production-ready platform)
+**Requirements**: TEST-01, TEST-02, TEST-03, TEST-04, DOC-01, REL-01
+**Success Criteria** (what must be TRUE):
+  1. TestConsole fetches server configuration from /api/connection-info instead of hardcoded settings
+  2. TestConsole tests all 7 NAS servers (input-1/2/3, output-1/2/3, backup) with file operations
+  3. TestConsole creates dynamic FTP/SFTP/NAS servers, tests connectivity, then deletes them
+  4. TestConsole includes Kafka produce/consume tests
+  5. Playwright E2E tests verify all dashboard features using Start-Simulator.ps1
+  6. README.md updated with complete v2.0 documentation (features, setup, usage)
+  7. GitHub tagged release (v2.0.0) created with full changelog of all v2.0 features
+**Plans**: 8 plans
+
+Plans:
+- [ ] 13-01-PLAN.md - TestConsole API-driven configuration using /api/connection-info
+- [ ] 13-02-PLAN.md - TestConsole NAS server testing (7 multi-NAS servers)
+- [ ] 13-03-PLAN.md - TestConsole dynamic server creation and testing
+- [ ] 13-04-PLAN.md - TestConsole Kafka integration tests
+- [ ] 13-05-PLAN.md - Playwright E2E test setup and Start-Simulator integration
+- [ ] 13-06-PLAN.md - Playwright E2E tests for all dashboard features
+- [ ] 13-07-PLAN.md - Documentation update (README.md and related docs)
+- [ ] 13-08-PLAN.md - GitHub release creation with changelog
 
 ## Progress
 
 **Execution Order:**
-v2.0 phases execute sequentially: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
+v2.0 phases execute sequentially: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -229,7 +253,8 @@ v2.0 phases execute sequentially: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 9. Historical Metrics and Storage | v2.0 | 6/6 | Complete | 2026-02-03 |
 | 10. Kafka Integration for Event Streaming | v2.0 | 7/7 | Complete | 2026-02-03 |
 | 11. Dynamic Server Management | v2.0 | 10/10 | Complete | 2026-02-04 |
-| 12. Alerting and Production Readiness | v2.0 | 0/10 | Not started | - |
+| 12. Alerting and Production Readiness | v2.0 | 10/10 | Complete | 2026-02-05 |
+| 13. TestConsole Modernization and Release | v2.0 | 0/8 | Not started | - |
 
 ---
-*Last updated: 2026-02-04 after Phase 12 planning complete*
+*Last updated: 2026-02-05 after Phase 12 complete, Phase 13 added*
