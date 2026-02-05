@@ -9,7 +9,7 @@ namespace FileSimulator.IntegrationTests.Protocols;
 
 /// <summary>
 /// WebDAV protocol integration tests validating all file operations.
-/// WebDAV is implemented via nginx with DAV module on the HTTP server.
+/// WebDAV is implemented via a dedicated ugeek/webdav container on port 30089.
 /// </summary>
 [Collection("Simulator")]
 public class WebDavProtocolTests
@@ -28,17 +28,18 @@ public class WebDavProtocolTests
 
     /// <summary>
     /// Gets WebDAV client with basic authentication configured.
+    /// Uses the dedicated WebDAV server (not the HTTP server).
     /// </summary>
     private async Task<(string baseUrl, HttpClient client, string username, string password)> GetWebDavClientAsync()
     {
         var connectionInfo = await _fixture.GetConnectionInfoAsync();
-        var httpServer = connectionInfo.GetServer("HTTP");
+        var webdavServer = connectionInfo.GetServer("WebDAV");
 
-        httpServer.Should().NotBeNull("HTTP server must be available in connection info");
+        webdavServer.Should().NotBeNull("WebDAV server must be available in connection info");
 
-        var baseUrl = $"http://{httpServer!.Host}:{httpServer.Port}";
-        var username = httpServer.Credentials.Username;
-        var password = httpServer.Credentials.Password;
+        var baseUrl = $"http://{webdavServer!.Host}:{webdavServer.Port}";
+        var username = webdavServer.Credentials.Username;
+        var password = webdavServer.Credentials.Password;
 
         var client = new HttpClient { BaseAddress = new Uri(baseUrl) };
 

@@ -67,9 +67,10 @@ public class KafkaProduceConsumeTests
 
         try
         {
-            // Act
+            // Act - Note: topic must be in body to pass model validation
             var response = await _fixture.ApiClient.PostAsJsonAsync($"/api/kafka/topics/{topicName}/messages", new
             {
+                topic = topicName,
                 key = "test-key",
                 value = "test-value"
             });
@@ -95,9 +96,10 @@ public class KafkaProduceConsumeTests
 
         try
         {
-            // Act - Produce message
+            // Act - Produce message (topic in body for model validation)
             var produceResponse = await _fixture.ApiClient.PostAsJsonAsync($"/api/kafka/topics/{topicName}/messages", new
             {
+                topic = topicName,
                 key = testKey,
                 value = testValue
             });
@@ -214,11 +216,12 @@ public class KafkaProduceConsumeTests
 
         try
         {
-            // Act - Produce all messages
+            // Act - Produce all messages (topic in body for model validation)
             foreach (var (key, value) in messages)
             {
                 var response = await _fixture.ApiClient.PostAsJsonAsync($"/api/kafka/topics/{topicName}/messages", new
                 {
+                    topic = topicName,
                     key = key,
                     value = value
                 });
@@ -240,16 +243,22 @@ public class KafkaProduceConsumeTests
             consumedMessages.Should().NotBeNull("Messages should be returned");
             consumedMessages.Should().HaveCount(messageCount, $"All {messageCount} messages should be consumed");
 
-            // Verify all messages were consumed in order
-            for (int i = 0; i < messageCount; i++)
-            {
-                var message = consumedMessages![i];
-                message.TryGetProperty("key", out var keyElement).Should().BeTrue($"Message {i} should have key");
-                message.TryGetProperty("value", out var valueElement).Should().BeTrue($"Message {i} should have value");
+            // Verify all messages were consumed (order not guaranteed in Kafka)
+            var consumedKeys = consumedMessages!
+                .Select(m => m.TryGetProperty("key", out var k) ? k.GetString() : null)
+                .Where(k => k != null)
+                .ToHashSet();
 
-                keyElement.GetString().Should().Be($"key-{i + 1}", $"Message {i} key should match");
-                valueElement.GetString().Should().Be($"value-{i + 1}", $"Message {i} value should match");
-            }
+            var consumedValues = consumedMessages!
+                .Select(m => m.TryGetProperty("value", out var v) ? v.GetString() : null)
+                .Where(v => v != null)
+                .ToHashSet();
+
+            var expectedKeys = messages.Select(m => m.Key).ToHashSet();
+            var expectedValues = messages.Select(m => m.Value).ToHashSet();
+
+            consumedKeys.Should().BeEquivalentTo(expectedKeys, "All produced keys should be consumed");
+            consumedValues.Should().BeEquivalentTo(expectedValues, "All produced values should be consumed");
         }
         finally
         {
@@ -278,9 +287,10 @@ public class KafkaProduceConsumeTests
             // Wait for topic to be ready
             await Task.Delay(1000);
 
-            // Act - Produce message via API
+            // Act - Produce message via API (topic in body for model validation)
             var produceResponse = await _fixture.ApiClient.PostAsJsonAsync($"/api/kafka/topics/{topicName}/messages", new
             {
+                topic = topicName,
                 key = "cycle-key",
                 value = "cycle-value"
             });
@@ -350,9 +360,10 @@ public class KafkaProduceConsumeTests
 
         try
         {
-            // Produce a message
+            // Produce a message (topic in body for model validation)
             var produceResponse = await _fixture.ApiClient.PostAsJsonAsync($"/api/kafka/topics/{topicName}/messages", new
             {
+                topic = topicName,
                 key = testKey,
                 value = testValue
             });
