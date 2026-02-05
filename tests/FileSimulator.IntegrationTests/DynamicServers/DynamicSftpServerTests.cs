@@ -89,6 +89,9 @@ public class DynamicSftpServerTests
                 serverName,
                 TimeSpan.FromSeconds(60));
 
+            // Wait for SSH daemon to fully start after pod is ready
+            await Task.Delay(2000);
+
             // Act - Connect to SFTP server (SSH.NET is synchronous, wrap in Task.Run)
             var isConnected = await Task.Run(() =>
             {
@@ -133,6 +136,9 @@ public class DynamicSftpServerTests
                 _fixture.ApiClient,
                 serverName,
                 TimeSpan.FromSeconds(60));
+
+            // Wait for SSH daemon to fully start after pod is ready
+            await Task.Delay(2000);
 
             // Act - File operations (SSH.NET is synchronous, wrap in Task.Run)
             await Task.Run(() =>
@@ -251,6 +257,9 @@ public class DynamicSftpServerTests
                 serverName,
                 TimeSpan.FromSeconds(60));
             status.PodReady.Should().BeTrue("Server should become ready");
+
+            // Wait for SSH daemon to fully start after pod is ready
+            await Task.Delay(2000);
 
             // Step 3-6: Connect, Upload, Download, Delete file (SSH.NET is synchronous)
             await Task.Run(() =>
