@@ -1,0 +1,106 @@
+{{- if .Values.dashboard.enabled }}
+---
+# Deployment for Dashboard
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-dashboard
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: dashboard
+    app.kubernetes.io/part-of: file-simulator-suite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "file-simulator.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: dashboard
+  template:
+    metadata:
+      labels:
+        {{- include "file-simulator.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: dashboard
+        app.kubernetes.io/part-of: file-simulator-suite
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101  # nginx user
+        runAsGroup: 101
+        fsGroup: 101
+      containers:
+        - name: dashboard
+          image: "{{ .Values.dashboard.image.repository }}:{{ .Values.dashboard.image.tag }}"
+          imagePullPolicy: {{ .Values.dashboard.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.dashboard.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true  # Static SPA needs no writes
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            # nginx needs writable temp directories
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
+      volumes:
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+---
+# Service for Dashboard
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "file-simulator.fullname" . }}-dashboard
+  namespace: {{ include "file-simulator.namespace" . }}
+  labels:
+    {{- include "file-simulator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: dashboard
+spec:
+  type: {{ .Values.dashboard.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.dashboard.service.port }}
+      targetPort: http
+      protocol: TCP
+      {{- if eq .Values.dashboard.service.type "NodePort" }}
+      nodePort: {{ .Values.dashboard.service.nodePort }}
+      {{- end }}
+  selector:
+    {{- include "file-simulator.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: dashboard
+{{- end }}
