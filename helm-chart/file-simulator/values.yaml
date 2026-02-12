@@ -376,7 +376,7 @@ controlApi:
   # Load into Minikube with: minikube -p file-simulator image load <image>
   image:
     repository: localhost:5000/file-simulator-control-api
-    tag: v2.2
+    tag: v2.1.0
     # Use Never for minikube image load, IfNotPresent for registry
     pullPolicy: Never
 
@@ -443,7 +443,7 @@ dashboard:
   # Load into Minikube with: minikube -p file-simulator image load <image>
   image:
     repository: localhost:5000/file-simulator-dashboard
-    tag: v2.1
+    tag: v2.1.0
     # Use Never for minikube image load, IfNotPresent for registry
     pullPolicy: Never
 

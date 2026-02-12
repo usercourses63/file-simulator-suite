@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Alert } from '../types/alert';
 
 /**
@@ -12,10 +13,19 @@ export interface AlertBannerProps {
  * Persistent banner displaying unresolved alert counts.
  * Appears below the header when there are active alerts.
  * Color-coded by highest severity level.
+ * Dismiss button hides banner; reappears when new alerts arrive.
  */
 export function AlertBanner({ alerts }: AlertBannerProps) {
+  const [dismissedAtCount, setDismissedAtCount] = useState<number | null>(null);
+
   // If no alerts, don't render anything
   if (alerts.length === 0) {
+    return null;
+  }
+
+  // If dismissed and no new alerts have arrived since, stay hidden
+  const isDismissed = dismissedAtCount !== null && alerts.length <= dismissedAtCount;
+  if (isDismissed) {
     return null;
   }
 
@@ -65,6 +75,14 @@ export function AlertBanner({ alerts }: AlertBannerProps) {
         )}
         <span className="alert-banner__message">{message}</span>
       </div>
+      <button
+        className="alert-banner__dismiss"
+        onClick={() => setDismissedAtCount(alerts.length)}
+        title="Dismiss"
+        type="button"
+      >
+        &times;
+      </button>
     </div>
   );
 }

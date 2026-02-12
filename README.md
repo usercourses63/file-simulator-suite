@@ -5,6 +5,16 @@
 
 A comprehensive file access simulator for Kubernetes development and testing. This suite provides multiple file transfer protocols (FTP, SFTP, HTTP/WebDAV, S3/MinIO, SMB, NFS) in a unified deployment, enabling seamless testing between Windows development environments and Kubernetes/OpenShift clusters.
 
+## v2.1: Dashboard Enhancements (Released: 2026-02-12)
+
+- **Activity Log**: Real-time activity sidebar on Servers tab aggregating server, file, alert, and mount events
+- **Alert Banner Dismiss**: Dismiss button with auto-reshow when new alerts arrive
+- **Version Badge**: Release version shown in dashboard header
+- **Mount Health Monitor**: Automatic stale mount detection and pod restart
+- **NAS Export Fix**: Prevent double-wrapping of NFS export options
+
+---
+
 ## v2.0: Simulator Control Platform (Released: 2026-02-05)
 
 **NEW:** The v2.0 release adds a complete **control platform** for managing and monitoring file simulators:
@@ -2198,4 +2208,4 @@ MIT License - See LICENSE file for details.
 
 ---
 
-**Version:** v2.0 (2026-02-05) | [See MILESTONES.md](.planning/MILESTONES.md) for full release notes
+**Version:** v2.1.0 (2026-02-12) | [See MILESTONES.md](.planning/MILESTONES.md) for full release notes

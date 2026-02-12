@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-02-12
+
+### Added
+- Mount health monitoring with automatic stale mount detection (MountHealthMonitor)
+- Auto-restart PVC-dependent pods on mount recovery
+- Mount health REST API (`/api/mount-health`)
+- Mount health dashboard banner (degraded/stale/recovering states)
+- Host-side infrastructure manager script (`Start-SimulatorInfra.ps1`)
+- Activity log sidebar on Servers tab (server lifecycle, file events, alerts, mount health)
+- Version badge in dashboard header
+- Alert banner dismiss button with auto-reshow on new alerts
+
+### Fixed
+- NAS NFS export options double-wrapping causing CrashLoopBackOff
+- Alert banner persisting forever with no dismiss option
+
 ## [2.0.0] - 2026-02-05
 
 ### Added
@@ -148,5 +164,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - NFS export of Windows-mounted hostPath volumes (emptyDir workaround)
 
+[2.1.0]: https://github.com/usercourses63/file-simulator-suite/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/usercourses63/file-simulator-suite/compare/v1.0...v2.0.0
 [1.0.0]: https://github.com/usercourses63/file-simulator-suite/releases/tag/v1.0

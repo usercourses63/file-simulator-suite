@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useSignalR } from './hooks/useSignalR';
 import { useFileEvents } from './hooks/useFileEvents';
 import { useMetricsStream } from './hooks/useMetricsStream';
@@ -24,6 +24,9 @@ import CreateServerModal from './components/CreateServerModal';
 import AlertToaster from './components/AlertToaster';
 import AlertBanner from './components/AlertBanner';
 import MountHealthBanner from './components/MountHealthBanner';
+import ActivityLog from './components/ActivityLog';
+import { useActivityLog } from './hooks/useActivityLog';
+import type { ActivityEvent, ActivitySeverity } from './types/activity';
 import { withErrorBoundary } from './components/ErrorBoundary';
 import './App.css';
 
@@ -78,6 +81,15 @@ function App() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showCreateServer, setShowCreateServer] = useState(false);
 
+  // Activity log for servers tab sidebar
+  const { events: activityEvents, addEvent, addEvents, clearEvents: clearActivityEvents } = useActivityLog();
+
+  // Refs for diffing SignalR data to produce activity events
+  const prevServersRef = useRef<Map<string, { isHealthy: boolean; protocol: string }> | null>(null);
+  const lastFileEventCountRef = useRef(0);
+  const prevAlertIdsRef = useRef<Set<string> | null>(null);
+  const prevMountStateRef = useRef<string | null>(null);
+
   // Server management hook
   const { deleteServer, isLoading: isDeleting } = useServerManagement({ apiBaseUrl });
 
@@ -129,6 +141,144 @@ function App() {
     }
   }, [activeTab, alertHistory.length, fetchAlertHistory]);
 
+  // Diff servers to emit activity events
+  useEffect(() => {
+    if (!data?.servers) return;
+    const current = new Map(
+      data.servers.map(s => [s.name, { isHealthy: s.isHealthy, protocol: s.protocol }])
+    );
+
+    if (prevServersRef.current === null) {
+      // First load — populate silently
+      prevServersRef.current = current;
+      return;
+    }
+
+    const prev = prevServersRef.current;
+    const now = new Date().toISOString();
+    const batch: ActivityEvent[] = [];
+
+    for (const [name, info] of current) {
+      const old = prev.get(name);
+      if (!old) {
+        batch.push({ id: `sc-${now}-${name}`, type: 'server-created', timestamp: now, title: `${info.protocol} server created`, detail: name, severity: 'info' });
+      } else {
+        if (!old.isHealthy && info.isHealthy) {
+          batch.push({ id: `sh-${now}-${name}`, type: 'server-healthy', timestamp: now, title: `${name} is healthy`, severity: 'success' });
+        } else if (old.isHealthy && !info.isHealthy) {
+          batch.push({ id: `sd-${now}-${name}`, type: 'server-down', timestamp: now, title: `${name} is down`, severity: 'critical' });
+        }
+      }
+    }
+
+    for (const [name, info] of prev) {
+      if (!current.has(name)) {
+        batch.push({ id: `sx-${now}-${name}`, type: 'server-deleted', timestamp: now, title: `${info.protocol} server deleted`, detail: name, severity: 'warning' });
+      }
+    }
+
+    if (batch.length > 0) addEvents(batch);
+    prevServersRef.current = current;
+  }, [data?.servers, addEvents]);
+
+  // Diff file events to emit activity events (skip Modified to reduce noise)
+  useEffect(() => {
+    if (fileEvents.length <= lastFileEventCountRef.current) {
+      lastFileEventCountRef.current = fileEvents.length;
+      return;
+    }
+
+    const newCount = fileEvents.length - lastFileEventCountRef.current;
+    const newEntries = fileEvents.slice(0, newCount);
+    const now = new Date().toISOString();
+    const batch: ActivityEvent[] = [];
+
+    for (const fe of newEntries) {
+      if (fe.eventType === 'Modified') continue;
+      const type = fe.eventType === 'Created' ? 'file-created' : fe.eventType === 'Deleted' ? 'file-deleted' : null;
+      if (!type) continue;
+      batch.push({
+        id: `fe-${now}-${fe.fileName}`,
+        type,
+        timestamp: fe.timestamp || now,
+        title: `File ${fe.eventType.toLowerCase()}: ${fe.fileName}`,
+        detail: fe.relativePath,
+        severity: type === 'file-deleted' ? 'warning' : 'info',
+      });
+    }
+
+    if (batch.length > 0) addEvents(batch);
+    lastFileEventCountRef.current = fileEvents.length;
+  }, [fileEvents, addEvents]);
+
+  // Diff active alerts to emit activity events
+  useEffect(() => {
+    const currentIds = new Set(activeAlerts.map(a => a.id));
+
+    if (prevAlertIdsRef.current === null) {
+      prevAlertIdsRef.current = currentIds;
+      return;
+    }
+
+    const prev = prevAlertIdsRef.current;
+    const now = new Date().toISOString();
+    const batch: ActivityEvent[] = [];
+    const alertMap = new Map(activeAlerts.map(a => [a.id, a]));
+
+    for (const id of currentIds) {
+      if (!prev.has(id)) {
+        const alert = alertMap.get(id);
+        const severity: ActivitySeverity = alert?.severity === 'Critical' ? 'critical' : alert?.severity === 'Warning' ? 'warning' : 'info';
+        batch.push({
+          id: `at-${now}-${id}`,
+          type: 'alert-triggered',
+          timestamp: now,
+          title: `Alert: ${alert?.title ?? id}`,
+          detail: alert?.message,
+          severity,
+        });
+      }
+    }
+
+    for (const id of prev) {
+      if (!currentIds.has(id)) {
+        batch.push({
+          id: `ar-${now}-${id}`,
+          type: 'alert-resolved',
+          timestamp: now,
+          title: `Alert resolved`,
+          detail: id,
+          severity: 'success',
+        });
+      }
+    }
+
+    if (batch.length > 0) addEvents(batch);
+    prevAlertIdsRef.current = currentIds;
+  }, [activeAlerts, addEvents]);
+
+  // Emit mount health state changes
+  useEffect(() => {
+    if (!mountHealth?.state) return;
+    if (prevMountStateRef.current === null) {
+      prevMountStateRef.current = mountHealth.state;
+      return;
+    }
+    if (mountHealth.state !== prevMountStateRef.current) {
+      const now = new Date().toISOString();
+      const severity: ActivitySeverity = mountHealth.state === 'Healthy' ? 'success' : mountHealth.state === 'Stale' ? 'critical' : 'warning';
+      addEvent({
+        id: `mh-${now}`,
+        type: 'mount-state-change',
+        timestamp: now,
+        title: `Mount: ${mountHealth.state}`,
+        detail: mountHealth.message ?? undefined,
+        severity,
+      });
+      prevMountStateRef.current = mountHealth.state;
+    }
+  }, [mountHealth, addEvent]);
+
   // Handle single delete
   const handleDelete = (server: ServerStatus) => {
     setDeleteTarget({ name: server.name, protocol: server.protocol });
@@ -175,7 +325,7 @@ function App() {
     <div className={`app ${selectedServer && activeTab === 'servers' ? 'app--panel-open' : ''}`}>
       <header className="app-header">
         <div className="header-title">
-          <h1>File Simulator Suite</h1>
+          <h1>File Simulator Suite <span className="header-version">v{__APP_VERSION__}</span></h1>
           <nav className="header-tabs">
             <button
               className={`header-tab ${activeTab === 'servers' ? 'header-tab--active' : ''}`}
@@ -255,37 +405,42 @@ function App() {
         )}
 
         {activeTab === 'servers' && (
-          <>
-            {data ? (
-              <>
-                <BatchOperationsBar
-                  selectedCount={selectedCount}
-                  onDelete={handleBatchDelete}
-                  onSelectAll={selectAll}
-                  onClearSelection={clearSelection}
-                  isDeleting={isDeleting}
-                />
-                <SummaryHeader servers={data.servers} />
-                <ServerGrid
-                  servers={data.servers}
-                  onCardClick={setSelectedServer}
-                  sparklineData={latestSamples}
-                  onSparklineClick={handleSparklineClick}
-                  showMultiSelect={true}
-                  selectedIds={selectedIds}
-                  onToggleSelect={toggleSelect}
-                  onDelete={handleDelete}
-                  dynamicInfo={dynamicInfo}
-                />
-              </>
-            ) : (
-              <div className="loading-state">
-                <div className="loading-spinner"></div>
-                <p>Connecting to server...</p>
-                {error && <p className="loading-error">{error}</p>}
-              </div>
-            )}
-          </>
+          <div className="servers-container">
+            <aside className="servers-sidebar">
+              <ActivityLog events={activityEvents} onClear={clearActivityEvents} />
+            </aside>
+            <div className="servers-main">
+              {data ? (
+                <>
+                  <BatchOperationsBar
+                    selectedCount={selectedCount}
+                    onDelete={handleBatchDelete}
+                    onSelectAll={selectAll}
+                    onClearSelection={clearSelection}
+                    isDeleting={isDeleting}
+                  />
+                  <SummaryHeader servers={data.servers} />
+                  <ServerGrid
+                    servers={data.servers}
+                    onCardClick={setSelectedServer}
+                    sparklineData={latestSamples}
+                    onSparklineClick={handleSparklineClick}
+                    showMultiSelect={true}
+                    selectedIds={selectedIds}
+                    onToggleSelect={toggleSelect}
+                    onDelete={handleDelete}
+                    dynamicInfo={dynamicInfo}
+                  />
+                </>
+              ) : (
+                <div className="loading-state">
+                  <div className="loading-spinner"></div>
+                  <p>Connecting to server...</p>
+                  {error && <p className="loading-error">{error}</p>}
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {activeTab === 'files' && (
