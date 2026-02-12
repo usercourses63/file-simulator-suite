@@ -218,6 +218,7 @@ Recent decisions affecting current work:
 2. **Fix Verify-Production.ps1 script bugs** - Unicode characters causing parsing errors, `$Host` variable conflict, and incorrect API endpoint paths need fixing.
 3. **Configure FTP passive mode** - Cross-protocol tests blocked by FTP passive mode data port issues. Need to expose passive port range via NodePort or switch to active mode.
 4. **Implement Kafka API endpoints** - Add POST /api/kafka/produce and GET /api/kafka/consume/{topic} to Control API for full Kafka test coverage.
+5. **Fix flaky E2E tests on fresh clusters** - `History_LoadsDataForRange` and `Servers_CanViewServerDetails` timeout on fresh Minikube (no historical data, UI timing). See `.planning/todos/pending/2026-02-12-fix-flaky-e2e-tests-on-fresh-clusters.md`.
 
 ### Blockers/Concerns
 
