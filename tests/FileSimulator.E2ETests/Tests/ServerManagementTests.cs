@@ -29,7 +29,10 @@ public class ServerManagementTests
         var serverNames = await serversPage.GetAllServerNamesAsync();
 
         serverNames.Should().NotBeEmpty("should have configured servers");
-        serverNames.Should().Contain(name => name.Contains("nas"), "should have NAS servers");
+
+        // NAS servers now render as table rows (not cards), so check via NAS table
+        var nasCount = await serversPage.GetNasServerCountAsync();
+        nasCount.Should().BeGreaterThan(0, "should have NAS servers in compact table");
 
         await page.CloseAsync();
     }
@@ -227,6 +230,131 @@ public class ServerManagementTests
 
         // Cancel dialog
         await serversPage.CancelButton.ClickAsync();
+
+        await page.CloseAsync();
+    }
+
+    [Fact]
+    public async Task Servers_ProtocolCards_HaveColorTinting()
+    {
+        var page = await _fixture.Context.NewPageAsync();
+        var dashboard = new DashboardPage(page);
+        var serversPage = new ServersPage(page);
+
+        await dashboard.NavigateAsync(_fixture.DashboardUrl);
+        await dashboard.WaitForDashboardLoadAsync();
+
+        var protocolClasses = await serversPage.GetAllProtocolCardProtocolClassesAsync();
+
+        protocolClasses.Should().NotBeEmpty("should have protocol server cards");
+
+        // Each protocol card should have a server-card--protocol-{protocol} class
+        foreach (var (name, classes) in protocolClasses)
+        {
+            classes.Should().MatchRegex(
+                @"server-card--protocol-(ftp|sftp|http|s3|smb|nfs|nas)",
+                $"server '{name}' should have a protocol tint class");
+        }
+
+        // Verify at least some of the known protocol types are present
+        var allClasses = string.Join(" ", protocolClasses.Values);
+        allClasses.Should().Contain("server-card--protocol-ftp", "FTP card should have FTP tint");
+        allClasses.Should().Contain("server-card--protocol-sftp", "SFTP card should have SFTP tint");
+
+        await page.CloseAsync();
+    }
+
+    [Fact]
+    public async Task Servers_NasCompactView_ShowsAllNasServers()
+    {
+        var page = await _fixture.Context.NewPageAsync();
+        var dashboard = new DashboardPage(page);
+        var serversPage = new ServersPage(page);
+
+        await dashboard.NavigateAsync(_fixture.DashboardUrl);
+        await dashboard.WaitForDashboardLoadAsync();
+
+        // Verify NAS table exists
+        var nasTableVisible = await serversPage.NasTable.IsVisibleAsync();
+        nasTableVisible.Should().BeTrue("NAS table should be visible on Servers tab");
+
+        // Count NAS rows - should be 7 for standard deployment
+        var nasCount = await serversPage.GetNasServerCountAsync();
+        nasCount.Should().Be(7, "should show all 7 NAS servers in compact table");
+
+        // Verify group headers exist (Input, Output, Backup)
+        var groupHeaderCount = await serversPage.NasTableGroupHeaders.CountAsync();
+        groupHeaderCount.Should().Be(3, "should have Input, Output, and Backup group headers");
+
+        // Verify all rows are visible in viewport (no scrolling needed at 1920x1080)
+        var rows = await serversPage.NasTableRows.AllAsync();
+        foreach (var row in rows)
+        {
+            var isVisible = await row.IsVisibleAsync();
+            isVisible.Should().BeTrue("all NAS rows should be visible without scrolling");
+        }
+
+        await page.CloseAsync();
+    }
+
+    [Fact]
+    public async Task Servers_DetailsPanel_OpensFromProtocolCard()
+    {
+        var page = await _fixture.Context.NewPageAsync();
+        var dashboard = new DashboardPage(page);
+        var serversPage = new ServersPage(page);
+
+        await dashboard.NavigateAsync(_fixture.DashboardUrl);
+        await dashboard.WaitForDashboardLoadAsync();
+
+        // Get a protocol server name (non-NAS)
+        var serverNames = await serversPage.GetAllServerNamesAsync();
+        serverNames.Should().NotBeEmpty("should have protocol servers");
+
+        var firstServer = serverNames[0];
+        await serversPage.SelectServerAsync(firstServer);
+
+        // Verify panel opened with server info
+        var details = await serversPage.GetServerDetailsAsync();
+        details.Should().ContainKey("name");
+        details["name"].Should().NotBeNullOrEmpty();
+
+        // Verify protocol is shown
+        details.Should().ContainKey("protocol");
+
+        // Close panel
+        await serversPage.CloseDetailsPanelAsync();
+
+        await page.CloseAsync();
+    }
+
+    [Fact]
+    public async Task Servers_DetailsPanel_OpensFromNasTableRow()
+    {
+        var page = await _fixture.Context.NewPageAsync();
+        var dashboard = new DashboardPage(page);
+        var serversPage = new ServersPage(page);
+
+        await dashboard.NavigateAsync(_fixture.DashboardUrl);
+        await dashboard.WaitForDashboardLoadAsync();
+
+        // Verify NAS table has rows
+        var nasCount = await serversPage.GetNasServerCountAsync();
+        nasCount.Should().BeGreaterThan(0, "should have NAS servers");
+
+        // Click first NAS row to open details panel
+        await serversPage.SelectNasServerAsync(0);
+
+        // Verify panel opened
+        var details = await serversPage.GetServerDetailsAsync();
+        details.Should().ContainKey("name");
+        details["name"].Should().NotBeNullOrEmpty();
+
+        // Verify protocol shows in details
+        details.Should().ContainKey("protocol");
+
+        // Close panel
+        await serversPage.CloseDetailsPanelAsync();
 
         await page.CloseAsync();
     }
