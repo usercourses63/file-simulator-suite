@@ -27,6 +27,10 @@ public class ServersPage
     public ILocator ProtocolServersSection => _page.Locator(".server-section").Filter(new() { HasText = "Protocol Servers" });
 
     public ILocator ServerCards => _page.Locator(".server-card");
+    public ILocator NasTable => _page.Locator(".nas-table");
+    public ILocator NasTableRows => _page.Locator(".nas-table__row");
+    public ILocator NasTableGroupHeaders => _page.Locator(".nas-table__group-header");
+    public ILocator NasTableRowDetail => _page.Locator(".nas-table__row-detail");
     public ILocator CreateServerButton => _page.GetByRole(AriaRole.Button, new() { Name = "Add Server" });
     public ILocator CreateServerModal => _page.Locator(".create-server-modal");
     public ILocator DeleteConfirmDialog => _page.Locator(".delete-confirm-dialog, .modal-overlay");
@@ -252,12 +256,12 @@ public class ServersPage
     }
 
     /// <summary>
-    /// Count servers in NAS section
+    /// Count servers in NAS section (NAS servers render as table rows, not cards)
     /// </summary>
     public async Task<int> GetNasServerCountAsync()
     {
-        var nasCards = await NasServersSection.Locator(".server-card").CountAsync();
-        return nasCards;
+        var nasRows = await NasTableRows.CountAsync();
+        return nasRows;
     }
 
     /// <summary>
@@ -303,5 +307,59 @@ public class ServersPage
             $"() => document.querySelectorAll('.activity-log__item').length >= {minCount}",
             null,
             new() { Timeout = timeoutMs });
+    }
+
+    /// <summary>
+    /// Get all NAS server names from the compact table view
+    /// </summary>
+    public async Task<List<string>> GetNasServerNamesAsync()
+    {
+        var names = new List<string>();
+        var cells = await _page.Locator(".nas-table__cell--name").AllAsync();
+        foreach (var cell in cells)
+        {
+            var text = await cell.TextContentAsync();
+            if (!string.IsNullOrWhiteSpace(text))
+                names.Add(text.Trim());
+        }
+        return names;
+    }
+
+    /// <summary>
+    /// Click a NAS table row by index (0-based) to open the details panel
+    /// </summary>
+    public async Task SelectNasServerAsync(int rowIndex)
+    {
+        await NasTableRows.Nth(rowIndex).ClickAsync();
+        await _page.Locator(".details-panel--open").WaitForAsync(new() { State = WaitForSelectorState.Visible });
+    }
+
+    /// <summary>
+    /// Get the full CSS class attribute string of a server card matching the given name
+    /// </summary>
+    public async Task<string?> GetProtocolCardClassesAsync(string serverName)
+    {
+        var card = GetServerCard(serverName);
+        return await card.GetAttributeAsync("class");
+    }
+
+    /// <summary>
+    /// Get a dictionary mapping server name to its CSS class string for all protocol server cards (non-NAS)
+    /// </summary>
+    public async Task<Dictionary<string, string>> GetAllProtocolCardProtocolClassesAsync()
+    {
+        var result = new Dictionary<string, string>();
+        var cards = await ProtocolServersSection.Locator(".server-card").AllAsync();
+        foreach (var card in cards)
+        {
+            var nameElement = card.Locator(".server-name");
+            var name = await nameElement.TextContentAsync();
+            var classes = await card.GetAttributeAsync("class");
+            if (!string.IsNullOrWhiteSpace(name) && classes != null)
+            {
+                result[name.Trim()] = classes;
+            }
+        }
+        return result;
     }
 }
