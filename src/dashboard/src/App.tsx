@@ -148,20 +148,27 @@ function App() {
       data.servers.map(s => [s.name, { isHealthy: s.isHealthy, protocol: s.protocol }])
     );
 
-    if (prevServersRef.current === null) {
-      // First load — populate silently
-      prevServersRef.current = current;
-      return;
-    }
-
-    const prev = prevServersRef.current;
+    const isInitialLoad = prevServersRef.current === null;
+    const prev = prevServersRef.current ?? new Map();
     const now = new Date().toISOString();
     const batch: ActivityEvent[] = [];
 
     for (const [name, info] of current) {
       const old = prev.get(name);
       if (!old) {
-        batch.push({ id: `sc-${now}-${name}`, type: 'server-created', timestamp: now, title: `${info.protocol} server created`, detail: name, severity: 'info' });
+        if (isInitialLoad) {
+          // Initial load: show current state of each server
+          batch.push({
+            id: `si-${now}-${name}`,
+            type: info.isHealthy ? 'server-healthy' : 'server-down',
+            timestamp: now,
+            title: `${name}`,
+            detail: `${info.protocol} — ${info.isHealthy ? 'healthy' : 'down'}`,
+            severity: info.isHealthy ? 'success' : 'critical',
+          });
+        } else {
+          batch.push({ id: `sc-${now}-${name}`, type: 'server-created', timestamp: now, title: `${info.protocol} server created`, detail: name, severity: 'info' });
+        }
       } else {
         if (!old.isHealthy && info.isHealthy) {
           batch.push({ id: `sh-${now}-${name}`, type: 'server-healthy', timestamp: now, title: `${name} is healthy`, severity: 'success' });
@@ -171,9 +178,11 @@ function App() {
       }
     }
 
-    for (const [name, info] of prev) {
-      if (!current.has(name)) {
-        batch.push({ id: `sx-${now}-${name}`, type: 'server-deleted', timestamp: now, title: `${info.protocol} server deleted`, detail: name, severity: 'warning' });
+    if (!isInitialLoad) {
+      for (const [name, info] of prev) {
+        if (!current.has(name)) {
+          batch.push({ id: `sx-${now}-${name}`, type: 'server-deleted', timestamp: now, title: `${info.protocol} server deleted`, detail: name, severity: 'warning' });
+        }
       }
     }
 

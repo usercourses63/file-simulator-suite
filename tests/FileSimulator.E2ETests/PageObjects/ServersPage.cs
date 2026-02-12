@@ -16,6 +16,12 @@ public class ServersPage
     }
 
     // Locators
+    public ILocator ServersContainer => _page.Locator(".servers-container");
+    public ILocator ServersSidebar => _page.Locator(".servers-sidebar");
+    public ILocator ActivityLog => _page.Locator(".activity-log");
+    public ILocator ActivityLogItems => _page.Locator(".activity-log__item");
+    public ILocator ActivityLogEmpty => _page.Locator(".activity-log__empty");
+    public ILocator ActivityLogClear => _page.Locator(".activity-log__clear");
     public ILocator ServerGridContainer => _page.Locator(".server-grid-container");
     public ILocator NasServersSection => _page.Locator(".server-section").Filter(new() { HasText = "NAS Servers" });
     public ILocator ProtocolServersSection => _page.Locator(".server-section").Filter(new() { HasText = "Protocol Servers" });
@@ -261,5 +267,41 @@ public class ServersPage
     {
         var protocolCards = await ProtocolServersSection.Locator(".server-card").CountAsync();
         return protocolCards;
+    }
+
+    /// <summary>
+    /// Get all activity log event titles
+    /// </summary>
+    public async Task<List<string>> GetActivityLogTitlesAsync()
+    {
+        var items = await ActivityLogItems.AllAsync();
+        var titles = new List<string>();
+        foreach (var item in items)
+        {
+            var titleEl = item.Locator(".activity-log__event-title");
+            var text = await titleEl.TextContentAsync();
+            if (!string.IsNullOrWhiteSpace(text))
+                titles.Add(text.Trim());
+        }
+        return titles;
+    }
+
+    /// <summary>
+    /// Get the activity log event count
+    /// </summary>
+    public async Task<int> GetActivityLogCountAsync()
+    {
+        return await ActivityLogItems.CountAsync();
+    }
+
+    /// <summary>
+    /// Wait for at least N items in the activity log
+    /// </summary>
+    public async Task WaitForActivityLogItemsAsync(int minCount, int timeoutMs = 10000)
+    {
+        await _page.WaitForFunctionAsync(
+            $"() => document.querySelectorAll('.activity-log__item').length >= {minCount}",
+            null,
+            new() { Timeout = timeoutMs });
     }
 }
