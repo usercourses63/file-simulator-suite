@@ -219,6 +219,7 @@ Recent decisions affecting current work:
 3. **Configure FTP passive mode** - Cross-protocol tests blocked by FTP passive mode data port issues. Need to expose passive port range via NodePort or switch to active mode.
 4. **Implement Kafka API endpoints** - Add POST /api/kafka/produce and GET /api/kafka/consume/{topic} to Control API for full Kafka test coverage.
 5. **Fix flaky E2E tests on fresh clusters** - `History_LoadsDataForRange` and `Servers_CanViewServerDetails` timeout on fresh Minikube (no historical data, UI timing). See `.planning/todos/pending/2026-02-12-fix-flaky-e2e-tests-on-fresh-clusters.md`.
+6. **Plan UI refactoring for Servers page** - Wider layout, protocol color coding, visual differentiation of server types. See `.planning/todos/pending/2026-02-12-plan-ui-refactoring-for-servers-page-layout-and-visual-differentiation.md`.
 
 ### Blockers/Concerns
 
