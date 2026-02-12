@@ -7,6 +7,7 @@ import { HealthSampleDto, ChartDataPoint } from '../types/metrics';
 interface HistoryTabProps {
   apiBaseUrl: string;
   initialServerId?: string;
+  deployedServerNames?: string[];
 }
 
 /**
@@ -14,7 +15,7 @@ interface HistoryTabProps {
  * Automatically switches between raw samples and hourly aggregations
  * based on the selected time range.
  */
-export function HistoryTab({ apiBaseUrl, initialServerId }: HistoryTabProps) {
+export function HistoryTab({ apiBaseUrl, initialServerId, deployedServerNames }: HistoryTabProps) {
   // Default to last 24 hours
   const [timeRange, setTimeRange] = useState(() => {
     const end = new Date();
@@ -90,6 +91,11 @@ export function HistoryTab({ apiBaseUrl, initialServerId }: HistoryTabProps) {
     return Array.from(ids).sort();
   }, [data]);
 
+  // Use deployed server names for the dropdown when available (filters out deleted dynamic servers)
+  const dropdownServers = deployedServerNames && deployedServerNames.length > 0
+    ? deployedServerNames
+    : serverIds;
+
   const handleRangeChange = (startTime: Date, endTime: Date) => {
     setTimeRange({ startTime, endTime });
   };
@@ -109,7 +115,7 @@ export function HistoryTab({ apiBaseUrl, initialServerId }: HistoryTabProps) {
             onChange={(e) => setSelectedServer(e.target.value || undefined)}
           >
             <option value="">All Servers</option>
-            {serverIds.map(id => (
+            {dropdownServers.map(id => (
               <option key={id} value={id}>{id}</option>
             ))}
           </select>

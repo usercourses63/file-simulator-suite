@@ -100,6 +100,12 @@ function App() {
   const [deleteTarget, setDeleteTarget] = useState<{ name: string; protocol: string } | null>(null);
   const [batchDeleteTargets, setBatchDeleteTargets] = useState<string[]>([]);
 
+  // Compute deployed server names for History tab dropdown filtering
+  const deployedServerNames = useMemo(() => {
+    if (!data?.servers) return [];
+    return data.servers.map(s => s.name).sort();
+  }, [data?.servers]);
+
   // Build dynamic info map for servers from SignalR data
   const dynamicInfo = useMemo(() => {
     if (!data?.servers) return {};
@@ -540,6 +546,7 @@ function App() {
           <SafeHistoryTab
             apiBaseUrl={apiBaseUrl}
             initialServerId={historyServerId}
+            deployedServerNames={deployedServerNames}
           />
         )}
 
