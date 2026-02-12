@@ -144,12 +144,10 @@
 
 .alerts-tab__title {
   font-weight: 600;
-  max-width: 250px;
 }
 
 .alerts-tab__message {
   color: var(--text-secondary);
-  max-width: 400px;
   white-space: normal;
   word-break: break-word;
 }
