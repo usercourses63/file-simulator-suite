@@ -139,7 +139,7 @@ Plans:
 3. Details panel shows: name, protocol, health, ports, endpoints, and actions
 
 Plans:
-- [ ] 23-01: Wire NAS row click to existing details panel, verify all info displayed
+- [x] 23-01: Wire NAS row click to existing details panel, verify all info displayed
 
 ### Phase 24: Secondary Tab Improvements
 **Goal**: Quick layout and data quality improvements for History, Files, Kafka, and Alerts tabs
@@ -195,9 +195,9 @@ Plans:
 | 20. Wider Layout and Collapsible Sidebar | v2.3.0 | 1/1 | Complete | 2026-02-12 |
 | 21. Protocol Color System | v2.3.0 | 2/2 | Complete | 2026-02-12 |
 | 22. NAS Compact Table View | v2.3.0 | 2/2 | Complete | 2026-02-12 |
-| 23. Server Details Panel Adaptation | v2.3.0 | 0/1 | Pending | — |
+| 23. Server Details Panel Adaptation | v2.3.0 | 1/1 | Complete | 2026-02-12 |
 | 24. Secondary Tab Improvements | v2.3.0 | 0/2 | Pending | — |
 | 25. E2E Tests + Version Bump + Release | v2.3.0 | 0/2 | Pending | — |
 
 ---
-*Last updated: 2026-02-12 - Phase 22 complete*
+*Last updated: 2026-02-12 - Phase 23 complete*
