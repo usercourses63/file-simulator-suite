@@ -4,6 +4,7 @@
 
 - ✅ **v1.0 Multi-NAS Production Topology** - Phases 1-5 (shipped 2026-02-01)
 - ✅ **v2.0 Simulator Control Platform** - Phases 6-14 (shipped 2026-02-05)
+- 🔄 **v2.2.0 Activity Log Completeness** - Phases 15-19 (in progress)
 
 ## Phases
 
@@ -72,6 +73,71 @@ Plans:
 
 </details>
 
+### v2.2.0 Activity Log Completeness (Phases 15-19)
+
+**Milestone Goal:** Make the activity log a complete audit trail of all server and file operations, add rename API, write comprehensive E2E tests, and validate fresh install from scratch.
+
+### Phase 15: Backend API Enhancements
+**Goal**: Add rename endpoint and read event emission to Control API
+**Requirements**: API-01, API-02
+**Success Criteria**:
+1. `PUT /api/files/rename` renames files and FileSystemWatcher emits Renamed event with OldPath
+2. `GET /api/files/download` broadcasts "Read" FileEvent via SignalR after successful download
+3. Both endpoints return appropriate HTTP status codes and error messages
+
+Plans:
+- [ ] 15-01: Add rename endpoint and read event emission to FilesController
+
+### Phase 16: Frontend Activity Log Completeness
+**Goal**: Handle all file event types in activity log and improve server attribution
+**Requirements**: SRVLOG-01, SRVLOG-02, SRVLOG-03, FILELOG-01, FILELOG-02, FILELOG-03, FILELOG-04, FILELOG-05
+**Success Criteria**:
+1. Activity log shows created/healthy/deleted events for all dynamic server types
+2. Activity log shows written/read/deleted/renamed events for all files with server attribution
+3. Files on static servers attributed via protocol-based fallback (NAS storage, FTP server, shared storage)
+4. Renamed events show both old and new file names
+
+Plans:
+- [ ] 16-01: Handle Renamed and Read events in App.tsx, update types and ActivityLog component
+
+### Phase 17: Version Bump + Infrastructure
+**Goal**: Update all version references to 2.2.0 and fix install script defaults
+**Requirements**: INFRA-01, INFRA-02
+**Success Criteria**:
+1. All version references show 2.2.0 (package.json, Chart.yaml, values.yaml, CLAUDE.md)
+2. Dashboard header badge displays v2.2.0
+3. Install-Simulator.ps1 uses 12GB RAM, 4 CPUs, and --kube-context on all kubectl commands
+
+Plans:
+- [ ] 17-01: Version bump and Install-Simulator.ps1 fixes
+
+### Phase 18: Comprehensive E2E Tests
+**Goal**: Write and pass E2E tests covering all server and file activity scenarios
+**Requirements**: TEST-01, TEST-02, TEST-03, TEST-04
+**Success Criteria**:
+1. Test creates 5 dynamic servers (FTP, SFTP, 3x NAS) and verifies activity log events
+2. Test performs all file operations on static servers and verifies each event type
+3. Test verifies correct server attribution for files on dynamic NAS servers
+4. Test verifies file rename shows old and new name
+5. All tests pass on deployed cluster
+
+Plans:
+- [ ] 18-01: Write ServerAndFileActivityTests.cs with 4 test methods
+- [ ] 18-02: Run tests and iterate on fixes
+
+### Phase 19: Fresh Install Validation + Release
+**Goal**: Validate entire system from scratch and publish v2.2.0 release
+**Requirements**: VAL-01, VAL-02, VAL-03, VAL-04
+**Success Criteria**:
+1. Minikube deleted and recreated from scratch via Install-Simulator.ps1
+2. All E2E Playwright tests pass on fresh install
+3. TestConsole protocol tests pass on fresh install
+4. GitHub release v2.2.0 published with tag and release notes
+
+Plans:
+- [ ] 19-01: Delete Minikube, fresh install, build and load images
+- [ ] 19-02: Run all tests and create release
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -90,6 +156,11 @@ Plans:
 | 12. Alerting and Production Readiness | v2.0 | 10/10 | Complete | 2026-02-05 |
 | 13. TestConsole Modernization and Release | v2.0 | 8/8 | Complete | 2026-02-05 |
 | 14. Comprehensive API-Driven Integration Testing | v2.0 | 10/10 | Complete | 2026-02-05 |
+| 15. Backend API Enhancements | v2.2.0 | 0/1 | Not Started | — |
+| 16. Frontend Activity Log Completeness | v2.2.0 | 0/1 | Not Started | — |
+| 17. Version Bump + Infrastructure | v2.2.0 | 0/1 | Not Started | — |
+| 18. Comprehensive E2E Tests | v2.2.0 | 0/2 | Not Started | — |
+| 19. Fresh Install Validation + Release | v2.2.0 | 0/2 | Not Started | — |
 
 ---
-*Last updated: 2026-02-11 - v2.0 milestone archived*
+*Last updated: 2026-02-12 - v2.2.0 milestone initialized*
