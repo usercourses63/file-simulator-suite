@@ -86,7 +86,7 @@ function App() {
 
   // Refs for diffing SignalR data to produce activity events
   const prevServersRef = useRef<Map<string, { isHealthy: boolean; protocol: string }> | null>(null);
-  const lastFileEventCountRef = useRef(0);
+  const processedFileEventsRef = useRef<Set<string>>(new Set());
   const prevAlertIdsRef = useRef<Set<string> | null>(null);
   const prevMountStateRef = useRef<string | null>(null);
 
@@ -167,7 +167,7 @@ function App() {
             severity: info.isHealthy ? 'success' : 'critical',
           });
         } else {
-          batch.push({ id: `sc-${now}-${name}`, type: 'server-created', timestamp: now, title: `${info.protocol} server created`, detail: name, severity: 'info' });
+          batch.push({ id: `sc-${now}-${name}`, type: 'server-created', timestamp: now, title: `${name}`, detail: `${info.protocol} server created`, severity: 'info' });
         }
       } else {
         if (!old.isHealthy && info.isHealthy) {
@@ -181,7 +181,7 @@ function App() {
     if (!isInitialLoad) {
       for (const [name, info] of prev) {
         if (!current.has(name)) {
-          batch.push({ id: `sx-${now}-${name}`, type: 'server-deleted', timestamp: now, title: `${info.protocol} server deleted`, detail: name, severity: 'warning' });
+          batch.push({ id: `sx-${now}-${name}`, type: 'server-deleted', timestamp: now, title: `${name}`, detail: `${info.protocol} server deleted`, severity: 'warning' });
         }
       }
     }
@@ -190,34 +190,45 @@ function App() {
     prevServersRef.current = current;
   }, [data?.servers, addEvents]);
 
-  // Diff file events to emit activity events (skip Modified to reduce noise)
+  // Diff file events to emit activity events (skip Modified to reduce noise).
+  // Track processed events by Set of unique keys since useFileEvents caps at 50.
   useEffect(() => {
-    if (fileEvents.length <= lastFileEventCountRef.current) {
-      lastFileEventCountRef.current = fileEvents.length;
-      return;
-    }
+    if (fileEvents.length === 0) return;
 
-    const newCount = fileEvents.length - lastFileEventCountRef.current;
-    const newEntries = fileEvents.slice(0, newCount);
     const now = new Date().toISOString();
     const batch: ActivityEvent[] = [];
 
-    for (const fe of newEntries) {
+    // Build server name list for path matching
+    const serverNames = prevServersRef.current ? Array.from(prevServersRef.current.keys()) : [];
+
+    for (const fe of fileEvents) {
       if (fe.eventType === 'Modified') continue;
       const type = fe.eventType === 'Created' ? 'file-created' : fe.eventType === 'Deleted' ? 'file-deleted' : null;
       if (!type) continue;
+
+      const feKey = `${fe.eventType}:${fe.fileName}:${fe.timestamp || ''}`;
+      if (processedFileEventsRef.current.has(feKey)) continue;
+      processedFileEventsRef.current.add(feKey);
+
+      // Try to match file path or name to a known server
+      const pathLower = (fe.relativePath || fe.fileName || '').toLowerCase();
+      const nameLower = (fe.fileName || '').toLowerCase();
+      const matchedServer = serverNames.find(s => pathLower.includes(s.toLowerCase()) || nameLower.includes(s.toLowerCase()));
+
+      const action = fe.eventType === 'Created' ? 'written to' : 'deleted from';
+      const serverSuffix = matchedServer || 'shared storage';
+
       batch.push({
         id: `fe-${now}-${fe.fileName}`,
         type,
         timestamp: fe.timestamp || now,
-        title: `File ${fe.eventType.toLowerCase()}: ${fe.fileName}`,
-        detail: fe.relativePath,
+        title: `${fe.fileName} ${action} ${serverSuffix}`,
+        detail: fe.relativePath || '/',
         severity: type === 'file-deleted' ? 'warning' : 'info',
       });
     }
 
     if (batch.length > 0) addEvents(batch);
-    lastFileEventCountRef.current = fileEvents.length;
   }, [fileEvents, addEvents]);
 
   // Diff active alerts to emit activity events

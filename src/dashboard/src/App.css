@@ -810,7 +810,7 @@ body {
 
 .servers-container {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 450px 1fr;
   gap: 1rem;
   height: calc(100vh - 120px);
 }
@@ -835,7 +835,7 @@ body {
 
   .servers-sidebar {
     order: 1;
-    max-height: 300px;
+    max-height: 400px;
   }
 
   .servers-main {
