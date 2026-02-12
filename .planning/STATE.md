@@ -6,15 +6,15 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Development systems must connect to simulated NAS servers using identical PV/PVC configurations as production OCP, with test files written on Windows immediately visible through NFS mounts - zero deployment differences between dev and prod.
 
-**Current focus:** v2.2.0 Activity Log Completeness — Phase 18 (E2E Tests)
+**Current focus:** v2.2.0 Activity Log Completeness — COMPLETE
 
 ## Current Position
 
 Milestone: v2.2.0 Activity Log Completeness
-Status: Phase 18 in progress — phases 15-17 complete, running E2E tests
-Last activity: 2026-02-12 - E2E tests written, running plan 18-02
+Status: All 5 phases complete, released as v2.2.0
+Last activity: 2026-02-12 - v2.2.0 tagged and released
 
-Progress: [███████████---------] 4 of 7 plans complete (57%)
+Progress: [████████████████████] 7 of 7 plans complete (100%)
 
 ## Performance Metrics
 
@@ -226,13 +226,14 @@ No active blockers.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Phase 18 — E2E tests written, running test suite
-Resume: Run E2E tests with USE_EXISTING_SIMULATOR=true dotnet test --filter ServerAndFileActivityTests
+Stopped at: v2.2.0 released — all phases complete
+Resume: /gsd:complete-milestone to archive v2.2.0
 
 ## Release History
 
 | Version | Date | Description |
 |---------|------|-------------|
+| v2.2.0 | 2026-02-12 | Activity log completeness, rename API, E2E tests, fresh install validation |
 | v2.1.0 | 2026-02-11 | Activity log, alert dismiss, version badge, version sync |
 | v2.0.0 | 2026-02-05 | Simulator Control Platform - Dashboard, API, Dynamic Servers, Kafka |
 | v1.0 | 2026-02-01 | Multi-NAS Production Topology - 7 NAS servers, bidirectional sync |
