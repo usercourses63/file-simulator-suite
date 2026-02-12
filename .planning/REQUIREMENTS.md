@@ -3,10 +3,10 @@
 ## Milestone Requirements
 
 ### Servers - Visual Differentiation (VIS) — Priority: HIGH
-- [ ] **VIS-01**: Server cards have protocol-tinted backgrounds using existing color palette (FTP=#8b5cf6, SFTP=#ec4899, HTTP=#3b82f6, S3=#f97316, SMB=#22c55e, NAS=#14b8a6)
-- [ ] **VIS-02**: Static (Helm) vs Dynamic servers visually differentiated with subtle badge or icon
-- [ ] **VIS-03**: Protocol badge colors consistent with card tinting (unified color system)
-- [ ] **VIS-04**: Health status (healthy/unhealthy/stopped) visually distinct beyond just left border color
+- [x] **VIS-01**: Server cards have protocol-tinted backgrounds using existing color palette (FTP=#8b5cf6, SFTP=#ec4899, HTTP=#3b82f6, S3=#f97316, SMB=#22c55e, NAS=#14b8a6)
+- [x] **VIS-02**: Static (Helm) vs Dynamic servers visually differentiated with subtle badge or icon
+- [x] **VIS-03**: Protocol badge colors consistent with card tinting (unified color system)
+- [x] **VIS-04**: Health status (healthy/unhealthy/stopped) visually distinct beyond just left border color
 
 ### Servers - Layout (LAYOUT) — Priority: HIGH
 - [x] **LAYOUT-01**: Remove 1400px max-width cap on main content area for wider server grid
@@ -60,10 +60,10 @@
 
 | Requirement | Phase | Plan |
 |-------------|-------|------|
-| VIS-01 | 21 | — |
-| VIS-02 | 21 | — |
-| VIS-03 | 21 | — |
-| VIS-04 | 21 | — |
+| VIS-01 | 21 | 21-01 |
+| VIS-02 | 21 | 21-02 |
+| VIS-03 | 21 | 21-01 |
+| VIS-04 | 21 | 21-02 |
 | LAYOUT-01 | 20 | 20-01 |
 | LAYOUT-02 | 20 | 20-01 |
 | LAYOUT-03 | 20 | 20-01 |

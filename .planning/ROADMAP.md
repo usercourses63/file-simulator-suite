@@ -113,8 +113,8 @@ Plans:
 4. Health states (healthy/unhealthy/stopped) are more visually distinct (beyond left border)
 
 Plans:
-- [ ] 21-01: Add protocol-tinted card backgrounds and unified color variables
-- [ ] 21-02: Add static/dynamic badges and enhanced health state indicators
+- [x] 21-01: Add protocol-tinted card backgrounds and unified color variables
+- [x] 21-02: Add static/dynamic badges and enhanced health state indicators
 
 ### Phase 22: NAS Compact Table View
 **Goal**: Replace NAS card grid with compact grouped table rows that show all 7 NAS servers without scrolling
@@ -193,11 +193,11 @@ Plans:
 | 18. Comprehensive E2E Tests | v2.2.0 | 2/2 | Complete | 2026-02-12 |
 | 19. Fresh Install Validation + Release | v2.2.0 | 2/2 | Complete | 2026-02-12 |
 | 20. Wider Layout and Collapsible Sidebar | v2.3.0 | 1/1 | Complete | 2026-02-12 |
-| 21. Protocol Color System | v2.3.0 | 0/2 | Pending | — |
+| 21. Protocol Color System | v2.3.0 | 2/2 | Complete | 2026-02-12 |
 | 22. NAS Compact Table View | v2.3.0 | 0/2 | Pending | — |
 | 23. Server Details Panel Adaptation | v2.3.0 | 0/1 | Pending | — |
 | 24. Secondary Tab Improvements | v2.3.0 | 0/2 | Pending | — |
 | 25. E2E Tests + Version Bump + Release | v2.3.0 | 0/2 | Pending | — |
 
 ---
-*Last updated: 2026-02-12 - Phase 20 complete*
+*Last updated: 2026-02-12 - Phase 21 complete*
