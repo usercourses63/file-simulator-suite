@@ -153,8 +153,8 @@ Plans:
 5. Alerts table columns use flexible widths without hardcoded max-widths
 
 Plans:
-- [ ] 24-01-PLAN.md — History tab server filter cleanup and legend optimization
-- [ ] 24-02-PLAN.md — Files, Kafka, Alerts tab minor layout adjustments
+- [x] 24-01: History tab server filter cleanup and legend optimization
+- [x] 24-02: Files, Kafka, Alerts tab minor layout adjustments
 
 ### Phase 25: E2E Tests + Version Bump + Release
 **Goal**: Validate all UI changes with E2E tests and release v2.3.0
@@ -197,8 +197,8 @@ Plans:
 | 21. Protocol Color System | v2.3.0 | 2/2 | Complete | 2026-02-12 |
 | 22. NAS Compact Table View | v2.3.0 | 2/2 | Complete | 2026-02-12 |
 | 23. Server Details Panel Adaptation | v2.3.0 | 1/1 | Complete | 2026-02-12 |
-| 24. Secondary Tab Improvements | v2.3.0 | 0/2 | Pending | — |
+| 24. Secondary Tab Improvements | v2.3.0 | 2/2 | Complete | 2026-02-12 |
 | 25. E2E Tests + Version Bump + Release | v2.3.0 | 0/2 | Pending | — |
 
 ---
-*Last updated: 2026-02-12 - Phase 24 plans created*
+*Last updated: 2026-02-12 - Phase 24 complete*
