@@ -15,11 +15,11 @@
 - [x] **LAYOUT-04**: Responsive grid adapts gracefully from mobile (single column) to ultra-wide (6+ cards per row)
 
 ### Servers - NAS Grouping (NAS) — Priority: HIGH
-- [ ] **NAS-01**: NAS servers displayed as compact table rows instead of full cards
-- [ ] **NAS-02**: NAS servers grouped by directory function (Input / Output / Backup) with visual sub-group headers
-- [ ] **NAS-03**: Sub-group headers show server count and aggregate health status
-- [ ] **NAS-04**: All 7 NAS servers visible without scrolling on standard viewport (1920x1080)
-- [ ] **NAS-05**: NAS table rows expandable to show sparkline and additional details on demand
+- [x] **NAS-01**: NAS servers displayed as compact table rows instead of full cards
+- [x] **NAS-02**: NAS servers grouped by directory function (Input / Output / Backup) with visual sub-group headers
+- [x] **NAS-03**: Sub-group headers show server count and aggregate health status
+- [x] **NAS-04**: All 7 NAS servers visible without scrolling on standard viewport (1920x1080)
+- [x] **NAS-05**: NAS table rows expandable to show sparkline and additional details on demand
 
 ### Servers - Details Panel (DETAILS) — Priority: HIGH
 - [ ] **DETAILS-01**: Clicking any server (protocol card or NAS table row) opens details panel showing all current information

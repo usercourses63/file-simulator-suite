@@ -127,8 +127,8 @@ Plans:
 5. Clicking a NAS row expands to show sparkline and additional metrics
 
 Plans:
-- [ ] 22-01: Create NasTable component with grouped rows and sub-headers
-- [ ] 22-02: Add expandable row details with sparkline integration
+- [x] 22-01: Create NasTable component with grouped rows and sub-headers
+- [x] 22-02: Add expandable row details with sparkline integration
 
 ### Phase 23: Server Details Panel Adaptation
 **Goal**: Ensure details panel works with both protocol cards and NAS table rows
@@ -194,10 +194,10 @@ Plans:
 | 19. Fresh Install Validation + Release | v2.2.0 | 2/2 | Complete | 2026-02-12 |
 | 20. Wider Layout and Collapsible Sidebar | v2.3.0 | 1/1 | Complete | 2026-02-12 |
 | 21. Protocol Color System | v2.3.0 | 2/2 | Complete | 2026-02-12 |
-| 22. NAS Compact Table View | v2.3.0 | 0/2 | Pending | — |
+| 22. NAS Compact Table View | v2.3.0 | 2/2 | Complete | 2026-02-12 |
 | 23. Server Details Panel Adaptation | v2.3.0 | 0/1 | Pending | — |
 | 24. Secondary Tab Improvements | v2.3.0 | 0/2 | Pending | — |
 | 25. E2E Tests + Version Bump + Release | v2.3.0 | 0/2 | Pending | — |
 
 ---
-*Last updated: 2026-02-12 - Phase 21 complete*
+*Last updated: 2026-02-12 - Phase 22 complete*
