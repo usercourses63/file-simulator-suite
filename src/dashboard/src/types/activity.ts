@@ -7,6 +7,7 @@ export type ActivityEventType =
   | 'file-deleted'
   | 'file-modified'
   | 'file-read'
+  | 'file-renamed'
   | 'alert-triggered'
   | 'alert-resolved'
   | 'mount-state-change';

@@ -86,7 +86,7 @@ Plans:
 3. Both endpoints return appropriate HTTP status codes and error messages
 
 Plans:
-- [ ] 15-01: Add rename endpoint and read event emission to FilesController
+- [x] 15-01: Add rename endpoint and read event emission to FilesController
 
 ### Phase 16: Frontend Activity Log Completeness
 **Goal**: Handle all file event types in activity log and improve server attribution
@@ -98,7 +98,7 @@ Plans:
 4. Renamed events show both old and new file names
 
 Plans:
-- [ ] 16-01: Handle Renamed and Read events in App.tsx, update types and ActivityLog component
+- [x] 16-01: Handle Renamed and Read events in App.tsx, update types and ActivityLog component
 
 ### Phase 17: Version Bump + Infrastructure
 **Goal**: Update all version references to 2.2.0 and fix install script defaults
@@ -109,7 +109,7 @@ Plans:
 3. Install-Simulator.ps1 uses 12GB RAM, 4 CPUs, and --kube-context on all kubectl commands
 
 Plans:
-- [ ] 17-01: Version bump and Install-Simulator.ps1 fixes
+- [x] 17-01: Version bump and Install-Simulator.ps1 fixes
 
 ### Phase 18: Comprehensive E2E Tests
 **Goal**: Write and pass E2E tests covering all server and file activity scenarios
@@ -122,8 +122,8 @@ Plans:
 5. All tests pass on deployed cluster
 
 Plans:
-- [ ] 18-01: Write ServerAndFileActivityTests.cs with 4 test methods
-- [ ] 18-02: Run tests and iterate on fixes
+- [x] 18-01: Write ServerAndFileActivityTests.cs with 4 test methods
+- [x] 18-02: Run tests and iterate on fixes
 
 ### Phase 19: Fresh Install Validation + Release
 **Goal**: Validate entire system from scratch and publish v2.2.0 release
@@ -156,10 +156,10 @@ Plans:
 | 12. Alerting and Production Readiness | v2.0 | 10/10 | Complete | 2026-02-05 |
 | 13. TestConsole Modernization and Release | v2.0 | 8/8 | Complete | 2026-02-05 |
 | 14. Comprehensive API-Driven Integration Testing | v2.0 | 10/10 | Complete | 2026-02-05 |
-| 15. Backend API Enhancements | v2.2.0 | 0/1 | Not Started | — |
-| 16. Frontend Activity Log Completeness | v2.2.0 | 0/1 | Not Started | — |
-| 17. Version Bump + Infrastructure | v2.2.0 | 0/1 | Not Started | — |
-| 18. Comprehensive E2E Tests | v2.2.0 | 0/2 | Not Started | — |
+| 15. Backend API Enhancements | v2.2.0 | 1/1 | Complete | 2026-02-12 |
+| 16. Frontend Activity Log Completeness | v2.2.0 | 1/1 | Complete | 2026-02-12 |
+| 17. Version Bump + Infrastructure | v2.2.0 | 1/1 | Complete | 2026-02-12 |
+| 18. Comprehensive E2E Tests | v2.2.0 | 2/2 | Complete | 2026-02-12 |
 | 19. Fresh Install Validation + Release | v2.2.0 | 0/2 | Not Started | — |
 
 ---

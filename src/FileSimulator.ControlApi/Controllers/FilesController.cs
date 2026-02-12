@@ -1,6 +1,8 @@
 namespace FileSimulator.ControlApi.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using FileSimulator.ControlApi.Hubs;
 using FileSimulator.ControlApi.Models;
 
 [ApiController]
@@ -9,6 +11,7 @@ public class FilesController : ControllerBase
 {
     private readonly string _basePath;
     private readonly ILogger<FilesController> _logger;
+    private readonly IHubContext<FileEventsHub> _fileEventsHub;
 
     // Hidden directories to exclude
     private static readonly HashSet<string> HiddenDirs = new(StringComparer.OrdinalIgnoreCase)
@@ -16,10 +19,11 @@ public class FilesController : ControllerBase
         ".minio.sys", ".deleted"
     };
 
-    public FilesController(IConfiguration config, ILogger<FilesController> logger)
+    public FilesController(IConfiguration config, ILogger<FilesController> logger, IHubContext<FileEventsHub> fileEventsHub)
     {
         _basePath = config["FileWatcher:Path"] ?? "/mnt/simulator-data";
         _logger = logger;
+        _fileEventsHub = fileEventsHub;
     }
 
     /// <summary>
@@ -213,6 +217,20 @@ public class FilesController : ControllerBase
 
             _logger.LogInformation("Downloading file: {Path}", path);
 
+            // Emit Read event via SignalR so activity log tracks downloads
+            var relativePath = Path.GetRelativePath(_basePath, fullPath);
+            var readEvent = new FileEventDto
+            {
+                Path = fullPath,
+                RelativePath = relativePath,
+                FileName = fileName,
+                EventType = "Read",
+                Timestamp = DateTime.UtcNow,
+                Protocols = GetVisibleProtocols(fullPath),
+                IsDirectory = false
+            };
+            _ = _fileEventsHub.Clients.All.SendAsync("FileEvent", readEvent);
+
             return File(stream, "application/octet-stream", fileName);
         }
         catch (Exception ex)
@@ -270,6 +288,77 @@ public class FilesController : ControllerBase
         {
             _logger.LogError(ex, "Error deleting: {Path}", path);
             return StatusCode(500, new { error = "Failed to delete" });
+        }
+    }
+
+    /// <summary>
+    /// Rename a file
+    /// </summary>
+    /// <param name="request">Source path and new file name</param>
+    /// <returns>Renamed FileNodeDto</returns>
+    [HttpPut("rename")]
+    public IActionResult Rename([FromBody] RenameRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Path) || string.IsNullOrWhiteSpace(request.NewName))
+        {
+            return BadRequest(new { error = "Path and newName are required" });
+        }
+
+        // Validate new name doesn't contain path separators
+        if (request.NewName.Contains('/') || request.NewName.Contains('\\'))
+        {
+            return BadRequest(new { error = "newName must be a file name, not a path" });
+        }
+
+        if (!ValidatePath(request.Path, out var sourcePath))
+        {
+            _logger.LogWarning("Path traversal attempt detected: {Path}", request.Path);
+            return BadRequest(new { error = "Invalid source path" });
+        }
+
+        if (!System.IO.File.Exists(sourcePath))
+        {
+            return NotFound(new { error = "Source file not found" });
+        }
+
+        var destPath = Path.Combine(Path.GetDirectoryName(sourcePath)!, request.NewName);
+        if (!destPath.StartsWith(_basePath, StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(new { error = "Invalid destination path" });
+        }
+
+        if (System.IO.File.Exists(destPath))
+        {
+            return Conflict(new { error = "Destination file already exists" });
+        }
+
+        try
+        {
+            // File.Move triggers FileSystemWatcher OnRenamed → SignalR broadcast with OldPath
+            System.IO.File.Move(sourcePath, destPath);
+
+            var fileInfo = new FileInfo(destPath);
+            var relativePath = Path.GetRelativePath(_basePath, destPath);
+
+            var node = new FileNodeDto
+            {
+                Id = relativePath.Replace('\\', '/'),
+                Name = request.NewName,
+                IsDirectory = false,
+                Size = fileInfo.Length,
+                Modified = fileInfo.LastWriteTimeUtc.ToString("O"),
+                Protocols = GetVisibleProtocols(destPath),
+                Children = null
+            };
+
+            _logger.LogInformation("Renamed file: {Source} -> {Dest}", request.Path, request.NewName);
+
+            return Ok(node);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error renaming file: {Path} -> {NewName}", request.Path, request.NewName);
+            return StatusCode(500, new { error = "Failed to rename file" });
         }
     }
 

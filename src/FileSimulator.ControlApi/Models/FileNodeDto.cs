@@ -26,3 +26,15 @@ public record FileNodeDto
     /// <summary>Child nodes (populated if directory and expanded)</summary>
     public List<FileNodeDto>? Children { get; init; }
 }
+
+/// <summary>
+/// Request body for PUT /api/files/rename.
+/// </summary>
+public record RenameRequest
+{
+    /// <summary>Relative path to the file to rename (e.g. "/old-name.txt")</summary>
+    public required string Path { get; init; }
+
+    /// <summary>New file name (just the name, not a path)</summary>
+    public required string NewName { get; init; }
+}

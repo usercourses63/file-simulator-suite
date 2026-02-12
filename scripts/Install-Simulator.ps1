@@ -18,10 +18,10 @@
     Minikube profile name. Default: file-simulator
 
 .PARAMETER MinikubeMemory
-    Memory allocation for Minikube VM in MB. Default: 4096
+    Memory allocation for Minikube VM in MB. Default: 12288 (12GB, required for Kafka)
 
 .PARAMETER MinikubeCPUs
-    Number of CPUs for Minikube VM. Default: 2
+    Number of CPUs for Minikube VM. Default: 4
 
 .PARAMETER MinikubeDisk
     Disk size for Minikube VM. Default: 20g
@@ -54,14 +54,22 @@
 param(
     [string]$SimulatorPath = "C:\simulator-data",
     [string]$MinikubeProfile = "file-simulator",
-    [int]$MinikubeMemory = 4096,
-    [int]$MinikubeCPUs = 2,
+    [int]$MinikubeMemory = 12288,
+    [int]$MinikubeCPUs = 4,
     [string]$MinikubeDisk = "20g",
     [switch]$SkipMinikubeCreate,
     [switch]$SkipHelmDeploy,
     [switch]$StartTunnel,
-    [string]$ValuesFile
+    [string]$ValuesFile = ""
 )
+
+# Default to values-v1-complete.yaml (7 NAS + all protocols + control platform)
+if (-not $ValuesFile) {
+    $defaultValues = Join-Path $PSScriptRoot "..\helm-chart\file-simulator\values-v1-complete.yaml"
+    if (Test-Path $defaultValues) {
+        $ValuesFile = $defaultValues
+    }
+}
 
 $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -290,6 +298,7 @@ if (-not $SkipHelmDeploy) {
         "upgrade", "--install",
         "file-sim",
         $HelmChartPath,
+        "--kube-context", $MinikubeProfile,
         "--namespace", "file-simulator",
         "--create-namespace",
         "--wait",
@@ -310,7 +319,7 @@ if (-not $SkipHelmDeploy) {
         Write-Host ""
         Write-Host "    Check the error above and try again." -ForegroundColor Yellow
         Write-Host "    You can also try:" -ForegroundColor Yellow
-        Write-Host "    kubectl get events -n file-simulator --sort-by='.lastTimestamp'" -ForegroundColor White
+        Write-Host "    kubectl --context=$MinikubeProfile get events -n file-simulator --sort-by='.lastTimestamp'" -ForegroundColor White
         Write-Host ""
         exit 1
     }
@@ -323,7 +332,7 @@ if (-not $SkipHelmDeploy) {
     $retryCount = 0
 
     while ($retryCount -lt $maxRetries) {
-        $pendingPods = kubectl get pods -n file-simulator --no-headers 2>$null | Where-Object { $_ -notmatch "Running|Completed" }
+        $pendingPods = kubectl --context=$MinikubeProfile get pods -n file-simulator --no-headers 2>$null | Where-Object { $_ -notmatch "Running|Completed" }
         if (-not $pendingPods) {
             Write-Success "All pods are running"
             break
@@ -334,7 +343,7 @@ if (-not $SkipHelmDeploy) {
     }
 
     if ($retryCount -eq $maxRetries) {
-        Write-Warning "Some pods may not be ready yet. Check with: kubectl get pods -n file-simulator"
+        Write-Warning "Some pods may not be ready yet. Check with: kubectl --context=$MinikubeProfile get pods -n file-simulator"
     }
 }
 
@@ -344,7 +353,7 @@ if (-not $SkipHelmDeploy) {
 Write-Step "Configuring SMB LoadBalancer"
 
 # Check if tunnel is needed
-$smbService = kubectl get svc -n file-simulator -o json 2>$null | ConvertFrom-Json |
+$smbService = kubectl --context=$MinikubeProfile get svc -n file-simulator -o json 2>$null | ConvertFrom-Json |
     Select-Object -ExpandProperty items |
     Where-Object { $_.metadata.name -match "smb" -and $_.spec.type -eq "LoadBalancer" }
 
@@ -368,7 +377,7 @@ if ($smbService) {
 
             while ($retryCount -lt $maxRetries) {
                 Start-Sleep -Seconds 2
-                $smbService = kubectl get svc -n file-simulator -l app.kubernetes.io/component=smb -o json 2>$null | ConvertFrom-Json
+                $smbService = kubectl --context=$MinikubeProfile get svc -n file-simulator -l app.kubernetes.io/component=smb -o json 2>$null | ConvertFrom-Json
                 $externalIP = $smbService.items[0].status.loadBalancer.ingress[0].ip
                 if ($externalIP) {
                     Write-Success "SMB External IP: $externalIP"
@@ -405,7 +414,7 @@ $minikubeIP = minikube ip -p $MinikubeProfile
 $smbIP = $minikubeIP
 
 # Try to get LoadBalancer IP for SMB
-$smbService = kubectl get svc -n file-simulator -l app.kubernetes.io/component=smb -o json 2>$null | ConvertFrom-Json
+$smbService = kubectl --context=$MinikubeProfile get svc -n file-simulator -l app.kubernetes.io/component=smb -o json 2>$null | ConvertFrom-Json
 if ($smbService.items -and $smbService.items[0].status.loadBalancer.ingress) {
     $smbIP = $smbService.items[0].status.loadBalancer.ingress[0].ip
     if (-not $smbIP) { $smbIP = $minikubeIP }

@@ -201,31 +201,70 @@ function App() {
     // Build server name list for path matching
     const serverNames = prevServersRef.current ? Array.from(prevServersRef.current.keys()) : [];
 
+    // Helper: resolve server name from path/name match or protocol-based fallback
+    const resolveServer = (fe: typeof fileEvents[0]): string => {
+      const pathLower = (fe.relativePath || fe.fileName || '').toLowerCase();
+      const nameLower = (fe.fileName || '').toLowerCase();
+      const matched = serverNames.find(s => pathLower.includes(s.toLowerCase()) || nameLower.includes(s.toLowerCase()));
+      if (matched) return matched;
+
+      // Protocol-based fallback
+      if (fe.protocols && fe.protocols.length === 1) {
+        if (fe.protocols[0] === 'NAS') return 'NAS storage';
+        if (fe.protocols[0] === 'FTP') return 'FTP server';
+        if (fe.protocols[0] === 'NFS') return 'NFS storage';
+      }
+      if (fe.protocols && fe.protocols.length > 1) return 'shared storage';
+      return 'shared storage';
+    };
+
     for (const fe of fileEvents) {
       if (fe.eventType === 'Modified') continue;
-      const type = fe.eventType === 'Created' ? 'file-created' : fe.eventType === 'Deleted' ? 'file-deleted' : null;
-      if (!type) continue;
 
       const feKey = `${fe.eventType}:${fe.fileName}:${fe.timestamp || ''}`;
       if (processedFileEventsRef.current.has(feKey)) continue;
       processedFileEventsRef.current.add(feKey);
 
-      // Try to match file path or name to a known server
-      const pathLower = (fe.relativePath || fe.fileName || '').toLowerCase();
-      const nameLower = (fe.fileName || '').toLowerCase();
-      const matchedServer = serverNames.find(s => pathLower.includes(s.toLowerCase()) || nameLower.includes(s.toLowerCase()));
+      const server = resolveServer(fe);
 
-      const action = fe.eventType === 'Created' ? 'written to' : 'deleted from';
-      const serverSuffix = matchedServer || 'shared storage';
-
-      batch.push({
-        id: `fe-${now}-${fe.fileName}`,
-        type,
-        timestamp: fe.timestamp || now,
-        title: `${fe.fileName} ${action} ${serverSuffix}`,
-        detail: fe.relativePath || '/',
-        severity: type === 'file-deleted' ? 'warning' : 'info',
-      });
+      if (fe.eventType === 'Created') {
+        batch.push({
+          id: `fe-${now}-${fe.fileName}`,
+          type: 'file-created',
+          timestamp: fe.timestamp || now,
+          title: `${fe.fileName} written to ${server}`,
+          detail: fe.relativePath || '/',
+          severity: 'info',
+        });
+      } else if (fe.eventType === 'Deleted') {
+        batch.push({
+          id: `fe-${now}-${fe.fileName}`,
+          type: 'file-deleted',
+          timestamp: fe.timestamp || now,
+          title: `${fe.fileName} deleted from ${server}`,
+          detail: fe.relativePath || '/',
+          severity: 'warning',
+        });
+      } else if (fe.eventType === 'Read') {
+        batch.push({
+          id: `fe-${now}-${fe.fileName}`,
+          type: 'file-read',
+          timestamp: fe.timestamp || now,
+          title: `${fe.fileName} read from ${server}`,
+          detail: fe.relativePath || '/',
+          severity: 'info',
+        });
+      } else if (fe.eventType === 'Renamed') {
+        const oldName = fe.oldPath ? fe.oldPath.split('/').pop() || fe.oldPath : 'unknown';
+        batch.push({
+          id: `fe-${now}-${fe.fileName}`,
+          type: 'file-renamed',
+          timestamp: fe.timestamp || now,
+          title: `${oldName} renamed to ${fe.fileName} on ${server}`,
+          detail: fe.relativePath || '/',
+          severity: 'info',
+        });
+      }
     }
 
     if (batch.length > 0) addEvents(batch);

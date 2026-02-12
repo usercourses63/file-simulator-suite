@@ -15,6 +15,7 @@ const iconMap: Record<ActivityEventType, string> = {
   'file-deleted': '-',
   'file-modified': '~',
   'file-read': '\u2192',
+  'file-renamed': '\u2194',
   'alert-triggered': '\u26A0',
   'alert-resolved': '\u2713',
   'mount-state-change': '\u25CF',

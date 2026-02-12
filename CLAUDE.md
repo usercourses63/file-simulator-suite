@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**Version:** 2.1.0 (Released: 2026-02-12)
+**Version:** 2.2.0 (Released: 2026-02-12)
 
 This project implements a File Access Simulator Suite for Kubernetes/OpenShift environments. It provides:
 

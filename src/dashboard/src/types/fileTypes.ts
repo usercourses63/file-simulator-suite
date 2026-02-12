@@ -6,12 +6,12 @@
 /**
  * File event types from FileSystemWatcher.
  */
-export type FileEventType = 'Created' | 'Modified' | 'Deleted' | 'Renamed';
+export type FileEventType = 'Created' | 'Modified' | 'Deleted' | 'Renamed' | 'Read';
 
 /**
  * Protocol types that can access files.
  */
-export type FileProtocol = 'FTP' | 'SFTP' | 'HTTP' | 'S3' | 'SMB' | 'NFS';
+export type FileProtocol = 'FTP' | 'SFTP' | 'HTTP' | 'S3' | 'SMB' | 'NFS' | 'NAS';
 
 /**
  * Real-time file event from Windows directory watcher.
