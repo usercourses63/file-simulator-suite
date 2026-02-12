@@ -375,7 +375,7 @@ public static class KafkaTests
                     value = "api-value"
                 };
 
-                var response = await client.PostAsJsonAsync("/api/kafka/produce", producePayload);
+                var response = await client.PostAsJsonAsync($"/api/kafka/topics/{topicName}/messages", producePayload);
                 produceResult.Success = response.IsSuccessStatusCode;
                 produceResult.DurationMs = sw.ElapsedMilliseconds;
                 produceResult.Details = $"Topic: {topicName}";
@@ -398,7 +398,7 @@ public static class KafkaTests
             sw.Restart();
             try
             {
-                var response = await client.GetAsync($"/api/kafka/consume/{topicName}?count=1&timeout=10");
+                var response = await client.GetAsync($"/api/kafka/topics/{topicName}/messages?count=1");
                 consumeResult.Success = response.IsSuccessStatusCode;
                 consumeResult.DurationMs = sw.ElapsedMilliseconds;
 

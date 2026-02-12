@@ -180,6 +180,17 @@ public class ApiConfigurationProvider
             config.Servers[key] = serverConfig;
         }
 
+        // Add an "Nfs" alias pointing to the first NAS output server
+        // so the standalone NFS test can find it via FileSimulator:Nfs:*
+        var nfsAlias = config.Servers.Values
+            .FirstOrDefault(s => s.Name.StartsWith("nas-output-", StringComparison.OrdinalIgnoreCase))
+            ?? config.Servers.Values
+                .FirstOrDefault(s => s.Protocol.Equals("NFS", StringComparison.OrdinalIgnoreCase));
+        if (nfsAlias != null && !config.Servers.ContainsKey("Nfs"))
+        {
+            config.Servers["Nfs"] = nfsAlias;
+        }
+
         return config;
     }
 
