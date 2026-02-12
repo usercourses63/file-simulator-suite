@@ -76,6 +76,8 @@ export function ServerGrid({
           <NasTable
             servers={nasServers}
             onRowClick={onCardClick}
+            sparklineData={sparklineData}
+            onSparklineClick={onSparklineClick}
             showMultiSelect={showMultiSelect}
             selectedIds={selectedIds}
             onToggleSelect={onToggleSelect}
