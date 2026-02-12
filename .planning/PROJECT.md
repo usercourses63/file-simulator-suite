@@ -8,21 +8,19 @@ A Kubernetes-based file protocol simulator with real-time monitoring and control
 
 Development systems must connect to simulated NAS servers using identical PV/PVC configurations as production OCP, with test files written on Windows immediately visible through NFS mounts - zero deployment differences between dev and prod.
 
-## Current Milestone: v2.2.0 Activity Log Completeness
+## Current Milestone: v2.3.0 Dashboard UI Refactoring
 
-**Goal:** Make the activity log a complete audit trail of all server and file operations, add rename API endpoint, write comprehensive E2E tests, and validate fresh install from scratch.
+**Goal:** Refactor the Servers page for better visual differentiation, wider layout, compact NAS display, and directory-based NAS grouping — making 14+ servers instantly scannable at a glance.
 
 **Target features:**
-- Complete activity log tracking for all dynamic server lifecycle events (FTP, SFTP, NAS)
-- File read events emitted from download API endpoint via SignalR
-- File rename API endpoint (`PUT /api/files/rename`) triggering FileSystemWatcher
-- Protocol-based server attribution fallback for activity log entries
-- Comprehensive E2E tests covering all server types and all file operations
-- Fresh Minikube install validation with updated Install-Simulator.ps1 defaults
+- Protocol-tinted card backgrounds using existing color palette (FTP=purple, SFTP=pink, NAS=teal, etc.)
+- Compact NAS table rows replacing full cards (7 NAS visible without scrolling)
+- Wider layout with collapsible activity sidebar (remove 1400px cap, toggle sidebar)
+- NAS sub-grouping by directory function (Input/Output/Backup with visual headers)
 
 ## Current State
 
-**Shipped version:** v2.1.0 (2026-02-11) — activity log, alert dismiss, version badge
+**Shipped version:** v2.2.0 (2026-02-12) — activity log completeness, rename API, E2E tests, fresh install
 **Previous:** v2.0 Simulator Control Platform (2026-02-05)
 
 **What shipped:**
@@ -45,6 +43,15 @@ Development systems must connect to simulated NAS servers using identical PV/PVC
 ## Requirements
 
 ### Validated
+
+v2.2.0 Activity Log Completeness (Shipped: 2026-02-12):
+
+- ✓ Complete activity log for dynamic server lifecycle events — v2.2.0
+- ✓ File rename API endpoint (`PUT /api/files/rename`) — v2.2.0
+- ✓ Download endpoint emits Read file events via SignalR — v2.2.0
+- ✓ Protocol-based server attribution fallback — v2.2.0
+- ✓ E2E tests for all server types and file operations — v2.2.0
+- ✓ Fresh Minikube install validation with updated defaults — v2.2.0
 
 v2.0 Simulator Control Platform (Shipped: 2026-02-05):
 
@@ -85,28 +92,9 @@ Existing capabilities (pre-v1.0):
 
 ### Active
 
-v2.2.0 Activity Log Completeness:
+v2.3.0 Dashboard UI Refactoring:
 
-- [ ] **SRVLOG-01**: Activity log shows "server created" for every dynamic server (FTP, SFTP, NAS)
-- [ ] **SRVLOG-02**: Activity log shows "server healthy" when dynamic servers become ready
-- [ ] **SRVLOG-03**: Activity log shows "server deleted" when dynamic servers are removed
-- [ ] **FILELOG-01**: Activity log shows "file written to {server}" for uploads on all servers
-- [ ] **FILELOG-02**: Activity log shows "file read from {server}" when files are downloaded via API
-- [ ] **FILELOG-03**: Activity log shows "file deleted from {server}" for deletions on all servers
-- [ ] **FILELOG-04**: Activity log shows "file renamed from {old} to {new} on {server}" for renames
-- [ ] **FILELOG-05**: Server attribution uses protocol-based fallback when path doesn't match a server name
-- [ ] **API-01**: `PUT /api/files/rename` endpoint renames files and triggers FileSystemWatcher rename event
-- [ ] **API-02**: Download endpoint emits "Read" file event via SignalR after successful download
-- [ ] **TEST-01**: E2E test creating/deleting all server types tracked in activity log
-- [ ] **TEST-02**: E2E test all file operations on static servers tracked in activity log
-- [ ] **TEST-03**: E2E test file operations on multiple dynamic NAS with correct attribution
-- [ ] **TEST-04**: E2E test file rename shows old and new name in activity log
-- [ ] **INFRA-01**: Install-Simulator.ps1 defaults updated (12GB RAM, 4 CPUs, --kube-context)
-- [ ] **INFRA-02**: Version bumped to 2.2.0 in all files
-- [ ] **VAL-01**: Fresh Minikube install from scratch succeeds
-- [ ] **VAL-02**: All E2E tests pass on fresh install
-- [ ] **VAL-03**: TestConsole protocol tests pass on fresh install
-- [ ] **VAL-04**: GitHub release v2.2.0 created with tag
+(See `.planning/REQUIREMENTS.md` for full requirement list with REQ-IDs)
 
 ### Out of Scope
 
@@ -164,10 +152,10 @@ v2.2.0 Activity Log Completeness:
 | Selective sidecar deployment | Only output servers need NFS→Windows sync; avoid overhead on inputs | ✓ Good - Resource efficient (96Mi vs 128Mi) |
 | kubectl --context mandatory | Multi-profile Minikube safety; prevent cross-cluster accidents | ✓ Good - Zero accidental deletions in v1.0 |
 
-| File reads emit events from API layer | FileWatcher only detects filesystem mutations; downloads need explicit SignalR broadcast from FilesController | — Pending |
-| New rename API endpoint | `PUT /api/files/rename` calls `File.Move()` → triggers existing FileSystemWatcher.OnRenamed | — Pending |
-| Protocol-based server attribution | Fallback when file path doesn't contain server name; uses `fe.protocols` array | — Pending |
-| Version 2.2.0 (not 2.1.1) | New API endpoint + new event type = minor version bump | — Pending |
+| File reads emit events from API layer | FileWatcher only detects filesystem mutations; downloads need explicit SignalR broadcast from FilesController | ✓ Good |
+| New rename API endpoint | `PUT /api/files/rename` calls `File.Move()` → triggers existing FileSystemWatcher.OnRenamed | ✓ Good |
+| Protocol-based server attribution | Fallback when file path doesn't contain server name; uses `fe.protocols` array | ✓ Good |
+| Version 2.2.0 (not 2.1.1) | New API endpoint + new event type = minor version bump | ✓ Good |
 
 ---
-*Last updated: 2026-02-12 after v2.2.0 milestone started*
+*Last updated: 2026-02-12 after v2.3.0 milestone started*
