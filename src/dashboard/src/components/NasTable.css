@@ -1,0 +1,195 @@
+/* =============================================================================
+   NAS TABLE - Compact grouped rows for NAS servers
+   ============================================================================= */
+
+.nas-table {
+  /* No outer border -- fits within existing .server-section */
+}
+
+/* --- Group wrapper --- */
+.nas-table__group {
+  margin-bottom: 4px;
+}
+
+.nas-table__group:last-child {
+  margin-bottom: 0;
+}
+
+/* --- Sub-group header --- */
+.nas-table__group-header {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  background: rgba(20, 184, 166, 0.06);
+  border-left: 3px solid var(--protocol-nas);
+  padding: 0 12px;
+  font-size: 0.875rem;
+}
+
+.nas-table__group-label {
+  font-weight: 600;
+}
+
+.nas-table__group-health {
+  font-weight: 400;
+  margin-left: auto;
+  font-size: 0.8125rem;
+}
+
+.nas-table__group-health--healthy {
+  color: var(--color-healthy);
+}
+
+.nas-table__group-health--mixed {
+  color: var(--color-degraded);
+}
+
+.nas-table__group-health--down {
+  color: var(--color-down);
+}
+
+/* --- Data row (CSS grid) --- */
+.nas-table__row {
+  display: grid;
+  grid-template-columns: 12px 1fr 120px 80px 70px auto 24px;
+  height: 40px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-border);
+  position: relative;
+}
+
+.nas-table__row:last-child {
+  border-bottom: none;
+}
+
+.nas-table__row:hover {
+  background: rgba(20, 184, 166, 0.04);
+}
+
+.nas-table__row--selected {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.nas-table__row--down {
+  background: rgba(239, 68, 68, 0.04);
+}
+
+/* Row grid with checkbox column */
+.nas-table--with-checkbox .nas-table__row {
+  grid-template-columns: 24px 12px 1fr 120px 80px 70px auto 24px;
+}
+
+/* --- Status dot --- */
+.nas-table__status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.nas-table__status-dot--healthy {
+  background-color: var(--color-healthy);
+}
+
+.nas-table__status-dot--degraded {
+  background-color: var(--color-degraded);
+}
+
+.nas-table__status-dot--down {
+  background-color: var(--color-down);
+}
+
+.nas-table__status-dot--unknown {
+  background-color: var(--color-unknown);
+}
+
+/* --- Cell styles --- */
+.nas-table__cell--name {
+  font-weight: 500;
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nas-table__cell--directory {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nas-table__cell--latency {
+  font-size: 0.8125rem;
+  text-align: right;
+}
+
+.nas-table__cell--port {
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+  text-align: right;
+}
+
+.nas-table__cell--badge {
+  flex-shrink: 0;
+}
+
+.nas-table__cell--chevron {
+  color: var(--color-text-light);
+  font-size: 1rem;
+  text-align: center;
+  line-height: 1;
+}
+
+/* --- Checkbox --- */
+.nas-table__checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+}
+
+.nas-table__checkbox input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+/* --- Delete button --- */
+.nas-table__delete-btn {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  padding: 2px;
+  border: none;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  color: var(--color-down);
+}
+
+.nas-table__row:hover .nas-table__delete-btn {
+  opacity: 1;
+}
+
+.nas-table__delete-btn:hover {
+  background: var(--color-down);
+  color: white;
+}
+
+.nas-table__delete-btn svg {
+  width: 100%;
+  height: 100%;
+}
