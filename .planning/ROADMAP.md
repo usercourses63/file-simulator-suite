@@ -144,6 +144,7 @@ Plans:
 ### Phase 24: Secondary Tab Improvements
 **Goal**: Quick layout and data quality improvements for History, Files, Kafka, and Alerts tabs
 **Requirements**: HIST-01, HIST-02, FILES-01, KAFKA-01, ALERTS-01
+**Plans**: 2 plans
 **Success Criteria**:
 1. History server dropdown only shows currently deployed servers (no deleted dynamic servers)
 2. History chart legend only includes servers with data in selected range
@@ -152,8 +153,8 @@ Plans:
 5. Alerts table columns use flexible widths without hardcoded max-widths
 
 Plans:
-- [ ] 24-01: History tab server filter cleanup and legend optimization
-- [ ] 24-02: Files, Kafka, Alerts tab minor layout adjustments
+- [ ] 24-01-PLAN.md — History tab server filter cleanup and legend optimization
+- [ ] 24-02-PLAN.md — Files, Kafka, Alerts tab minor layout adjustments
 
 ### Phase 25: E2E Tests + Version Bump + Release
 **Goal**: Validate all UI changes with E2E tests and release v2.3.0
@@ -200,4 +201,4 @@ Plans:
 | 25. E2E Tests + Version Bump + Release | v2.3.0 | 0/2 | Pending | — |
 
 ---
-*Last updated: 2026-02-12 - Phase 23 complete*
+*Last updated: 2026-02-12 - Phase 24 plans created*
