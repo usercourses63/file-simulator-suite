@@ -5,7 +5,7 @@
 - ✅ **v1.0 Multi-NAS Production Topology** - Phases 1-5 (shipped 2026-02-01)
 - ✅ **v2.0 Simulator Control Platform** - Phases 6-14 (shipped 2026-02-05)
 - ✅ **v2.2.0 Activity Log Completeness** - Phases 15-19 (shipped 2026-02-12)
-- 🔄 **v2.3.0 Dashboard UI Refactoring** - Phases 20-25 (in progress)
+- ✅ **v2.3.0 Dashboard UI Refactoring** - Phases 20-25 (shipped 2026-02-12)
 
 ## Phases
 
@@ -167,8 +167,8 @@ Plans:
 5. Version bumped to 2.3.0 and release created
 
 Plans:
-- [ ] 25-01: Write E2E tests for new UI components
-- [ ] 25-02: Version bump, build, deploy, and create release
+- [x] 25-01: Write E2E tests for new UI components
+- [x] 25-02: Version bump, build, deploy, and create release
 
 ## Progress
 
@@ -198,7 +198,7 @@ Plans:
 | 22. NAS Compact Table View | v2.3.0 | 2/2 | Complete | 2026-02-12 |
 | 23. Server Details Panel Adaptation | v2.3.0 | 1/1 | Complete | 2026-02-12 |
 | 24. Secondary Tab Improvements | v2.3.0 | 2/2 | Complete | 2026-02-12 |
-| 25. E2E Tests + Version Bump + Release | v2.3.0 | 0/2 | Pending | — |
+| 25. E2E Tests + Version Bump + Release | v2.3.0 | 2/2 | Complete | 2026-02-12 |
 
 ---
-*Last updated: 2026-02-12 - Phase 24 complete*
+*Last updated: 2026-02-12 - v2.3.0 milestone complete*
