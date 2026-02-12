@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ReferenceArea, ResponsiveContainer
@@ -24,6 +24,13 @@ const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088fe', '#00C49F'
  * Uses ReferenceArea to show zoom selection during drag.
  */
 export function LatencyChart({ data, serverIds }: LatencyChartProps) {
+  // Filter to only servers that have at least one data point (hides empty legend entries)
+  const activeServerIds = useMemo(() => {
+    return serverIds.filter(id =>
+      data.some(point => point[id] !== undefined)
+    );
+  }, [serverIds, data]);
+
   const [zoomState, setZoomState] = useState<ZoomState>({
     left: 'dataMin',
     right: 'dataMax',
@@ -127,12 +134,12 @@ export function LatencyChart({ data, serverIds }: LatencyChartProps) {
             }}
           />
           <Legend />
-          {serverIds.map((serverId, index) => (
+          {activeServerIds.map((serverId) => (
             <Line
               key={serverId}
               type="monotone"
               dataKey={serverId}
-              stroke={COLORS[index % COLORS.length]}
+              stroke={COLORS[serverIds.indexOf(serverId) % COLORS.length]}
               dot={false}
               name={serverId}
               connectNulls
