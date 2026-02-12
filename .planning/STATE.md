@@ -6,15 +6,15 @@ See: .planning/PROJECT.md (updated 2026-02-12)
 
 **Core value:** Development systems must connect to simulated NAS servers using identical PV/PVC configurations as production OCP, with test files written on Windows immediately visible through NFS mounts - zero deployment differences between dev and prod.
 
-**Current focus:** v2.3.0 Dashboard UI Refactoring
+**Current focus:** v2.3.0 Dashboard UI Refactoring -- COMPLETE
 
 ## Current Position
 
 Milestone: v2.3.0 Dashboard UI Refactoring
-Status: Executing Phase 25
-Last activity: 2026-02-12 — Completed 25-01 (E2E tests for v2.3.0 UI features)
+Status: Complete
+Last activity: 2026-02-12 — Completed 25-02 (Version Bump + Release v2.3.0)
 
-Progress: [██████████████████░░] 9 of 10 plans complete
+Progress: [████████████████████] 10 of 10 plans complete
 
 Phases:
 - Phase 20: Wider Layout and Collapsible Sidebar (LAYOUT) — 1 plan
@@ -27,9 +27,9 @@ Phases:
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 71
-- Average duration: 5.7 min
-- Total execution time: 7.1 hours
+- Total plans completed: 72
+- Average duration: 6.2 min
+- Total execution time: 7.8 hours
 
 **By Phase:**
 
@@ -55,11 +55,11 @@ Phases:
 | 22. NAS Compact Table View | 2 | 4 min | 2.0 min |
 | 23. Server Details Panel Adaptation | 1 | 2 min | 2.0 min |
 | 24. Secondary Tab Improvements | 2 | 4 min | 2.0 min |
-| 25. E2E Tests + Version Bump | 1 | 2 min | 2.0 min |
+| 25. E2E Tests + Version Bump | 2 | 46 min | 23.0 min |
 
 **Recent Trend:**
-- Last 5 plans: [2.0, 2.0, 2.0, 2.0, 2.0] min
-- Trend: E2E tests for v2.3.0 UI features 2 min (2 tasks, 2 files)
+- Last 5 plans: [2.0, 2.0, 2.0, 2.0, 44.0] min
+- Trend: v2.3.0 release 44 min (3 tasks, 8 files — includes Docker build, deploy, E2E run)
 
 ## Accumulated Context
 
@@ -250,6 +250,10 @@ Recent decisions affecting current work:
 - Phase 25-01: GetNasServerCountAsync uses .nas-table__row count (not .server-card) since NAS servers render as table rows
 - Phase 25-01: GetAllServerNamesAsync returns only protocol card names; separate GetNasServerNamesAsync for NAS names
 - Phase 25-01: Protocol tint test uses regex matching for server-card--protocol-{type} CSS classes
+- Phase 25-02: minikube image load instead of registry push when registry addon unavailable
+- Phase 25-02: Explicit v2.3.0 image tags in values.yaml for version pinning in Helm deployments
+- Phase 25-02: Exact text matching in Playwright GetByRole to prevent FTP matching SFTP
+- Phase 25-02: Assert count < previous (not == 0) for flaky clear-button test reliability
 
 ### Pending Todos
 
@@ -267,13 +271,14 @@ No active blockers.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 25-01-PLAN.md (E2E tests for v2.3.0 UI features)
-Resume: Execute 25-02-PLAN.md for Version Bump + Release
+Stopped at: Completed 25-02-PLAN.md (Version Bump + Release v2.3.0) -- v2.3.0 milestone complete
+Resume: All v2.3.0 plans executed. Milestone complete.
 
 ## Release History
 
 | Version | Date | Description |
 |---------|------|-------------|
+| v2.3.0 | 2026-02-12 | Dashboard UI refactoring: wider layout, protocol colors, NAS compact table, details panel, secondary tab improvements |
 | v2.2.0 | 2026-02-12 | Activity log completeness, rename API, E2E tests, fresh install validation |
 | v2.1.0 | 2026-02-11 | Activity log, alert dismiss, version badge, version sync |
 | v2.0.0 | 2026-02-05 | Simulator Control Platform - Dashboard, API, Dynamic Servers, Kafka |
