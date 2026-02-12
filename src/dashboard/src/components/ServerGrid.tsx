@@ -1,5 +1,6 @@
 import { ServerStatus } from '../types/server';
 import ServerCard from './ServerCard';
+import NasTable from './NasTable';
 
 interface DynamicServerInfo {
   isDynamic: boolean;
@@ -71,12 +72,19 @@ export function ServerGrid({
           NAS Servers
           <span className="section-count">({nasServers.length})</span>
         </h2>
-        <div className="server-grid">
-          {nasServers.map(renderServerCard)}
-          {nasServers.length === 0 && (
-            <div className="server-grid-empty">No NAS servers found</div>
-          )}
-        </div>
+        {nasServers.length > 0 ? (
+          <NasTable
+            servers={nasServers}
+            onRowClick={onCardClick}
+            showMultiSelect={showMultiSelect}
+            selectedIds={selectedIds}
+            onToggleSelect={onToggleSelect}
+            onDelete={onDelete ? (server) => onDelete(server) : undefined}
+            dynamicInfo={dynamicInfo}
+          />
+        ) : (
+          <div className="server-grid-empty">No NAS servers found</div>
+        )}
       </section>
 
       <section className="server-section">
