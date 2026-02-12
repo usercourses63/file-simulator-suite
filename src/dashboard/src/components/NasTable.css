@@ -145,6 +145,15 @@
   font-size: 1rem;
   text-align: center;
   line-height: 1;
+  transition: transform 0.2s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nas-table__cell--chevron--expanded {
+  transform: rotate(90deg);
 }
 
 /* --- Checkbox --- */
@@ -192,4 +201,86 @@
 .nas-table__delete-btn svg {
   width: 100%;
   height: 100%;
+}
+
+/* --- Expanded row highlight --- */
+.nas-table__row--expanded {
+  background: rgba(20, 184, 166, 0.06);
+  border-bottom-color: transparent;
+}
+
+/* --- Expanded detail section --- */
+.nas-table__row-detail {
+  display: flex;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  padding-left: 24px;
+  background: rgba(20, 184, 166, 0.03);
+  border-bottom: 1px solid var(--color-border);
+  border-left: 3px solid var(--protocol-nas);
+  animation: nas-detail-expand 0.15s ease-out;
+}
+
+@keyframes nas-detail-expand {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 120px;
+  }
+}
+
+.nas-table__detail-sparkline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  min-width: 220px;
+}
+
+.nas-table__detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--spacing-sm) var(--spacing-lg);
+  flex: 1;
+}
+
+.nas-table__detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nas-table__detail-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-light);
+}
+
+.nas-table__detail-value {
+  font-size: 0.8125rem;
+  color: var(--color-text);
+}
+
+.nas-table__detail-value--mono {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  font-size: 0.75rem;
+}
+
+.nas-table__detail-value--healthy {
+  color: var(--color-healthy);
+  font-weight: 500;
+}
+
+.nas-table__detail-value--degraded {
+  color: var(--color-degraded);
+  font-weight: 500;
+}
+
+.nas-table__detail-value--down {
+  color: var(--color-down);
+  font-weight: 500;
 }
