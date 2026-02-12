@@ -11,10 +11,10 @@ See: .planning/PROJECT.md (updated 2026-02-12)
 ## Current Position
 
 Milestone: v2.3.0 Dashboard UI Refactoring
-Status: Executing Phase 21
-Last activity: 2026-02-12 — Completed 21-01 (Protocol Color System - CSS Custom Properties)
+Status: Executing Phase 22
+Last activity: 2026-02-12 — Completed 21-02 (Protocol Color System - Badges & Health Indicators)
 
-Progress: [████░░░░░░░░░░░░░░░░] 2 of 10 plans complete
+Progress: [██████░░░░░░░░░░░░░░] 3 of 10 plans complete
 
 Phases:
 - Phase 20: Wider Layout and Collapsible Sidebar (LAYOUT) — 1 plan
@@ -27,7 +27,7 @@ Phases:
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 64
+- Total plans completed: 65
 - Average duration: 6.0 min
 - Total execution time: 7.0 hours
 
@@ -51,11 +51,11 @@ Phases:
 | 14. Integration Testing | 8 | 33.5 min | 4.2 min |
 
 | 20. Wider Layout & Sidebar | 1 | 3 min | 3.0 min |
-| 21. Protocol Color System | 1 | 2 min | 2.0 min |
+| 21. Protocol Color System | 2 | 4 min | 2.0 min |
 
 **Recent Trend:**
-- Last 5 plans: [12.0, 7.5, 8.0, 3.0, 2.0] min
-- Trend: CSS/TSX protocol color system 2 min (2 tasks, 2 files)
+- Last 5 plans: [7.5, 8.0, 3.0, 2.0, 2.0] min
+- Trend: CSS/TSX badge icons + health backgrounds 2 min (1 task, 2 files)
 
 ## Accumulated Context
 
@@ -229,6 +229,9 @@ Recent decisions affecting current work:
 - Phase 21-01: CSS custom properties as single source of truth for 7 protocol colors
 - Phase 21-01: 0.06 alpha for card background tints; 0.12 alpha for protocol label backgrounds
 - Phase 21-01: Management protocol cards default to white (no matching CSS rule, correct behavior)
+- Phase 21-02: Lightning bolt SVG icon for Dynamic badge; crosshair/wheel SVG icon for Helm badge
+- Phase 21-02: Health background tints (down=red, degraded=yellow) override protocol tints via CSS cascade ordering
+- Phase 21-02: Down state box-shadow uses :not(:hover) to avoid conflicting with existing hover effects
 
 ### Pending Todos
 
@@ -246,8 +249,8 @@ No active blockers.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 21-01-PLAN.md (Protocol Color System - CSS Custom Properties)
-Resume: /gsd:execute-phase 21 plan 02 for Protocol Color System remaining plan
+Stopped at: Completed 21-02-PLAN.md (Protocol Color System - Badges & Health Indicators)
+Resume: /gsd:execute-phase 22 for NAS Compact Table View
 
 ## Release History
 
