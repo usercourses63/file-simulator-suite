@@ -252,7 +252,7 @@ public class ServerManagementTests
         foreach (var (name, classes) in protocolClasses)
         {
             classes.Should().MatchRegex(
-                @"server-card--protocol-(ftp|sftp|http|s3|smb|nfs|nas)",
+                @"server-card--protocol-(ftp|sftp|http|s3|smb|nfs|nas|management|webdav)",
                 $"server '{name}' should have a protocol tint class");
         }
 

@@ -63,11 +63,13 @@ public class ServersPage
     }
 
     /// <summary>
-    /// Get a server card by name
+    /// Get a server card by name (exact match on .server-name element to avoid substring matches like "ftp" matching "sftp")
     /// </summary>
     public ILocator GetServerCard(string serverName)
     {
-        return _page.Locator(".server-card").Filter(new() { HasText = serverName });
+        return _page.Locator(".server-card")
+            .Filter(new() { Has = _page.Locator(".server-name").GetByText(serverName, new() { Exact = true }) })
+            .First;
     }
 
     /// <summary>
