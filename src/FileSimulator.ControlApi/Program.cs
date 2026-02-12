@@ -57,7 +57,8 @@ try
     builder.Services.AddSingleton<KafkaHealthCheck>();
     builder.Services.AddHealthChecks()
         .AddCheck<DiskSpaceHealthCheck>("disk_space")
-        .AddCheck<KafkaHealthCheck>("kafka");
+        .AddCheck<KafkaHealthCheck>("kafka")
+        .AddCheck<MountHealthCheck>("mount_health");
 
     // Add controllers for file operations
     builder.Services.AddControllers();
@@ -124,6 +125,11 @@ try
 
     // Alert management service
     builder.Services.AddHostedService<AlertService>();
+
+    // Mount health monitoring
+    builder.Services.AddSingleton<MountHealthMonitor>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<MountHealthMonitor>());
+    builder.Services.AddSingleton<MountHealthCheck>();
 
     // Kafka services
     builder.Services.AddSingleton<IKafkaAdminService, KafkaAdminService>();
@@ -194,7 +200,9 @@ try
             "/api/configuration/import",
             "/api/configuration/import/file",
             "/api/configuration/validate",
-            "/api/configuration/templates"
+            "/api/configuration/templates",
+            "/api/mount-health",
+            "/api/mount-health/restart-affected"
         }
     });
 

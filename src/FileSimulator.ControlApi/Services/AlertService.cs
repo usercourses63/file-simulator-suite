@@ -17,6 +17,7 @@ public class AlertService : IHostedService, IDisposable
     private readonly IDbContextFactory<MetricsDbContext> _contextFactory;
     private readonly IHubContext<AlertHub> _hubContext;
     private readonly IServiceProvider _serviceProvider;
+    private readonly MountHealthMonitor _mountHealthMonitor;
     private readonly ILogger<AlertService> _logger;
     private Timer? _timer;
 
@@ -29,11 +30,13 @@ public class AlertService : IHostedService, IDisposable
         IDbContextFactory<MetricsDbContext> contextFactory,
         IHubContext<AlertHub> hubContext,
         IServiceProvider serviceProvider,
+        MountHealthMonitor mountHealthMonitor,
         ILogger<AlertService> logger)
     {
         _contextFactory = contextFactory;
         _hubContext = hubContext;
         _serviceProvider = serviceProvider;
+        _mountHealthMonitor = mountHealthMonitor;
         _logger = logger;
     }
 
@@ -65,6 +68,7 @@ public class AlertService : IHostedService, IDisposable
             await CheckDiskSpaceAsync();
             await CheckKafkaHealthAsync();
             await CheckServerHealthAsync();
+            await CheckMountHealthAsync();
             await CleanupOldAlertsAsync();
         }
         catch (Exception ex)
@@ -179,6 +183,46 @@ public class AlertService : IHostedService, IDisposable
                     await ResolveAlertsAsync("ServerHealth", serverId);
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Check mount health from MountHealthMonitor cached state.
+    /// </summary>
+    private async Task CheckMountHealthAsync()
+    {
+        var status = _mountHealthMonitor.GetStatus();
+
+        switch (status.State)
+        {
+            case Models.MountState.Stale:
+                await RaiseAlertAsync(
+                    type: "MountStale",
+                    severity: AlertSeverity.Critical,
+                    title: "Mount Stale",
+                    message: $"9p mount at {status.MountPath} is stale ({status.ConsecutiveFailures} consecutive failures). " +
+                             "PVC-backed servers (FTP, SFTP, HTTP, SMB, Management) are affected.",
+                    source: "MountHealth");
+                break;
+
+            case Models.MountState.Degraded:
+                await RaiseAlertAsync(
+                    type: "MountDegraded",
+                    severity: AlertSeverity.Warning,
+                    title: "Mount Degraded",
+                    message: $"9p mount at {status.MountPath} has {status.ConsecutiveFailures} consecutive probe failure(s). " +
+                             "May recover automatically.",
+                    source: "MountHealth");
+                break;
+
+            case Models.MountState.Healthy:
+                await ResolveAlertsAsync("MountStale", "MountHealth");
+                await ResolveAlertsAsync("MountDegraded", "MountHealth");
+                break;
+
+            case Models.MountState.Recovering:
+                // Keep stale alert active during recovery, it will resolve when Healthy
+                break;
         }
     }
 

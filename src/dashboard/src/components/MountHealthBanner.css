@@ -1,0 +1,91 @@
+/* ===========================================
+   Mount Health Banner
+   =========================================== */
+
+.mount-health-banner {
+  position: sticky;
+  top: 60px;
+  z-index: 91;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: 0.875rem;
+}
+
+.mount-health-banner--degraded {
+  background-color: rgba(234, 179, 8, 0.15);
+  border-bottom: 2px solid var(--color-degraded);
+}
+
+.mount-health-banner--stale {
+  background-color: rgba(239, 68, 68, 0.15);
+  border-bottom: 2px solid var(--color-down);
+}
+
+.mount-health-banner--recovering {
+  background-color: rgba(59, 130, 246, 0.15);
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.mount-health-banner__content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.mount-health-banner__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: white;
+  flex-shrink: 0;
+}
+
+.mount-health-banner--degraded .mount-health-banner__icon {
+  background-color: var(--color-degraded);
+}
+
+.mount-health-banner--stale .mount-health-banner__icon {
+  background-color: var(--color-down);
+}
+
+.mount-health-banner--recovering .mount-health-banner__icon {
+  background-color: var(--color-primary);
+}
+
+.mount-health-banner__state {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.mount-health-banner__message {
+  color: var(--color-text-secondary);
+}
+
+.mount-health-banner__time {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+.mount-health-banner__dismiss {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+
+.mount-health-banner__dismiss:hover {
+  opacity: 1;
+}

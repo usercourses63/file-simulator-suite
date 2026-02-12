@@ -476,6 +476,9 @@ public class FileWatcherService : BackgroundService, IDisposable
         if (relativePath.Contains(".deleted", StringComparison.OrdinalIgnoreCase))
             return true;
 
+        if (relativePath.Contains(".health", StringComparison.OrdinalIgnoreCase))
+            return true;
+
         return false;
     }
 

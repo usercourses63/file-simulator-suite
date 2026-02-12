@@ -6,6 +6,7 @@ import { useMultiSelect } from './hooks/useMultiSelect';
 import { useServerManagement } from './hooks/useServerManagement';
 import { useAlerts } from './hooks/useAlerts';
 import { ServerStatus, ServerStatusUpdate } from './types/server';
+import { MountHealthStatus } from './types/mountHealth';
 import ConnectionStatus from './components/ConnectionStatus';
 import SummaryHeader from './components/SummaryHeader';
 import ServerGrid from './components/ServerGrid';
@@ -22,6 +23,7 @@ import BatchOperationsBar from './components/BatchOperationsBar';
 import CreateServerModal from './components/CreateServerModal';
 import AlertToaster from './components/AlertToaster';
 import AlertBanner from './components/AlertBanner';
+import MountHealthBanner from './components/MountHealthBanner';
 import { withErrorBoundary } from './components/ErrorBoundary';
 import './App.css';
 
@@ -49,6 +51,9 @@ function App() {
   // Connect to SignalR hub and receive status updates
   const { data, isConnected, isReconnecting, reconnectAttempt, error, lastUpdate } =
     useSignalR<ServerStatusUpdate>(statusHubUrl, 'ServerStatusUpdate');
+
+  // Subscribe to mount health updates from same hub (broadcasts only on state change)
+  const { data: mountHealth } = useSignalR<MountHealthStatus>(statusHubUrl, 'MountHealthUpdate');
 
   // Connect to file events hub
   const { events: fileEvents, isConnected: fileEventsConnected, clearEvents } = useFileEvents(fileEventsHubUrl);
@@ -238,6 +243,7 @@ function App() {
         </div>
       </header>
 
+      <MountHealthBanner status={mountHealth} />
       <AlertBanner alerts={activeAlerts} />
 
       <main className="app-main">

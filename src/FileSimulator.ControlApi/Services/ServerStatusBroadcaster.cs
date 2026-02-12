@@ -18,6 +18,7 @@ public class ServerStatusBroadcaster : BackgroundService
     private readonly IKubernetesDiscoveryService _discovery;
     private readonly IHealthCheckService _healthCheck;
     private readonly IDbContextFactory<MetricsDbContext> _contextFactory;
+    private readonly MountHealthMonitor _mountHealthMonitor;
     private readonly ILogger<ServerStatusBroadcaster> _logger;
 
     // Broadcast interval - matches dashboard refresh expectations
@@ -27,12 +28,16 @@ public class ServerStatusBroadcaster : BackgroundService
     private ServerStatusUpdate? _latestStatus;
     private readonly object _statusLock = new();
 
+    // Track mount health state to only broadcast on change
+    private MountState? _lastBroadcastedMountState;
+
     public ServerStatusBroadcaster(
         IHubContext<ServerStatusHub> hubContext,
         IHubContext<MetricsHub> metricsHubContext,
         IKubernetesDiscoveryService discovery,
         IHealthCheckService healthCheck,
         IDbContextFactory<MetricsDbContext> contextFactory,
+        MountHealthMonitor mountHealthMonitor,
         ILogger<ServerStatusBroadcaster> logger)
     {
         _hubContext = hubContext;
@@ -40,6 +45,7 @@ public class ServerStatusBroadcaster : BackgroundService
         _discovery = discovery;
         _healthCheck = healthCheck;
         _contextFactory = contextFactory;
+        _mountHealthMonitor = mountHealthMonitor;
         _logger = logger;
     }
 
@@ -138,6 +144,15 @@ public class ServerStatusBroadcaster : BackgroundService
                 })
             },
             ct);
+
+        // Broadcast mount health only on state change (avoid spamming healthy every 5s)
+        var mountStatus = _mountHealthMonitor.GetStatus();
+        if (mountStatus.State != _lastBroadcastedMountState)
+        {
+            _lastBroadcastedMountState = mountStatus.State;
+            await _hubContext.Clients.All.SendAsync("MountHealthUpdate", mountStatus, ct);
+            _logger.LogInformation("Broadcast mount health: {State}", mountStatus.State);
+        }
     }
 
     /// <summary>
