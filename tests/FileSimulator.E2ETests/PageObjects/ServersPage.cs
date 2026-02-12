@@ -23,16 +23,13 @@ public class ServersPage
     public ILocator ServerCards => _page.Locator(".server-card");
     public ILocator CreateServerButton => _page.GetByRole(AriaRole.Button, new() { Name = "Add Server" });
     public ILocator CreateServerModal => _page.Locator(".create-server-modal");
-    public ILocator DeleteConfirmDialog => _page.Locator(".delete-confirm-dialog");
-    public ILocator ServerDetailsPanel => _page.Locator(".server-details-panel");
+    public ILocator DeleteConfirmDialog => _page.Locator(".delete-confirm-dialog, .modal-overlay");
+    public ILocator ServerDetailsPanel => _page.Locator(".details-panel");
 
     // Create Server Modal fields
-    public ILocator ProtocolSelect => CreateServerModal.Locator("select[name='protocol']");
-    public ILocator NameInput => CreateServerModal.GetByLabel("Server Name", new() { Exact = false });
-    public ILocator UsernameInput => CreateServerModal.GetByLabel("Username", new() { Exact = false });
-    public ILocator PasswordInput => CreateServerModal.GetByLabel("Password", new() { Exact = false });
-    public ILocator SubmitButton => CreateServerModal.GetByRole(AriaRole.Button, new() { Name = "Create Server" });
-    public ILocator CancelButton => CreateServerModal.GetByRole(AriaRole.Button, new() { Name = "Cancel" });
+    public ILocator NameInput => CreateServerModal.Locator("#server-name");
+    public ILocator SubmitButton => CreateServerModal.Locator("button[type='submit']");
+    public ILocator CancelButton => CreateServerModal.Locator("button.btn--secondary");
 
     /// <summary>
     /// Get all server names currently displayed in the grid
@@ -44,7 +41,7 @@ public class ServersPage
 
         foreach (var card in cards)
         {
-            var nameElement = card.Locator(".server-card__name");
+            var nameElement = card.Locator(".server-name");
             var name = await nameElement.TextContentAsync();
             if (!string.IsNullOrWhiteSpace(name))
             {
@@ -69,14 +66,14 @@ public class ServersPage
     public async Task<string> GetServerHealthAsync(string serverName)
     {
         var card = GetServerCard(serverName);
-        var healthDot = card.Locator(".health-dot");
+        var healthDot = card.Locator(".status-dot");
         var classList = await healthDot.GetAttributeAsync("class");
 
-        if (classList?.Contains("health-dot--healthy") == true)
+        if (classList?.Contains("status-dot--healthy") == true)
             return "healthy";
-        if (classList?.Contains("health-dot--degraded") == true)
+        if (classList?.Contains("status-dot--degraded") == true)
             return "degraded";
-        if (classList?.Contains("health-dot--unhealthy") == true)
+        if (classList?.Contains("status-dot--down") == true)
             return "unhealthy";
 
         return "unknown";
@@ -88,7 +85,7 @@ public class ServersPage
     public async Task<string?> GetServerStatusAsync(string serverName)
     {
         var card = GetServerCard(serverName);
-        var statusElement = card.Locator(".server-card__status, .health-text");
+        var statusElement = card.Locator(".status-text");
         return await statusElement.TextContentAsync();
     }
 
@@ -106,10 +103,14 @@ public class ServersPage
     /// </summary>
     public async Task FillServerDetailsAsync(string name, string protocol, string? username = null, string? password = null)
     {
-        // Select protocol first (this may show/hide fields)
-        if (protocol.ToLower() != "ftp") // ftp is default
+        // Select protocol using protocol buttons
+        var protocolUpper = protocol.ToUpper();
+        if (protocolUpper == "NAS") protocolUpper = "NAS";
+        var protocolButton = CreateServerModal.GetByRole(AriaRole.Button, new() { Name = protocolUpper, Exact = true });
+        var isActive = await protocolButton.GetAttributeAsync("class");
+        if (isActive?.Contains("protocol-btn--active") != true)
         {
-            await ProtocolSelect.SelectOptionAsync(protocol.ToLower());
+            await protocolButton.ClickAsync();
         }
 
         // Fill name
@@ -118,12 +119,20 @@ public class ServersPage
         // Fill credentials if provided and visible
         if (username != null)
         {
-            await UsernameInput.FillAsync(username);
+            var usernameInput = CreateServerModal.Locator($"#{protocol.ToLower()}-username");
+            if (await usernameInput.CountAsync() > 0)
+            {
+                await usernameInput.FillAsync(username);
+            }
         }
 
         if (password != null)
         {
-            await PasswordInput.FillAsync(password);
+            var passwordInput = CreateServerModal.Locator($"#{protocol.ToLower()}-password");
+            if (await passwordInput.CountAsync() > 0)
+            {
+                await passwordInput.FillAsync(password);
+            }
         }
     }
 
@@ -156,7 +165,7 @@ public class ServersPage
         await card.ClickAsync();
 
         // Wait for details panel to open
-        await ServerDetailsPanel.WaitForAsync(new() { State = WaitForSelectorState.Visible });
+        await _page.Locator(".details-panel--open").WaitForAsync(new() { State = WaitForSelectorState.Visible });
     }
 
     /// <summary>
@@ -170,7 +179,7 @@ public class ServersPage
         await card.HoverAsync();
 
         // Click delete button
-        var deleteButton = card.Locator(".server-card__delete-btn, button[title='Delete server']");
+        var deleteButton = card.Locator(".server-card-delete, button[title='Delete server']");
         await deleteButton.ClickAsync();
 
         // Wait for confirmation dialog
@@ -191,14 +200,17 @@ public class ServersPage
         // Wait for panel to be visible
         await ServerDetailsPanel.WaitForAsync(new() { State = WaitForSelectorState.Visible });
 
-        // Extract key details (adjust selectors based on actual panel structure)
-        var nameElement = ServerDetailsPanel.Locator(".server-details__name, h2");
+        // Extract key details from panel
+        var nameElement = ServerDetailsPanel.Locator(".panel-title");
         var name = await nameElement.TextContentAsync();
         if (name != null) details["name"] = name.Trim();
 
-        var protocolElement = ServerDetailsPanel.Locator(".server-details__protocol");
-        var protocol = await protocolElement.First.TextContentAsync();
-        if (protocol != null) details["protocol"] = protocol.Trim();
+        var protocolElement = ServerDetailsPanel.Locator(".panel-protocol");
+        if (await protocolElement.CountAsync() > 0)
+        {
+            var protocol = await protocolElement.First.TextContentAsync();
+            if (protocol != null) details["protocol"] = protocol.Trim();
+        }
 
         return details;
     }
@@ -208,7 +220,7 @@ public class ServersPage
     /// </summary>
     public async Task CloseDetailsPanelAsync()
     {
-        var closeButton = ServerDetailsPanel.Locator("button.close-btn, button[aria-label='Close']");
+        var closeButton = ServerDetailsPanel.Locator(".panel-close");
         await closeButton.ClickAsync();
 
         // Wait for panel to be hidden
@@ -220,7 +232,7 @@ public class ServersPage
     /// </summary>
     public async Task<bool> HasValidationErrorAsync()
     {
-        var errorElement = CreateServerModal.Locator(".error-message, .validation-error, .field-error");
+        var errorElement = CreateServerModal.Locator(".modal-error, .name-unavailable, .form-input--error");
         return await errorElement.CountAsync() > 0;
     }
 
@@ -229,7 +241,7 @@ public class ServersPage
     /// </summary>
     public async Task<string?> GetValidationErrorAsync()
     {
-        var errorElement = CreateServerModal.Locator(".error-message, .validation-error, .field-error").First;
+        var errorElement = CreateServerModal.Locator(".modal-error, .name-unavailable").First;
         return await errorElement.TextContentAsync();
     }
 

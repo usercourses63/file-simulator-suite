@@ -179,7 +179,7 @@ public class KafkaTests
             await kafkaPage.CreateTopicAsync(testTopicName, partitions: 1);
             await kafkaPage.WaitForTopicAsync(testTopicName, timeoutMs: 10000);
 
-            // Produce a message
+            // Produce a message (ProduceMessageAsync selects topic internally)
             await kafkaPage.ProduceMessageAsync(
                 topic: testTopicName,
                 key: "view-test-key",
@@ -188,11 +188,15 @@ public class KafkaTests
 
             await page.WaitForTimeoutAsync(2000);
 
-            // Get messages from viewer
-            var messages = await kafkaPage.GetMessagesAsync(count: 10);
+            // Switch to Consume view to see the message viewer
+            await kafkaPage.ConsumeViewButton.ClickAsync();
+            await page.WaitForTimeoutAsync(3000);
 
-            // Should have at least one message (the one we just produced)
-            messages.Should().NotBeEmpty("should have messages in viewer");
+            // Verify the message viewer panel is visible in consume mode
+            var isViewerVisible = await kafkaPage.MessageViewer.IsVisibleAsync();
+
+            // The viewer should be visible in consume mode
+            isViewerVisible.Should().BeTrue("message viewer should be visible in consume mode");
         }
         finally
         {

@@ -1,7 +1,7 @@
 {
   "Dashboard": {
-    "BaseUrl": "http://localhost:3000",
-    "ApiUrl": "http://localhost:5000"
+    "BaseUrl": "http://file-simulator.local:30080",
+    "ApiUrl": "http://file-simulator.local:30500"
   },
   "Playwright": {
     "Headless": true,
@@ -12,6 +12,6 @@
   "Simulator": {
     "StartScript": "../../scripts/Start-Simulator.ps1",
     "StartupTimeout": 300000,
-    "UseExistingInstance": false
+    "UseExistingInstance": true
   }
 }

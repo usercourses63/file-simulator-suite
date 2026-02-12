@@ -26,21 +26,21 @@ public class KafkaPage
 
     // Topic list
     public ILocator TopicList => _page.Locator(".topic-list");
-    public ILocator TopicItems => TopicList.Locator(".topic-item");
-    public ILocator CreateTopicButton => _page.GetByRole(AriaRole.Button, new() { Name = "Create Topic" });
+    public ILocator TopicItems => TopicList.Locator(".topic-list__item");
+    public ILocator CreateTopicButton => _page.Locator(".topic-list__create-btn");
 
-    // Create topic form
+    // Create topic form (overlay modal)
     public ILocator CreateTopicForm => _page.Locator(".create-topic-form");
-    public ILocator TopicNameInput => CreateTopicForm.GetByLabel("Topic Name", new() { Exact = false });
-    public ILocator PartitionsInput => CreateTopicForm.GetByLabel("Partitions", new() { Exact = false });
-    public ILocator SubmitTopicButton => CreateTopicForm.GetByRole(AriaRole.Button, new() { Name = "Create" });
-    public ILocator CancelTopicButton => CreateTopicForm.GetByRole(AriaRole.Button, new() { Name = "Cancel" });
+    public ILocator TopicNameInput => _page.Locator("#topic-name");
+    public ILocator PartitionsInput => _page.Locator("#topic-partitions");
+    public ILocator SubmitTopicButton => _page.Locator(".create-topic-form__submit");
+    public ILocator CancelTopicButton => _page.Locator(".create-topic-form__cancel");
 
     // Message producer
     public ILocator MessageProducer => _page.Locator(".message-producer");
-    public ILocator MessageKeyInput => MessageProducer.Locator("input[name='key'], input[placeholder*='key']");
-    public ILocator MessageValueInput => MessageProducer.Locator("textarea[name='value'], textarea[placeholder*='message']");
-    public ILocator SendMessageButton => MessageProducer.GetByRole(AriaRole.Button, new() { Name = "Send" });
+    public ILocator MessageKeyInput => _page.Locator("#msg-key");
+    public ILocator MessageValueInput => _page.Locator("#msg-value");
+    public ILocator SendMessageButton => _page.Locator(".message-producer__submit");
 
     // View mode toggle
     public ILocator ProduceViewButton => _page.Locator(".kafka-view-toggle__btn").Filter(new() { HasText = "Produce" });
@@ -48,11 +48,11 @@ public class KafkaPage
 
     // Message viewer
     public ILocator MessageViewer => _page.Locator(".message-viewer");
-    public ILocator MessageItems => MessageViewer.Locator(".message-item, .kafka-message");
+    public ILocator MessageItems => MessageViewer.Locator(".message-viewer__item");
 
     // Consumer groups
-    public ILocator ConsumerGroupList => _page.Locator(".consumer-group-list");
-    public ILocator ConsumerGroupItems => ConsumerGroupList.Locator(".consumer-group-item");
+    public ILocator ConsumerGroupList => _page.Locator(".kafka-groups-list");
+    public ILocator ConsumerGroupItems => ConsumerGroupList.Locator(".consumer-group-detail");
 
     /// <summary>
     /// Get list of all topic names
@@ -64,7 +64,7 @@ public class KafkaPage
 
         foreach (var item in items)
         {
-            var nameElement = item.Locator(".topic-name, .topic-item__name");
+            var nameElement = item.Locator(".topic-list__item-name");
             var name = await nameElement.TextContentAsync();
             if (!string.IsNullOrWhiteSpace(name))
             {
@@ -94,7 +94,7 @@ public class KafkaPage
         await SubmitTopicButton.ClickAsync();
 
         // Wait for form to close
-        await CreateTopicForm.WaitForAsync(new() { State = WaitForSelectorState.Hidden, Timeout = 5000 });
+        await CreateTopicForm.WaitForAsync(new() { State = WaitForSelectorState.Hidden, Timeout = 10000 });
     }
 
     /// <summary>
@@ -104,19 +104,17 @@ public class KafkaPage
     {
         var topicItem = TopicItems.Filter(new() { HasText = topicName }).First;
 
-        // Look for delete button
-        var deleteButton = topicItem.Locator("button[title='Delete'], .delete-btn");
+        // Click delete button (the "x" button)
+        var deleteButton = topicItem.Locator(".topic-list__delete-btn");
         await deleteButton.ClickAsync();
 
-        // Handle inline confirmation or dialog
-        var confirmButton = _page.Locator("button").Filter(new() { HasText = "Delete" }).First;
-        if (await confirmButton.CountAsync() > 0)
-        {
-            await confirmButton.ClickAsync();
-        }
+        // Handle inline confirmation (Yes/No buttons appear)
+        var confirmYes = topicItem.Locator(".topic-list__confirm-yes");
+        await confirmYes.WaitForAsync(new() { State = WaitForSelectorState.Visible });
+        await confirmYes.ClickAsync();
 
         // Wait for topic to be removed
-        await _page.WaitForTimeoutAsync(1000);
+        await _page.WaitForTimeoutAsync(2000);
     }
 
     /// <summary>
@@ -125,7 +123,8 @@ public class KafkaPage
     public async Task SelectTopicAsync(string topicName)
     {
         var topicItem = TopicItems.Filter(new() { HasText = topicName }).First;
-        await topicItem.ClickAsync();
+        var selectButton = topicItem.Locator(".topic-list__item-btn");
+        await selectButton.ClickAsync();
 
         // Wait for messages panel to update
         await _page.WaitForTimeoutAsync(500);
@@ -140,7 +139,8 @@ public class KafkaPage
         await SelectTopicAsync(topic);
 
         // Switch to produce view if not already
-        if (!await ProduceViewButton.GetAttributeAsync("class").ContinueWith(t => t.Result?.Contains("--active") == true))
+        var produceClass = await ProduceViewButton.GetAttributeAsync("class");
+        if (produceClass?.Contains("--active") != true)
         {
             await ProduceViewButton.ClickAsync();
         }
@@ -160,7 +160,7 @@ public class KafkaPage
         await SendMessageButton.ClickAsync();
 
         // Wait for send to complete
-        await _page.WaitForTimeoutAsync(500);
+        await _page.WaitForTimeoutAsync(1000);
     }
 
     /// <summary>
@@ -169,10 +169,14 @@ public class KafkaPage
     public async Task<List<string>> GetMessagesAsync(int count = 10)
     {
         // Switch to consume view
-        await ConsumeViewButton.ClickAsync();
+        var consumeClass = await ConsumeViewButton.GetAttributeAsync("class");
+        if (consumeClass?.Contains("--active") != true)
+        {
+            await ConsumeViewButton.ClickAsync();
+        }
 
-        // Wait for messages to load
-        await _page.WaitForTimeoutAsync(1000);
+        // Wait for messages to load (Kafka consumption can take a few seconds)
+        await _page.WaitForTimeoutAsync(5000);
 
         var messages = new List<string>();
         var items = await MessageItems.AllAsync();
@@ -200,7 +204,7 @@ public class KafkaPage
 
         foreach (var item in items)
         {
-            var nameElement = item.Locator(".group-name, .consumer-group__name");
+            var nameElement = item.Locator(".consumer-group-detail__id");
             var name = await nameElement.TextContentAsync();
             if (!string.IsNullOrWhiteSpace(name))
             {

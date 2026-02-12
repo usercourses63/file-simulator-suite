@@ -21,25 +21,35 @@ public class AlertsPage
     public ILocator CriticalCountBadge => AlertBanner.Locator(".alert-banner__count--critical");
     public ILocator WarningCountBadge => AlertBanner.Locator(".alert-banner__count--warning");
     public ILocator InfoCountBadge => AlertBanner.Locator(".alert-banner__count--info");
-    public ILocator DismissBannerButton => AlertBanner.Locator("button.dismiss-btn, button[aria-label='Dismiss']");
+    public ILocator DismissBannerButton => AlertBanner.Locator("button");
 
     // Alerts tab content
     public ILocator AlertsTab => _page.Locator(".alerts-tab");
-    public ILocator ActiveAlertsList => AlertsTab.Locator(".active-alerts-list, .alerts-active");
-    public ILocator AlertHistoryList => AlertsTab.Locator(".alert-history-list, .alerts-history");
 
-    // Alert items
-    public ILocator AlertItems => _page.Locator(".alert-item");
-    public ILocator ActiveAlertItems => ActiveAlertsList.Locator(".alert-item");
-    public ILocator HistoryAlertItems => AlertHistoryList.Locator(".alert-item");
+    // Stats section
+    public ILocator StatsSection => AlertsTab.Locator(".alerts-tab__stats");
+    public ILocator StatCards => StatsSection.Locator(".stat-card");
 
     // Filters
-    public ILocator SeverityFilter => AlertsTab.Locator("select[name='severity'], select.severity-filter");
-    public ILocator TypeFilter => AlertsTab.Locator("select[name='type'], select.type-filter");
-    public ILocator SearchInput => AlertsTab.Locator("input[type='search'], input[placeholder*='Search']");
+    public ILocator SeverityFilter => _page.Locator("#severity-filter");
+    public ILocator TypeFilter => _page.Locator("#type-filter");
+    public ILocator SearchInput => _page.Locator("#search-filter");
 
-    // Acknowledge button (for active alerts)
-    public ILocator AcknowledgeButtons => _page.Locator("button").Filter(new() { HasText = "Acknowledge" });
+    // Alerts table
+    public ILocator AlertsTable => AlertsTab.Locator(".alerts-tab__table");
+    public ILocator AlertTableRows => AlertsTable.Locator("tbody tr");
+
+    // Alert items (table rows) - used for counting
+    public ILocator AlertItems => AlertTableRows;
+
+    // Active and history sections - both use the same table; filter by status column
+    public ILocator ActiveAlertsList => AlertsTab;
+    public ILocator AlertHistoryList => AlertsTab;
+    public ILocator ActiveAlertItems => AlertsTable.Locator("tbody tr").Filter(new() { Has = _page.Locator(".alert-status--active") });
+    public ILocator HistoryAlertItems => AlertsTable.Locator("tbody tr").Filter(new() { Has = _page.Locator(".alert-status--resolved") });
+
+    // Loading state
+    public ILocator LoadingIndicator => AlertsTab.Locator(".alerts-tab__loading, .loading-spinner");
 
     /// <summary>
     /// Get active alerts with severity, message, and time
@@ -47,12 +57,17 @@ public class AlertsPage
     public async Task<List<AlertInfo>> GetActiveAlertsAsync()
     {
         var alerts = new List<AlertInfo>();
-        var items = await ActiveAlertItems.AllAsync();
+        var rows = await AlertTableRows.AllAsync();
 
-        foreach (var item in items)
+        foreach (var row in rows)
         {
-            var alert = await ParseAlertItemAsync(item);
-            alerts.Add(alert);
+            // Check if this row has an active status
+            var statusElement = row.Locator(".alert-status--active");
+            if (await statusElement.CountAsync() > 0)
+            {
+                var alert = await ParseAlertRowAsync(row);
+                alerts.Add(alert);
+            }
         }
 
         return alerts;
@@ -64,11 +79,11 @@ public class AlertsPage
     public async Task<List<AlertInfo>> GetAlertHistoryAsync()
     {
         var alerts = new List<AlertInfo>();
-        var items = await HistoryAlertItems.AllAsync();
+        var rows = await AlertTableRows.AllAsync();
 
-        foreach (var item in items)
+        foreach (var row in rows)
         {
-            var alert = await ParseAlertItemAsync(item);
+            var alert = await ParseAlertRowAsync(row);
             alerts.Add(alert);
         }
 
@@ -76,24 +91,37 @@ public class AlertsPage
     }
 
     /// <summary>
-    /// Parse an alert item into AlertInfo
+    /// Parse a table row into AlertInfo
     /// </summary>
-    private async Task<AlertInfo> ParseAlertItemAsync(ILocator item)
+    private async Task<AlertInfo> ParseAlertRowAsync(ILocator row)
     {
         var severity = "Unknown";
-        var classList = await item.GetAttributeAsync("class");
-        if (classList?.Contains("--critical") == true) severity = "Critical";
-        else if (classList?.Contains("--warning") == true) severity = "Warning";
-        else if (classList?.Contains("--info") == true) severity = "Info";
 
-        var titleElement = item.Locator(".alert-title, .alert__title");
-        var title = await titleElement.TextContentAsync() ?? "";
+        // Check for alert badge severity class
+        var badge = row.Locator(".alert-badge");
+        if (await badge.CountAsync() > 0)
+        {
+            var badgeClass = await badge.First.GetAttributeAsync("class");
+            if (badgeClass?.Contains("alert-badge--critical") == true) severity = "Critical";
+            else if (badgeClass?.Contains("alert-badge--warning") == true) severity = "Warning";
+            else if (badgeClass?.Contains("alert-badge--info") == true) severity = "Info";
+        }
 
-        var messageElement = item.Locator(".alert-message, .alert__message");
-        var message = await messageElement.TextContentAsync() ?? "";
+        // Get title from the title cell
+        var titleElement = row.Locator(".alerts-tab__title");
+        var title = "";
+        if (await titleElement.CountAsync() > 0)
+            title = await titleElement.TextContentAsync() ?? "";
 
-        var timeElement = item.Locator(".alert-time, .alert__time");
-        var time = await timeElement.TextContentAsync() ?? "";
+        // Get message from the message cell
+        var messageElement = row.Locator(".alerts-tab__message");
+        var message = "";
+        if (await messageElement.CountAsync() > 0)
+            message = await messageElement.TextContentAsync() ?? "";
+
+        // Get time from the row (look for time/date cell)
+        var cells = await row.Locator("td").AllAsync();
+        var time = cells.Count > 5 ? (await cells[5].TextContentAsync() ?? "") : "";
 
         return new AlertInfo
         {
@@ -160,21 +188,6 @@ public class AlertsPage
     }
 
     /// <summary>
-    /// Acknowledge an alert by index
-    /// </summary>
-    public async Task AcknowledgeAlertAsync(int index = 0)
-    {
-        var buttons = await AcknowledgeButtons.AllAsync();
-        if (index < buttons.Count)
-        {
-            await buttons[index].ClickAsync();
-
-            // Wait for operation to complete
-            await _page.WaitForTimeoutAsync(500);
-        }
-    }
-
-    /// <summary>
     /// Filter alerts by severity
     /// </summary>
     public async Task FilterBySeverityAsync(string severity)
@@ -208,11 +221,11 @@ public class AlertsPage
     }
 
     /// <summary>
-    /// Get total alert count
+    /// Get total alert count from table rows
     /// </summary>
     public async Task<int> GetAlertCountAsync()
     {
-        return await AlertItems.CountAsync();
+        return await AlertTableRows.CountAsync();
     }
 
     /// <summary>
@@ -220,8 +233,23 @@ public class AlertsPage
     /// </summary>
     public async Task<bool> IsLoadingAsync()
     {
-        var loadingIndicator = AlertsTab.Locator(".loading, .spinner");
-        return await loadingIndicator.IsVisibleAsync();
+        return await LoadingIndicator.IsVisibleAsync();
+    }
+
+    /// <summary>
+    /// Get stat card value by severity
+    /// </summary>
+    public async Task<int> GetStatCardValueAsync(string severity)
+    {
+        var card = StatsSection.Locator($".stat-card--{severity.ToLower()}");
+        if (await card.CountAsync() > 0)
+        {
+            var valueElement = card.Locator(".stat-card__value");
+            var text = await valueElement.TextContentAsync();
+            if (int.TryParse(text?.Trim(), out var value))
+                return value;
+        }
+        return 0;
     }
 }
 

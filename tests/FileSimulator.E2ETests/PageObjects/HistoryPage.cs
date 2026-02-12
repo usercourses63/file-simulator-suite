@@ -4,7 +4,7 @@ namespace FileSimulator.E2ETests.PageObjects;
 
 /// <summary>
 /// Page Object for the History tab.
-/// Provides access to time range selector, latency chart, and server sparklines.
+/// Provides access to time range selector, latency chart, and server filter.
 /// </summary>
 public class HistoryPage
 {
@@ -18,22 +18,30 @@ public class HistoryPage
     // Main containers
     public ILocator HistoryTab => _page.Locator(".history-tab");
     public ILocator TimeRangeSelector => _page.Locator(".time-range-selector");
-    public ILocator LatencyChart => _page.Locator(".latency-chart, .recharts-wrapper");
-    public ILocator ServerSparklines => _page.Locator(".server-sparklines");
+    public ILocator LatencyChart => _page.Locator(".latency-chart");
+    public ILocator ServerSparklines => _page.Locator(".history-tab-stats");
 
-    // Time range buttons
-    public ILocator OneHourButton => TimeRangeSelector.GetByRole(AriaRole.Button, new() { Name = "1h" });
-    public ILocator SixHourButton => TimeRangeSelector.GetByRole(AriaRole.Button, new() { Name = "6h" });
-    public ILocator TwentyFourHourButton => TimeRangeSelector.GetByRole(AriaRole.Button, new() { Name = "24h" });
-    public ILocator SevenDayButton => TimeRangeSelector.GetByRole(AriaRole.Button, new() { Name = "7d" });
+    // Time range preset buttons
+    public ILocator TimeRangePresets => TimeRangeSelector.Locator(".time-range-preset");
+    public ILocator OneHourButton => TimeRangeSelector.Locator(".time-range-preset").Filter(new() { HasText = "1h" });
+    public ILocator SixHourButton => TimeRangeSelector.Locator(".time-range-preset").Filter(new() { HasText = "6h" });
+    public ILocator TwentyFourHourButton => TimeRangeSelector.Locator(".time-range-preset").Filter(new() { HasText = "24h" });
+    public ILocator SevenDayButton => TimeRangeSelector.Locator(".time-range-preset").Filter(new() { HasText = "7d" });
 
     // Chart elements
     public ILocator ChartLines => LatencyChart.Locator(".recharts-line");
     public ILocator ChartTooltip => _page.Locator(".recharts-tooltip-wrapper");
-    public ILocator LoadingIndicator => HistoryTab.Locator(".loading, .spinner");
+    public ILocator LoadingIndicator => HistoryTab.Locator(".history-tab-loading");
 
-    // Sparklines
-    public ILocator SparklineItems => ServerSparklines.Locator(".sparkline-item, .server-sparkline");
+    // Chart controls
+    public ILocator ZoomResetButton => LatencyChart.Locator(".zoom-reset-btn");
+    public ILocator RefreshButton => HistoryTab.Locator(".refresh-btn");
+
+    // Filters section
+    public ILocator FiltersSection => HistoryTab.Locator(".history-tab-filters");
+
+    // Sparklines (not present in HistoryTab directly - stats section used instead)
+    public ILocator SparklineItems => ServerSparklines.Locator(".stat-item, div");
 
     /// <summary>
     /// Select a time range
@@ -60,17 +68,12 @@ public class HistoryPage
     /// </summary>
     public async Task<string> GetCurrentTimeRangeAsync()
     {
-        // Look for active button
-        var buttons = new[] { OneHourButton, SixHourButton, TwentyFourHourButton, SevenDayButton };
-        var ranges = new[] { "1h", "6h", "24h", "7d" };
-
-        for (int i = 0; i < buttons.Length; i++)
+        // Look for the active preset button
+        var activeButton = TimeRangeSelector.Locator(".time-range-preset--active");
+        if (await activeButton.CountAsync() > 0)
         {
-            var classList = await buttons[i].GetAttributeAsync("class");
-            if (classList?.Contains("active") == true || classList?.Contains("selected") == true)
-            {
-                return ranges[i];
-            }
+            var text = await activeButton.First.TextContentAsync();
+            return text?.Trim() ?? "unknown";
         }
 
         return "unknown";
@@ -107,7 +110,7 @@ public class HistoryPage
     }
 
     /// <summary>
-    /// Get list of servers shown in sparklines
+    /// Get list of servers shown in sparklines/stats
     /// </summary>
     public async Task<List<string>> GetSparklineServersAsync()
     {
@@ -116,11 +119,14 @@ public class HistoryPage
 
         foreach (var item in items)
         {
-            var nameElement = item.Locator(".sparkline-name, .server-name");
-            var name = await nameElement.TextContentAsync();
-            if (!string.IsNullOrWhiteSpace(name))
+            var nameElement = item.Locator(".server-name, .stat-name");
+            if (await nameElement.CountAsync() > 0)
             {
-                servers.Add(name.Trim());
+                var name = await nameElement.TextContentAsync();
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    servers.Add(name.Trim());
+                }
             }
         }
 
@@ -195,12 +201,12 @@ public class HistoryPage
     }
 
     /// <summary>
-    /// Get all available time range options
+    /// Get all available time range options from preset buttons
     /// </summary>
     public async Task<List<string>> GetAvailableTimeRangesAsync()
     {
         var ranges = new List<string>();
-        var buttons = await TimeRangeSelector.Locator("button").AllAsync();
+        var buttons = await TimeRangePresets.AllAsync();
 
         foreach (var button in buttons)
         {

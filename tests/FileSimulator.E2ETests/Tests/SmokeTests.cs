@@ -32,7 +32,7 @@ public class SmokeTests
     public async Task Api_Health_Returns_Success()
     {
         using var client = new HttpClient();
-        var response = await client.GetAsync($"{_fixture.ApiUrl}/api/health");
+        var response = await client.GetAsync($"{_fixture.ApiUrl}/health");
         response.IsSuccessStatusCode.Should().BeTrue();
     }
 }

@@ -105,15 +105,11 @@ public class HistoryTests
         await dashboard.SwitchToTabAsync("History");
         await page.WaitForTimeoutAsync(2000);
 
-        // Check if sparklines section exists
-        var hasSparklines = await historyPage.ServerSparklines.CountAsync() > 0;
-
-        if (hasSparklines)
-        {
-            // Get server sparklines
-            var servers = await historyPage.GetSparklineServersAsync();
-            servers.Should().NotBeEmpty("should have server sparklines");
-        }
+        // Sparklines are on ServerCards on the Servers tab, not in HistoryTab.
+        // HistoryTab has a chart and time range selector instead.
+        // Verify the chart is present as the main content.
+        var isChartVisible = await historyPage.LatencyChart.IsVisibleAsync();
+        isChartVisible.Should().BeTrue("history tab should show latency chart");
 
         await page.CloseAsync();
     }

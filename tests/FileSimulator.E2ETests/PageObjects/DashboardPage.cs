@@ -19,12 +19,12 @@ public class DashboardPage
     public ILocator HeaderTitle => _page.GetByRole(AriaRole.Heading, new() { Name = "File Simulator Suite" });
     public ILocator ConnectionStatus => _page.Locator(".connection-status");
 
-    // Tab buttons
-    public ILocator ServersTab => _page.GetByRole(AriaRole.Button, new() { Name = "Servers" });
-    public ILocator FilesTab => _page.GetByRole(AriaRole.Button, new() { Name = "Files" });
-    public ILocator HistoryTab => _page.GetByRole(AriaRole.Button, new() { Name = "History" });
-    public ILocator KafkaTab => _page.GetByRole(AriaRole.Button, new() { Name = "Kafka" });
-    public ILocator AlertsTab => _page.GetByRole(AriaRole.Button, new() { Name = "Alerts" });
+    // Tab buttons - use Exact = true to avoid matching server-sparkline "Click to view history" etc.
+    public ILocator ServersTab => _page.Locator("button.header-tab").Filter(new() { HasText = "Servers" });
+    public ILocator FilesTab => _page.Locator("button.header-tab").Filter(new() { HasText = "Files" });
+    public ILocator HistoryTab => _page.Locator("button.header-tab").Filter(new() { HasText = "History" });
+    public ILocator KafkaTab => _page.Locator("button.header-tab").Filter(new() { HasText = "Kafka" });
+    public ILocator AlertsTab => _page.Locator("button.header-tab").Filter(new() { HasText = "Alerts" });
 
     // Summary header
     public ILocator SummaryHeader => _page.Locator(".summary-header");
@@ -46,8 +46,8 @@ public class DashboardPage
     /// </summary>
     public async Task WaitForDashboardLoadAsync(int timeoutMs = 10000)
     {
-        // Wait for connection status to show connected
-        await _page.WaitForSelectorAsync(".connection-status--connected, .connection-status--reconnecting",
+        // Wait for connection indicator to show connected
+        await _page.WaitForSelectorAsync(".connection-indicator--connected, .connection-indicator--reconnecting",
             new() { Timeout = timeoutMs });
 
         // Wait for summary header to appear (indicates data loaded)
@@ -71,9 +71,9 @@ public class DashboardPage
 
         await tab.ClickAsync();
 
-        // Wait for tab to be active
-        await _page.WaitForSelectorAsync($".header-tab--active >> text={tabName}",
-            new() { State = WaitForSelectorState.Visible });
+        // Wait for tab to become active
+        await _page.Locator("button.header-tab--active").Filter(new() { HasText = tabName })
+            .WaitForAsync(new() { State = WaitForSelectorState.Visible });
     }
 
     /// <summary>
@@ -99,12 +99,13 @@ public class DashboardPage
     /// </summary>
     public async Task<string> GetConnectionStatusAsync()
     {
-        var classList = await ConnectionStatus.GetAttributeAsync("class");
+        var indicator = ConnectionStatus.Locator(".connection-indicator");
+        var classList = await indicator.GetAttributeAsync("class");
 
-        if (classList?.Contains("connection-status--connected") == true)
+        if (classList?.Contains("connection-indicator--connected") == true)
             return "connected";
 
-        if (classList?.Contains("connection-status--reconnecting") == true)
+        if (classList?.Contains("connection-indicator--reconnecting") == true)
             return "reconnecting";
 
         return "disconnected";

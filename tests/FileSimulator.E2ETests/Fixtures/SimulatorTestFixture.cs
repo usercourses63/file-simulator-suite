@@ -41,7 +41,7 @@ public class SimulatorTestFixture : IAsyncLifetime
         // Wait for services to be ready
         Console.WriteLine($"Waiting for API at {ApiUrl}...");
         await WaitHelpers.WaitForServiceHealthyAsync(
-            $"{ApiUrl}/api/health",
+            $"{ApiUrl}/health",
             TimeSpan.FromMilliseconds(_settings.Simulator.StartupTimeout)
         );
 
