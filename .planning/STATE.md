@@ -12,9 +12,9 @@ See: .planning/PROJECT.md (updated 2026-02-12)
 
 Milestone: v2.3.0 Dashboard UI Refactoring
 Status: Executing Phase 22
-Last activity: 2026-02-12 — Completed 21-02 (Protocol Color System - Badges & Health Indicators)
+Last activity: 2026-02-12 — Completed 22-01 (NAS Compact Table View - Grouped Rows)
 
-Progress: [██████░░░░░░░░░░░░░░] 3 of 10 plans complete
+Progress: [████████░░░░░░░░░░░░] 4 of 10 plans complete
 
 Phases:
 - Phase 20: Wider Layout and Collapsible Sidebar (LAYOUT) — 1 plan
@@ -27,7 +27,7 @@ Phases:
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 65
+- Total plans completed: 66
 - Average duration: 6.0 min
 - Total execution time: 7.0 hours
 
@@ -52,10 +52,11 @@ Phases:
 
 | 20. Wider Layout & Sidebar | 1 | 3 min | 3.0 min |
 | 21. Protocol Color System | 2 | 4 min | 2.0 min |
+| 22. NAS Compact Table View | 1 | 2 min | 2.0 min |
 
 **Recent Trend:**
-- Last 5 plans: [7.5, 8.0, 3.0, 2.0, 2.0] min
-- Trend: CSS/TSX badge icons + health backgrounds 2 min (1 task, 2 files)
+- Last 5 plans: [8.0, 3.0, 2.0, 2.0, 2.0] min
+- Trend: NasTable compact grouped rows replacing card grid 2 min (2 tasks, 3 files)
 
 ## Accumulated Context
 
@@ -232,6 +233,9 @@ Recent decisions affecting current work:
 - Phase 21-02: Lightning bolt SVG icon for Dynamic badge; crosshair/wheel SVG icon for Helm badge
 - Phase 21-02: Health background tints (down=red, degraded=yellow) override protocol tints via CSS cascade ordering
 - Phase 21-02: Down state box-shadow uses :not(:hover) to avoid conflicting with existing hover effects
+- Phase 22-01: CSS grid rows (not HTML table) for NasTable compact layout with BEM styling
+- Phase 22-01: Strip file-sim-file-simulator- prefix from Helm NAS names for compact display
+- Phase 22-01: Fixed group render order: input, output, backup, other (skip empty groups)
 
 ### Pending Todos
 
@@ -249,8 +253,8 @@ No active blockers.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 21-02-PLAN.md (Protocol Color System - Badges & Health Indicators)
-Resume: /gsd:execute-phase 22 for NAS Compact Table View
+Stopped at: Completed 22-01-PLAN.md (NAS Compact Table View - Grouped Rows)
+Resume: Execute 22-02-PLAN.md for NAS expandable rows with sparklines
 
 ## Release History
 
