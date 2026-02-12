@@ -9,10 +9,10 @@
 - [ ] **VIS-04**: Health status (healthy/unhealthy/stopped) visually distinct beyond just left border color
 
 ### Servers - Layout (LAYOUT) — Priority: HIGH
-- [ ] **LAYOUT-01**: Remove 1400px max-width cap on main content area for wider server grid
-- [ ] **LAYOUT-02**: Activity sidebar collapsible with toggle button (default expanded)
-- [ ] **LAYOUT-03**: Server grid uses full available width when sidebar is collapsed
-- [ ] **LAYOUT-04**: Responsive grid adapts gracefully from mobile (single column) to ultra-wide (6+ cards per row)
+- [x] **LAYOUT-01**: Remove 1400px max-width cap on main content area for wider server grid
+- [x] **LAYOUT-02**: Activity sidebar collapsible with toggle button (default expanded)
+- [x] **LAYOUT-03**: Server grid uses full available width when sidebar is collapsed
+- [x] **LAYOUT-04**: Responsive grid adapts gracefully from mobile (single column) to ultra-wide (6+ cards per row)
 
 ### Servers - NAS Grouping (NAS) — Priority: HIGH
 - [ ] **NAS-01**: NAS servers displayed as compact table rows instead of full cards
@@ -64,10 +64,10 @@
 | VIS-02 | 21 | — |
 | VIS-03 | 21 | — |
 | VIS-04 | 21 | — |
-| LAYOUT-01 | 20 | — |
-| LAYOUT-02 | 20 | — |
-| LAYOUT-03 | 20 | — |
-| LAYOUT-04 | 20 | — |
+| LAYOUT-01 | 20 | 20-01 |
+| LAYOUT-02 | 20 | 20-01 |
+| LAYOUT-03 | 20 | 20-01 |
+| LAYOUT-04 | 20 | 20-01 |
 | NAS-01 | 22 | — |
 | NAS-02 | 22 | — |
 | NAS-03 | 22 | — |

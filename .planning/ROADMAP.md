@@ -101,7 +101,7 @@ Plans:
 4. Grid adapts from single column (mobile) to 6+ cards per row (ultra-wide)
 
 Plans:
-- [ ] 20-01: Remove max-width cap, add sidebar toggle, update responsive grid
+- [x] 20-01: Remove max-width cap, add sidebar toggle, update responsive grid
 
 ### Phase 21: Protocol Color System
 **Goal**: Apply protocol-specific color tinting to server cards and unify the color system
@@ -192,7 +192,7 @@ Plans:
 | 17. Version Bump + Infrastructure | v2.2.0 | 1/1 | Complete | 2026-02-12 |
 | 18. Comprehensive E2E Tests | v2.2.0 | 2/2 | Complete | 2026-02-12 |
 | 19. Fresh Install Validation + Release | v2.2.0 | 2/2 | Complete | 2026-02-12 |
-| 20. Wider Layout and Collapsible Sidebar | v2.3.0 | 0/1 | Pending | — |
+| 20. Wider Layout and Collapsible Sidebar | v2.3.0 | 1/1 | Complete | 2026-02-12 |
 | 21. Protocol Color System | v2.3.0 | 0/2 | Pending | — |
 | 22. NAS Compact Table View | v2.3.0 | 0/2 | Pending | — |
 | 23. Server Details Panel Adaptation | v2.3.0 | 0/1 | Pending | — |
@@ -200,4 +200,4 @@ Plans:
 | 25. E2E Tests + Version Bump + Release | v2.3.0 | 0/2 | Pending | — |
 
 ---
-*Last updated: 2026-02-12 - v2.3.0 milestone roadmap created*
+*Last updated: 2026-02-12 - Phase 20 complete*
