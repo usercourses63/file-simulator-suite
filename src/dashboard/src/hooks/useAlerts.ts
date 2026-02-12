@@ -43,13 +43,15 @@ export function useAlerts(apiBaseUrl: string): UseAlertsResult {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Calculate statistics from active alerts
+  // Calculate statistics from alert history (what's shown in the table)
+  // Falls back to active alerts if history hasn't been loaded yet
+  const statsSource = alertHistory.length > 0 ? alertHistory : activeAlerts;
   const stats: AlertStats = {
-    totalCount: activeAlerts.length,
-    infoCount: activeAlerts.filter(a => a.severity === 'Info').length,
-    warningCount: activeAlerts.filter(a => a.severity === 'Warning').length,
-    criticalCount: activeAlerts.filter(a => a.severity === 'Critical').length,
-    byType: activeAlerts.reduce((acc, alert) => {
+    totalCount: statsSource.length,
+    infoCount: statsSource.filter(a => a.severity === 'Info').length,
+    warningCount: statsSource.filter(a => a.severity === 'Warning').length,
+    criticalCount: statsSource.filter(a => a.severity === 'Critical').length,
+    byType: statsSource.reduce((acc, alert) => {
       acc[alert.type] = (acc[alert.type] || 0) + 1;
       return acc;
     }, {} as Record<string, number>)

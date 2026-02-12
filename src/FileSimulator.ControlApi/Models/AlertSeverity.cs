@@ -1,8 +1,11 @@
+using System.Text.Json.Serialization;
+
 namespace FileSimulator.ControlApi.Models;
 
 /// <summary>
 /// Severity levels for alerts in the system.
 /// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum AlertSeverity
 {
     /// <summary>

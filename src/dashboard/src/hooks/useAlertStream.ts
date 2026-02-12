@@ -57,6 +57,12 @@ export function useAlertStream(
   // Track if component is mounted to prevent state updates after unmount
   const isMountedRef = useRef(true);
 
+  // Store handlers in a ref so the effect doesn't depend on them.
+  // This prevents the connection from being torn down and recreated
+  // every time the parent component re-renders with a new handlers object.
+  const handlersRef = useRef(handlers);
+  handlersRef.current = handlers;
+
   useEffect(() => {
     isMountedRef.current = true;
 
@@ -104,20 +110,16 @@ export function useAlertStream(
     });
 
     // Subscribe to AlertTriggered events
-    if (handlers.onAlertTriggered) {
-      connection.on('AlertTriggered', (alert: Alert) => {
-        if (!isMountedRef.current) return;
-        handlers.onAlertTriggered?.(alert);
-      });
-    }
+    connection.on('AlertTriggered', (alert: Alert) => {
+      if (!isMountedRef.current) return;
+      handlersRef.current.onAlertTriggered?.(alert);
+    });
 
     // Subscribe to AlertResolved events
-    if (handlers.onAlertResolved) {
-      connection.on('AlertResolved', (alert: Alert) => {
-        if (!isMountedRef.current) return;
-        handlers.onAlertResolved?.(alert);
-      });
-    }
+    connection.on('AlertResolved', (alert: Alert) => {
+      if (!isMountedRef.current) return;
+      handlersRef.current.onAlertResolved?.(alert);
+    });
 
     // Start connection
     connection.start()
@@ -144,7 +146,7 @@ export function useAlertStream(
         console.warn('Error stopping SignalR alert stream:', err);
       });
     };
-  }, [hubUrl, handlers]);
+  }, [hubUrl]);
 
   return { isConnected, isReconnecting, reconnectAttempt, error };
 }

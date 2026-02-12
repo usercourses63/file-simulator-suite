@@ -81,7 +81,7 @@ export function AlertsTab({ alerts, stats, loading }: AlertsTabProps) {
       <div className="alerts-tab__stats">
         <div className="stat-card">
           <div className="stat-card__value">{stats.totalCount}</div>
-          <div className="stat-card__label">Total Active</div>
+          <div className="stat-card__label">Total</div>
         </div>
         <div className="stat-card stat-card--info">
           <div className="stat-card__value">{stats.infoCount}</div>
