@@ -48,6 +48,9 @@ export function ServerCard({
   const healthState = getHealthState(server);
   const healthText = getHealthStateText(healthState);
 
+  // Derive protocol class for tinted background (VIS-01)
+  const protocolClass = `server-card--protocol-${server.protocol.toLowerCase()}`;
+
   // Track previous health state to trigger animation on change
   const prevHealthState = useRef(healthState);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -90,7 +93,7 @@ export function ServerCard({
 
   return (
     <div
-      className={`server-card server-card--${healthState} ${isAnimating ? 'server-card--pulse' : ''} ${isSelected ? 'server-card--selected' : ''}`}
+      className={`server-card server-card--${healthState} ${protocolClass} ${isAnimating ? 'server-card--pulse' : ''} ${isSelected ? 'server-card--selected' : ''}`}
       onClick={onClick}
       role="button"
       tabIndex={0}
