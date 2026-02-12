@@ -934,7 +934,7 @@ body {
 
 .files-container {
   display: grid;
-  grid-template-columns: 1fr 350px;
+  grid-template-columns: 1fr 400px;
   gap: 1rem;
   height: calc(100vh - 120px);
 }

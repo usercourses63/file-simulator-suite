@@ -47,7 +47,7 @@
 /* Three-column layout */
 .kafka-layout {
   display: grid;
-  grid-template-columns: 280px 1fr 280px;
+  grid-template-columns: minmax(280px, 320px) 1fr minmax(280px, 320px);
   gap: var(--spacing-lg);
   flex: 1;
   min-height: 0;
