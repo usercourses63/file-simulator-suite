@@ -2,8 +2,8 @@ apiVersion: v2
 name: file-simulator
 description: A comprehensive file access simulator suite for development and testing
 type: application
-version: 2.2.0
-appVersion: "2.2.0"
+version: 2.3.0
+appVersion: "2.3.0"
 keywords:
   - file-simulator
   - ftp

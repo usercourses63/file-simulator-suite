@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-02-12
+
+### Changed
+
+#### Wider Layout and Collapsible Sidebar (Phase 20)
+- Removed 1400px max-width cap on main content area for full viewport utilization
+- Added collapsible activity sidebar with floating toggle button
+- Server grid fills entire width when sidebar is collapsed
+
+#### Protocol Color System (Phase 21)
+- Protocol-specific color tinting on server cards (FTP=purple, SFTP=pink, HTTP=blue, S3=orange, SMB=green, NAS=teal)
+- Visual source badges distinguishing Dynamic (lightning bolt) vs Helm (crosshair) servers
+- Enhanced health state indicators with background tints for down/degraded states
+
+#### NAS Compact Table View (Phase 22)
+- NAS servers render as compact grouped table rows instead of full-size cards
+- Rows grouped under Input (3), Output (3), and Backup (1) sub-headers with aggregate health
+- All 7 NAS servers visible without scrolling at 1920x1080
+- Expandable row detail with inline sparkline and server metrics
+
+#### Server Details Panel Adaptation (Phase 23)
+- Details panel opens from both protocol card click and NAS table row click
+- NAS row click wired to same details panel with full server info
+
+#### Secondary Tab Improvements (Phase 24)
+- History tab server dropdown filtered to currently deployed servers only
+- History chart legend only includes servers with data in selected range
+- Files sidebar increased to 400px for more file path text
+- Kafka side panels use flexible width (280-320px) on wide viewports
+- Alerts table columns use flexible widths without hardcoded max-widths
+
+### Added
+- E2E tests for protocol-tinted colors, NAS compact view, and details panel navigation
+
 ## [2.1.0] - 2026-02-12
 
 ### Added
@@ -164,6 +198,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - NFS export of Windows-mounted hostPath volumes (emptyDir workaround)
 
+[2.3.0]: https://github.com/usercourses63/file-simulator-suite/compare/v2.1.0...v2.3.0
 [2.1.0]: https://github.com/usercourses63/file-simulator-suite/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/usercourses63/file-simulator-suite/compare/v1.0...v2.0.0
 [1.0.0]: https://github.com/usercourses63/file-simulator-suite/releases/tag/v1.0
