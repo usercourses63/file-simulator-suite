@@ -81,6 +81,9 @@ function App() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showCreateServer, setShowCreateServer] = useState(false);
 
+  // Sidebar collapse state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   // Activity log for servers tab sidebar
   const { events: activityEvents, addEvent, addEvents, clearEvents: clearActivityEvents } = useActivityLog();
 
@@ -464,42 +467,58 @@ function App() {
         )}
 
         {activeTab === 'servers' && (
-          <div className="servers-container">
-            <aside className="servers-sidebar">
-              <ActivityLog events={activityEvents} onClear={clearActivityEvents} />
-            </aside>
-            <div className="servers-main">
-              {data ? (
-                <>
-                  <BatchOperationsBar
-                    selectedCount={selectedCount}
-                    onDelete={handleBatchDelete}
-                    onSelectAll={selectAll}
-                    onClearSelection={clearSelection}
-                    isDeleting={isDeleting}
-                  />
-                  <SummaryHeader servers={data.servers} />
-                  <ServerGrid
-                    servers={data.servers}
-                    onCardClick={setSelectedServer}
-                    sparklineData={latestSamples}
-                    onSparklineClick={handleSparklineClick}
-                    showMultiSelect={true}
-                    selectedIds={selectedIds}
-                    onToggleSelect={toggleSelect}
-                    onDelete={handleDelete}
-                    dynamicInfo={dynamicInfo}
-                  />
-                </>
-              ) : (
-                <div className="loading-state">
-                  <div className="loading-spinner"></div>
-                  <p>Connecting to server...</p>
-                  {error && <p className="loading-error">{error}</p>}
-                </div>
-              )}
+          <>
+            <div className={`servers-container ${sidebarCollapsed ? 'servers-container--collapsed' : ''}`}>
+              <aside className="servers-sidebar">
+                <ActivityLog
+                  events={activityEvents}
+                  onClear={clearActivityEvents}
+                  onToggleCollapse={() => setSidebarCollapsed(true)}
+                />
+              </aside>
+              <div className="servers-main">
+                {data ? (
+                  <>
+                    <BatchOperationsBar
+                      selectedCount={selectedCount}
+                      onDelete={handleBatchDelete}
+                      onSelectAll={selectAll}
+                      onClearSelection={clearSelection}
+                      isDeleting={isDeleting}
+                    />
+                    <SummaryHeader servers={data.servers} />
+                    <ServerGrid
+                      servers={data.servers}
+                      onCardClick={setSelectedServer}
+                      sparklineData={latestSamples}
+                      onSparklineClick={handleSparklineClick}
+                      showMultiSelect={true}
+                      selectedIds={selectedIds}
+                      onToggleSelect={toggleSelect}
+                      onDelete={handleDelete}
+                      dynamicInfo={dynamicInfo}
+                    />
+                  </>
+                ) : (
+                  <div className="loading-state">
+                    <div className="loading-spinner"></div>
+                    <p>Connecting to server...</p>
+                    {error && <p className="loading-error">{error}</p>}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+            {sidebarCollapsed && (
+              <button
+                className="sidebar-expand-btn"
+                onClick={() => setSidebarCollapsed(false)}
+                title="Show Activity Log"
+                type="button"
+              >
+                &#x25B6;
+              </button>
+            )}
+          </>
         )}
 
         {activeTab === 'files' && (

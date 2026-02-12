@@ -4,6 +4,7 @@ import './ActivityLog.css';
 interface ActivityLogProps {
   events: ActivityEvent[];
   onClear: () => void;
+  onToggleCollapse?: () => void;
 }
 
 const iconMap: Record<ActivityEventType, string> = {
@@ -36,20 +37,32 @@ function formatTime(isoDate: string): string {
   }
 }
 
-export function ActivityLog({ events, onClear }: ActivityLogProps) {
+export function ActivityLog({ events, onClear, onToggleCollapse }: ActivityLogProps) {
   return (
     <div className="activity-log">
       <div className="activity-log__header">
         <h3 className="activity-log__title">Activity Log</h3>
-        {events.length > 0 && (
-          <button
-            className="activity-log__clear"
-            onClick={onClear}
-            type="button"
-          >
-            Clear
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          {events.length > 0 && (
+            <button
+              className="activity-log__clear"
+              onClick={onClear}
+              type="button"
+            >
+              Clear
+            </button>
+          )}
+          {onToggleCollapse && (
+            <button
+              className="activity-log__collapse-btn"
+              onClick={onToggleCollapse}
+              title="Collapse sidebar"
+              type="button"
+            >
+              &#xAB;
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="activity-log__list">
