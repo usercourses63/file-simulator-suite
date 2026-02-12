@@ -162,6 +162,13 @@ public class ApiConfigurationProvider
                     serverConfig.Password = apiResponse.DefaultCredentials.Smb.Password;
                     serverConfig.ShareName = "simulator";
                     serverConfig.BasePath = "output";
+                    // SMB requires port 445 for protocol negotiation;
+                    // use LoadBalancer cluster IP (exposed via minikube tunnel)
+                    if (!string.IsNullOrEmpty(server.ClusterIp) && server.ClusterPort == 445)
+                    {
+                        serverConfig.Host = server.ClusterIp;
+                        serverConfig.Port = server.ClusterPort;
+                    }
                     break;
 
                 case "NFS":
