@@ -12,9 +12,9 @@ See: .planning/PROJECT.md (updated 2026-02-12)
 
 Milestone: v2.3.0 Dashboard UI Refactoring
 Status: Executing Phase 25
-Last activity: 2026-02-12 — Completed 24-02 (Layout width adjustments for Files, Kafka, Alerts)
+Last activity: 2026-02-12 — Completed 25-01 (E2E tests for v2.3.0 UI features)
 
-Progress: [████████████████░░░░] 8 of 10 plans complete
+Progress: [██████████████████░░] 9 of 10 plans complete
 
 Phases:
 - Phase 20: Wider Layout and Collapsible Sidebar (LAYOUT) — 1 plan
@@ -27,8 +27,8 @@ Phases:
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 70
-- Average duration: 5.8 min
+- Total plans completed: 71
+- Average duration: 5.7 min
 - Total execution time: 7.1 hours
 
 **By Phase:**
@@ -55,10 +55,11 @@ Phases:
 | 22. NAS Compact Table View | 2 | 4 min | 2.0 min |
 | 23. Server Details Panel Adaptation | 1 | 2 min | 2.0 min |
 | 24. Secondary Tab Improvements | 2 | 4 min | 2.0 min |
+| 25. E2E Tests + Version Bump | 1 | 2 min | 2.0 min |
 
 **Recent Trend:**
 - Last 5 plans: [2.0, 2.0, 2.0, 2.0, 2.0] min
-- Trend: Layout width adjustments 2 min (2 tasks, 3 files)
+- Trend: E2E tests for v2.3.0 UI features 2 min (2 tasks, 2 files)
 
 ## Accumulated Context
 
@@ -246,6 +247,9 @@ Recent decisions affecting current work:
 - Phase 24-02: Files sidebar 350px->400px for more file path text
 - Phase 24-02: Kafka panels use minmax(280px,320px) instead of fixed 280px
 - Phase 24-02: Alert columns uncapped -- word-break handles long strings
+- Phase 25-01: GetNasServerCountAsync uses .nas-table__row count (not .server-card) since NAS servers render as table rows
+- Phase 25-01: GetAllServerNamesAsync returns only protocol card names; separate GetNasServerNamesAsync for NAS names
+- Phase 25-01: Protocol tint test uses regex matching for server-card--protocol-{type} CSS classes
 
 ### Pending Todos
 
@@ -263,8 +267,8 @@ No active blockers.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 24-02-PLAN.md (Layout width adjustments)
-Resume: Execute 25-01-PLAN.md for E2E Tests + Version Bump
+Stopped at: Completed 25-01-PLAN.md (E2E tests for v2.3.0 UI features)
+Resume: Execute 25-02-PLAN.md for Version Bump + Release
 
 ## Release History
 
