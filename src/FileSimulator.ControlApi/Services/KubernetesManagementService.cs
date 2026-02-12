@@ -695,7 +695,7 @@ public class KubernetesManagementService : IKubernetesManagementService
                                     new V1EnvVar
                                     {
                                         Name = "NFS_EXPORT_0",
-                                        Value = $"/data *({request.ExportOptions},fsid=0)"
+                                        Value = $"/data *({NormalizeExportOptions(request.ExportOptions)},fsid=0)"
                                     },
                                     new V1EnvVar { Name = "NFS_DISABLE_VERSION_3", Value = "false" },
                                     new V1EnvVar { Name = "NFS_LOG_LEVEL", Value = "DEBUG" }
@@ -988,5 +988,18 @@ public class KubernetesManagementService : IKubernetesManagementService
 
         // Update ConfigMap - server temporarily unavailable during restart
         await _configMapService.UpdateConfigMapAsync(ct);
+    }
+
+    /// <summary>
+    /// Strips any leading client spec (e.g. "*(" ... ")") from export options so they
+    /// can be safely wrapped in the NFS_EXPORT_0 value without double-wrapping.
+    /// Accepts: "rw,sync,no_root_squash" or "*(rw,sync,no_root_squash)".
+    /// </summary>
+    private static string NormalizeExportOptions(string options)
+    {
+        var trimmed = options.Trim();
+        if (trimmed.StartsWith("*(") && trimmed.EndsWith(")"))
+            trimmed = trimmed[2..^1];
+        return trimmed;
     }
 }
