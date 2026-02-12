@@ -11,10 +11,18 @@ See: .planning/PROJECT.md (updated 2026-02-12)
 ## Current Position
 
 Milestone: v2.3.0 Dashboard UI Refactoring
-Status: Defining requirements
-Last activity: 2026-02-12 — Milestone v2.3.0 started
+Status: Ready to plan Phase 20
+Last activity: 2026-02-12 — Requirements and roadmap complete (23 requirements, 6 phases, 10 plans)
 
-Progress: [░░░░░░░░░░░░░░░░░░░░] 0 of 0 plans complete (defining requirements)
+Progress: [░░░░░░░░░░░░░░░░░░░░] 0 of 10 plans complete
+
+Phases:
+- Phase 20: Wider Layout and Collapsible Sidebar (LAYOUT) — 1 plan
+- Phase 21: Protocol Color System (VIS) — 2 plans
+- Phase 22: NAS Compact Table View (NAS) — 2 plans
+- Phase 23: Server Details Panel Adaptation (DETAILS) — 1 plan
+- Phase 24: Secondary Tab Improvements (HIST, FILES, KAFKA, ALERTS) — 2 plans
+- Phase 25: E2E Tests + Version Bump + Release (TEST) — 2 plans
 
 ## Performance Metrics
 
@@ -219,7 +227,7 @@ Recent decisions affecting current work:
 3. **Configure FTP passive mode** - Cross-protocol tests blocked by FTP passive mode data port issues. Need to expose passive port range via NodePort or switch to active mode.
 4. **Implement Kafka API endpoints** - Add POST /api/kafka/produce and GET /api/kafka/consume/{topic} to Control API for full Kafka test coverage.
 5. **Fix flaky E2E tests on fresh clusters** - `History_LoadsDataForRange` and `Servers_CanViewServerDetails` timeout on fresh Minikube (no historical data, UI timing). See `.planning/todos/pending/2026-02-12-fix-flaky-e2e-tests-on-fresh-clusters.md`.
-6. **Plan UI refactoring for Servers page** - Wider layout, protocol color coding, visual differentiation of server types. See `.planning/todos/pending/2026-02-12-plan-ui-refactoring-for-servers-page-layout-and-visual-differentiation.md`.
+6. ~~**Plan UI refactoring for Servers page**~~ — Resolved: promoted to v2.3.0 milestone with 23 requirements across 6 phases.
 
 ### Blockers/Concerns
 
@@ -228,7 +236,7 @@ No active blockers.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: v2.3.0 milestone initialization
+Stopped at: v2.3.0 requirements and roadmap complete
 Resume: /gsd:plan-phase 20 to start first phase
 
 ## Release History

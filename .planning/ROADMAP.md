@@ -4,7 +4,8 @@
 
 - ✅ **v1.0 Multi-NAS Production Topology** - Phases 1-5 (shipped 2026-02-01)
 - ✅ **v2.0 Simulator Control Platform** - Phases 6-14 (shipped 2026-02-05)
-- 🔄 **v2.2.0 Activity Log Completeness** - Phases 15-19 (in progress)
+- ✅ **v2.2.0 Activity Log Completeness** - Phases 15-19 (shipped 2026-02-12)
+- 🔄 **v2.3.0 Dashboard UI Refactoring** - Phases 20-25 (in progress)
 
 ## Phases
 
@@ -73,70 +74,100 @@ Plans:
 
 </details>
 
-### v2.2.0 Activity Log Completeness (Phases 15-19)
+<details>
+<summary>v2.2.0 Activity Log Completeness (Phases 15-19) - SHIPPED 2026-02-12</summary>
 
 **Milestone Goal:** Make the activity log a complete audit trail of all server and file operations, add rename API, write comprehensive E2E tests, and validate fresh install from scratch.
 
-### Phase 15: Backend API Enhancements
-**Goal**: Add rename endpoint and read event emission to Control API
-**Requirements**: API-01, API-02
+- [x] Phase 15: Backend API Enhancements (1/1 plans) - 2026-02-12
+- [x] Phase 16: Frontend Activity Log Completeness (1/1 plans) - 2026-02-12
+- [x] Phase 17: Version Bump + Infrastructure (1/1 plans) - 2026-02-12
+- [x] Phase 18: Comprehensive E2E Tests (2/2 plans) - 2026-02-12
+- [x] Phase 19: Fresh Install Validation + Release (2/2 plans) - 2026-02-12
+
+</details>
+
+### v2.3.0 Dashboard UI Refactoring (Phases 20-25)
+
+**Milestone Goal:** Refactor the Servers page for better visual differentiation, wider layout, compact NAS display, and directory-based NAS grouping — making 14+ servers instantly scannable at a glance. Secondary improvements to History, Files, Kafka, and Alerts tabs.
+
+### Phase 20: Wider Layout and Collapsible Sidebar
+**Goal**: Remove layout constraints and make activity sidebar collapsible for maximum server grid space
+**Requirements**: LAYOUT-01, LAYOUT-02, LAYOUT-03, LAYOUT-04
 **Success Criteria**:
-1. `PUT /api/files/rename` renames files and FileSystemWatcher emits Renamed event with OldPath
-2. `GET /api/files/download` broadcasts "Read" FileEvent via SignalR after successful download
-3. Both endpoints return appropriate HTTP status codes and error messages
+1. Main content area no longer capped at 1400px — uses full viewport width
+2. Activity sidebar has a toggle button that collapses/expands it
+3. Server grid fills entire width when sidebar is collapsed
+4. Grid adapts from single column (mobile) to 6+ cards per row (ultra-wide)
 
 Plans:
-- [x] 15-01: Add rename endpoint and read event emission to FilesController
+- [ ] 20-01: Remove max-width cap, add sidebar toggle, update responsive grid
 
-### Phase 16: Frontend Activity Log Completeness
-**Goal**: Handle all file event types in activity log and improve server attribution
-**Requirements**: SRVLOG-01, SRVLOG-02, SRVLOG-03, FILELOG-01, FILELOG-02, FILELOG-03, FILELOG-04, FILELOG-05
+### Phase 21: Protocol Color System
+**Goal**: Apply protocol-specific color tinting to server cards and unify the color system
+**Requirements**: VIS-01, VIS-02, VIS-03, VIS-04
 **Success Criteria**:
-1. Activity log shows created/healthy/deleted events for all dynamic server types
-2. Activity log shows written/read/deleted/renamed events for all files with server attribution
-3. Files on static servers attributed via protocol-based fallback (NAS storage, FTP server, shared storage)
-4. Renamed events show both old and new file names
+1. Each protocol card has a subtle tinted background (FTP=purple, SFTP=pink, HTTP=blue, S3=orange, SMB=green, NAS=teal)
+2. Static (Helm) and dynamic servers have distinct visual badges
+3. Protocol badge colors match card tinting (single source of truth for protocol colors)
+4. Health states (healthy/unhealthy/stopped) are more visually distinct (beyond left border)
 
 Plans:
-- [x] 16-01: Handle Renamed and Read events in App.tsx, update types and ActivityLog component
+- [ ] 21-01: Add protocol-tinted card backgrounds and unified color variables
+- [ ] 21-02: Add static/dynamic badges and enhanced health state indicators
 
-### Phase 17: Version Bump + Infrastructure
-**Goal**: Update all version references to 2.2.0 and fix install script defaults
-**Requirements**: INFRA-01, INFRA-02
+### Phase 22: NAS Compact Table View
+**Goal**: Replace NAS card grid with compact grouped table rows that show all 7 NAS servers without scrolling
+**Requirements**: NAS-01, NAS-02, NAS-03, NAS-04, NAS-05
 **Success Criteria**:
-1. All version references show 2.2.0 (package.json, Chart.yaml, values.yaml, CLAUDE.md)
-2. Dashboard header badge displays v2.2.0
-3. Install-Simulator.ps1 uses 12GB RAM, 4 CPUs, and --kube-context on all kubectl commands
+1. NAS servers render as compact table rows instead of full-size cards
+2. Rows grouped under Input (3), Output (3), and Backup (1) sub-headers
+3. Sub-group headers display server count and aggregate health (e.g., "Input Servers (3) — All Healthy")
+4. All 7 NAS visible without scrolling at 1920x1080
+5. Clicking a NAS row expands to show sparkline and additional metrics
 
 Plans:
-- [x] 17-01: Version bump and Install-Simulator.ps1 fixes
+- [ ] 22-01: Create NasTable component with grouped rows and sub-headers
+- [ ] 22-02: Add expandable row details with sparkline integration
 
-### Phase 18: Comprehensive E2E Tests
-**Goal**: Write and pass E2E tests covering all server and file activity scenarios
-**Requirements**: TEST-01, TEST-02, TEST-03, TEST-04
+### Phase 23: Server Details Panel Adaptation
+**Goal**: Ensure details panel works with both protocol cards and NAS table rows
+**Requirements**: DETAILS-01, DETAILS-02
 **Success Criteria**:
-1. Test creates 5 dynamic servers (FTP, SFTP, 3x NAS) and verifies activity log events
-2. Test performs all file operations on static servers and verifies each event type
-3. Test verifies correct server attribution for files on dynamic NAS servers
-4. Test verifies file rename shows old and new name
-5. All tests pass on deployed cluster
+1. Clicking a protocol server card opens the details panel (existing behavior preserved)
+2. Clicking a NAS table row opens the same details panel with full server info
+3. Details panel shows: name, protocol, health, ports, endpoints, and actions
 
 Plans:
-- [x] 18-01: Write ServerAndFileActivityTests.cs with 4 test methods
-- [x] 18-02: Run tests and iterate on fixes
+- [ ] 23-01: Wire NAS row click to existing details panel, verify all info displayed
 
-### Phase 19: Fresh Install Validation + Release
-**Goal**: Validate entire system from scratch and publish v2.2.0 release
-**Requirements**: VAL-01, VAL-02, VAL-03, VAL-04
+### Phase 24: Secondary Tab Improvements
+**Goal**: Quick layout and data quality improvements for History, Files, Kafka, and Alerts tabs
+**Requirements**: HIST-01, HIST-02, FILES-01, KAFKA-01, ALERTS-01
 **Success Criteria**:
-1. Minikube deleted and recreated from scratch via Install-Simulator.ps1
-2. All E2E Playwright tests pass on fresh install
-3. TestConsole protocol tests pass on fresh install
-4. GitHub release v2.2.0 published with tag and release notes
+1. History server dropdown only shows currently deployed servers (no deleted dynamic servers)
+2. History chart legend only includes servers with data in selected range
+3. Files tab sidebar increased to 400px
+4. Kafka side panels use 300px+ width on wide viewports
+5. Alerts table columns use flexible widths without hardcoded max-widths
 
 Plans:
-- [x] 19-01: Delete Minikube, fresh install, build and load images
-- [x] 19-02: Run all tests and create release
+- [ ] 24-01: History tab server filter cleanup and legend optimization
+- [ ] 24-02: Files, Kafka, Alerts tab minor layout adjustments
+
+### Phase 25: E2E Tests + Version Bump + Release
+**Goal**: Validate all UI changes with E2E tests and release v2.3.0
+**Requirements**: TEST-01, TEST-02, TEST-03
+**Success Criteria**:
+1. E2E test verifies protocol-tinted colors on server cards
+2. E2E test verifies all 7 NAS servers visible in compact view
+3. E2E test verifies details panel opens from both card and NAS row
+4. All existing E2E tests still pass (no regression)
+5. Version bumped to 2.3.0 and release created
+
+Plans:
+- [ ] 25-01: Write E2E tests for new UI components
+- [ ] 25-02: Version bump, build, deploy, and create release
 
 ## Progress
 
@@ -161,6 +192,12 @@ Plans:
 | 17. Version Bump + Infrastructure | v2.2.0 | 1/1 | Complete | 2026-02-12 |
 | 18. Comprehensive E2E Tests | v2.2.0 | 2/2 | Complete | 2026-02-12 |
 | 19. Fresh Install Validation + Release | v2.2.0 | 2/2 | Complete | 2026-02-12 |
+| 20. Wider Layout and Collapsible Sidebar | v2.3.0 | 0/1 | Pending | — |
+| 21. Protocol Color System | v2.3.0 | 0/2 | Pending | — |
+| 22. NAS Compact Table View | v2.3.0 | 0/2 | Pending | — |
+| 23. Server Details Panel Adaptation | v2.3.0 | 0/1 | Pending | — |
+| 24. Secondary Tab Improvements | v2.3.0 | 0/2 | Pending | — |
+| 25. E2E Tests + Version Bump + Release | v2.3.0 | 0/2 | Pending | — |
 
 ---
-*Last updated: 2026-02-12 - v2.2.0 milestone initialized*
+*Last updated: 2026-02-12 - v2.3.0 milestone roadmap created*
