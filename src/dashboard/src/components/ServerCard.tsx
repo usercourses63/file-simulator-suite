@@ -123,9 +123,18 @@ export function ServerCard({
         <div className="server-badges">
           <span className="server-protocol">{server.protocol}</span>
           {isDynamic ? (
-            <span className="badge badge--dynamic">Dynamic</span>
+            <span className="badge badge--dynamic">
+              <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <path d="M13 2L3 14h9l-1 10 10-12h-9l1-10z"/>
+              </svg>
+              Dynamic
+            </span>
           ) : (
             <span className="badge badge--helm" title="Managed by Helm - cannot be deleted">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/>
+                <path d="M12 8v8M8 12h8"/>
+              </svg>
               Helm
             </span>
           )}

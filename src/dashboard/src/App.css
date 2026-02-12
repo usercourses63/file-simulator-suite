@@ -312,6 +312,22 @@ body {
 .server-card--protocol-nfs { background-color: rgba(234, 179, 8, 0.06); }
 .server-card--protocol-nas { background-color: rgba(20, 184, 166, 0.06); }
 
+/* Enhanced health state indicators - background tint (VIS-04) */
+/* Down: subtle red wash over entire card - overrides protocol tint */
+.server-card--down {
+  background-color: rgba(239, 68, 68, 0.06);
+}
+
+/* Degraded: subtle yellow wash over entire card - overrides protocol tint */
+.server-card--degraded {
+  background-color: rgba(234, 179, 8, 0.06);
+}
+
+/* Down state gets subtle red shadow for additional emphasis */
+.server-card--down:not(:hover) {
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.15);
+}
+
 /* Pulse animation on status change */
 @keyframes pulse {
   0%, 100% { opacity: 1; }
@@ -1935,14 +1951,34 @@ body {
   text-transform: uppercase;
 }
 
-/* Dynamic server badge */
+/* Dynamic server badge - blue with lightning bolt icon */
 .badge--dynamic {
-  background: rgba(59, 130, 246, 0.2);
+  background: rgba(59, 130, 246, 0.15);
   color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
-/* Helm-managed server badge */
+.badge--dynamic svg {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}
+
+/* Helm-managed server badge - gray with crosshair icon */
 .badge--helm {
-  background: rgba(156, 163, 175, 0.2);
+  background: rgba(156, 163, 175, 0.15);
   color: #6b7280;
+  border: 1px solid rgba(156, 163, 175, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.badge--helm svg {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
 }
