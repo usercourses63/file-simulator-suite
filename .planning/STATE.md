@@ -11,10 +11,10 @@ See: .planning/PROJECT.md (updated 2026-02-12)
 ## Current Position
 
 Milestone: v2.3.0 Dashboard UI Refactoring
-Status: Executing Phase 24
-Last activity: 2026-02-12 — Completed 23-01 (Server Details Panel Adaptation verification)
+Status: Executing Phase 25
+Last activity: 2026-02-12 — Completed 24-02 (Layout width adjustments for Files, Kafka, Alerts)
 
-Progress: [████████████░░░░░░░░] 6 of 10 plans complete
+Progress: [████████████████░░░░] 8 of 10 plans complete
 
 Phases:
 - Phase 20: Wider Layout and Collapsible Sidebar (LAYOUT) — 1 plan
@@ -27,9 +27,9 @@ Phases:
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 68
-- Average duration: 5.9 min
-- Total execution time: 7.0 hours
+- Total plans completed: 70
+- Average duration: 5.8 min
+- Total execution time: 7.1 hours
 
 **By Phase:**
 
@@ -54,10 +54,11 @@ Phases:
 | 21. Protocol Color System | 2 | 4 min | 2.0 min |
 | 22. NAS Compact Table View | 2 | 4 min | 2.0 min |
 | 23. Server Details Panel Adaptation | 1 | 2 min | 2.0 min |
+| 24. Secondary Tab Improvements | 2 | 4 min | 2.0 min |
 
 **Recent Trend:**
 - Last 5 plans: [2.0, 2.0, 2.0, 2.0, 2.0] min
-- Trend: Server details panel adaptation verification 2 min (1 task, 0 files)
+- Trend: Layout width adjustments 2 min (2 tasks, 3 files)
 
 ## Accumulated Context
 
@@ -241,6 +242,10 @@ Recent decisions affecting current work:
 - Phase 22-02: ServerSparkline reused at 200x30 in expanded detail for inline latency trend
 - Phase 22-02: Single expandedServer state string provides accordion behavior (one row at a time)
 - [Phase 23]: Verification-only phase: no code changes needed, Phase 22 already completed the NAS-to-details-panel integration
+- Phase 24-01: History tab dropdown filtered to deployed servers only; chart legend filtered to servers with data points
+- Phase 24-02: Files sidebar 350px->400px for more file path text
+- Phase 24-02: Kafka panels use minmax(280px,320px) instead of fixed 280px
+- Phase 24-02: Alert columns uncapped -- word-break handles long strings
 
 ### Pending Todos
 
@@ -258,8 +263,8 @@ No active blockers.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 23-01-PLAN.md (Server Details Panel Adaptation verification)
-Resume: Execute 24-01-PLAN.md for Secondary Tab Improvements
+Stopped at: Completed 24-02-PLAN.md (Layout width adjustments)
+Resume: Execute 25-01-PLAN.md for E2E Tests + Version Bump
 
 ## Release History
 
