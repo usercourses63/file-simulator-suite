@@ -1,5 +1,59 @@
 # Project Milestones: File Simulator Suite
 
+## v2.3.0 Dashboard UI Refactoring (Shipped: 2026-02-12)
+
+**Delivered:** Protocol-tinted server cards, compact NAS table view, full-width layout with collapsible sidebar, and secondary tab improvements — making 14+ servers instantly scannable.
+
+**Phases completed:** 20-25 (10 plans total)
+
+**Key accomplishments:**
+
+- Full-width layout with collapsible activity sidebar (removed 1400px max-width cap)
+- Protocol-tinted card backgrounds with unified CSS custom properties (7 protocol colors)
+- NAS compact table view rendering 7 servers as grouped rows (Input/Output/Backup) replacing cards
+- Expandable NAS rows with sparkline latency charts and server metadata
+- History/Files/Kafka/Alerts tab layout refinements (wider sidebars, flexible panels, filtered legends)
+- 4 new Playwright E2E tests validating UI changes, all 54 tests passing
+
+**Stats:**
+
+- 51 files modified (+5,669 / -206 lines)
+- 6 phases, 10 plans, 40 commits
+- 1 day (2026-02-12)
+- 54 E2E tests passing, 23/23 requirements validated
+
+**Git range:** `0e9ce50 (docs: start milestone)` → `5ac631e (docs: complete phase execution)`
+
+**What's next:** Platform UI polished for production use. All servers visually differentiated by protocol with compact NAS grouping.
+
+---
+
+## v2.2.0 Activity Log Completeness (Shipped: 2026-02-12)
+
+**Delivered:** Complete activity log for all server and file operations, rename API, comprehensive E2E tests, and fresh install validation.
+
+**Phases completed:** 15-19 (7 plans total)
+
+**Key accomplishments:**
+
+- Complete activity log for dynamic server lifecycle events (create/start/stop/restart/delete)
+- File rename API endpoint (PUT /api/files/rename) with FileSystemWatcher integration
+- Download endpoint emits Read file events via SignalR
+- Protocol-based server attribution fallback for file events
+- E2E tests for all server types and file operations
+- Fresh Minikube install validation with updated defaults
+
+**Stats:**
+
+- 5 phases, 7 plans
+- 1 day (2026-02-12)
+
+**Git range:** Phases 15-19
+
+**What's next:** Activity log is now a complete audit trail. Ready for UI refactoring in v2.3.0.
+
+---
+
 ## v2.0 Simulator Control Platform (Shipped: 2026-02-05)
 
 **Delivered:** Observable, controllable platform with React dashboard, real-time monitoring, dynamic server management, Kafka integration, and comprehensive API-driven test suite.

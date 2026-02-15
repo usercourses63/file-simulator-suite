@@ -2,19 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-12)
+See: .planning/PROJECT.md (updated 2026-02-15)
 
 **Core value:** Development systems must connect to simulated NAS servers using identical PV/PVC configurations as production OCP, with test files written on Windows immediately visible through NFS mounts - zero deployment differences between dev and prod.
 
-**Current focus:** v2.3.0 Dashboard UI Refactoring -- COMPLETE
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Milestone: v2.3.0 Dashboard UI Refactoring
-Status: Complete
-Last activity: 2026-02-12 — Completed 25-02 (Version Bump + Release v2.3.0)
+Milestone: v2.3.0 Dashboard UI Refactoring — ARCHIVED
+Status: Shipped and archived
+Last activity: 2026-02-15 — Milestone archived to .planning/milestones/
 
-Progress: [████████████████████] 10 of 10 plans complete
+Progress: [████████████████████] 10 of 10 plans complete — ARCHIVED
 
 Phases:
 - Phase 20: Wider Layout and Collapsible Sidebar (LAYOUT) — 1 plan
@@ -270,9 +270,9 @@ No active blockers.
 
 ## Session Continuity
 
-Last session: 2026-02-12
-Stopped at: Completed 25-02-PLAN.md (Version Bump + Release v2.3.0) -- v2.3.0 milestone complete
-Resume: All v2.3.0 plans executed. Milestone complete.
+Last session: 2026-02-15
+Stopped at: v2.3.0 milestone archived. Deploy-Simulator.ps1 script created, 7-NAS topology merged into default values.yaml.
+Resume: Start next milestone with `/gsd:new-milestone`.
 
 ## Release History
 

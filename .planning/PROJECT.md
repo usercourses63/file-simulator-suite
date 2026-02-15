@@ -8,20 +8,10 @@ A Kubernetes-based file protocol simulator with real-time monitoring and control
 
 Development systems must connect to simulated NAS servers using identical PV/PVC configurations as production OCP, with test files written on Windows immediately visible through NFS mounts - zero deployment differences between dev and prod.
 
-## Current Milestone: v2.3.0 Dashboard UI Refactoring
-
-**Goal:** Refactor the Servers page for better visual differentiation, wider layout, compact NAS display, and directory-based NAS grouping — making 14+ servers instantly scannable at a glance.
-
-**Target features:**
-- Protocol-tinted card backgrounds using existing color palette (FTP=purple, SFTP=pink, NAS=teal, etc.)
-- Compact NAS table rows replacing full cards (7 NAS visible without scrolling)
-- Wider layout with collapsible activity sidebar (remove 1400px cap, toggle sidebar)
-- NAS sub-grouping by directory function (Input/Output/Backup with visual headers)
-
 ## Current State
 
-**Shipped version:** v2.2.0 (2026-02-12) — activity log completeness, rename API, E2E tests, fresh install
-**Previous:** v2.0 Simulator Control Platform (2026-02-05)
+**Shipped version:** v2.3.0 (2026-02-12) — Dashboard UI refactoring: protocol colors, NAS compact table, wider layout
+**Previous:** v2.2.0 Activity Log Completeness (2026-02-12), v2.0 Simulator Control Platform (2026-02-05)
 
 **What shipped:**
 - React 19 dashboard with real-time monitoring via SignalR (5 hubs)
@@ -43,6 +33,19 @@ Development systems must connect to simulated NAS servers using identical PV/PVC
 ## Requirements
 
 ### Validated
+
+v2.3.0 Dashboard UI Refactoring (Shipped: 2026-02-12):
+
+- ✓ Protocol-tinted card backgrounds with unified color system (7 protocols) — v2.3.0
+- ✓ Static/Dynamic server badges (Helm crosshair, Dynamic lightning bolt) — v2.3.0
+- ✓ Health state background tints (red down, yellow degraded) — v2.3.0
+- ✓ Full-width layout with collapsible activity sidebar — v2.3.0
+- ✓ NAS compact table view with Input/Output/Backup grouping — v2.3.0
+- ✓ Expandable NAS rows with sparkline charts — v2.3.0
+- ✓ Details panel works from both protocol cards and NAS rows — v2.3.0
+- ✓ History tab filtered to deployed servers with data-aware legend — v2.3.0
+- ✓ Files/Kafka/Alerts layout improvements (wider sidebars, flexible columns) — v2.3.0
+- ✓ 4 new E2E tests validating UI changes, 54 total tests passing — v2.3.0
 
 v2.2.0 Activity Log Completeness (Shipped: 2026-02-12):
 
@@ -92,9 +95,7 @@ Existing capabilities (pre-v1.0):
 
 ### Active
 
-v2.3.0 Dashboard UI Refactoring:
-
-(See `.planning/REQUIREMENTS.md` for full requirement list with REQ-IDs)
+(No active milestone — use `/gsd:new-milestone` to start next)
 
 ### Out of Scope
 
@@ -152,10 +153,14 @@ v2.3.0 Dashboard UI Refactoring:
 | Selective sidecar deployment | Only output servers need NFS→Windows sync; avoid overhead on inputs | ✓ Good - Resource efficient (96Mi vs 128Mi) |
 | kubectl --context mandatory | Multi-profile Minikube safety; prevent cross-cluster accidents | ✓ Good - Zero accidental deletions in v1.0 |
 
+| CSS custom properties for protocol colors | Single source of truth for 7 protocol tints (0.06 alpha) | ✓ Good - Consistent theming across cards, badges, table rows |
+| CSS grid rows for NasTable | BEM-styled grid rows vs HTML table for compact NAS layout | ✓ Good - Flexible, maintainable, consistent with codebase |
+| Verification-only Phase 23 | Phase 22 already wired NAS row click to details panel | ✓ Good - Avoided unnecessary code changes |
+| minikube image load over registry push | Minikube registry addon unavailable | ✓ Good - Simpler workflow, no port-forwarding needed |
 | File reads emit events from API layer | FileWatcher only detects filesystem mutations; downloads need explicit SignalR broadcast from FilesController | ✓ Good |
 | New rename API endpoint | `PUT /api/files/rename` calls `File.Move()` → triggers existing FileSystemWatcher.OnRenamed | ✓ Good |
 | Protocol-based server attribution | Fallback when file path doesn't contain server name; uses `fe.protocols` array | ✓ Good |
 | Version 2.2.0 (not 2.1.1) | New API endpoint + new event type = minor version bump | ✓ Good |
 
 ---
-*Last updated: 2026-02-12 after v2.3.0 milestone started*
+*Last updated: 2026-02-15 after v2.3.0 milestone completed*
