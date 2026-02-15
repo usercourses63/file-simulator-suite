@@ -75,7 +75,13 @@ try {
 $hostsPath = "$env:SystemRoot\System32\drivers\etc\hosts"
 
 # Read current hosts file
-$hostsContent = Get-Content $hostsPath -Raw
+try {
+    $hostsContent = Get-Content $hostsPath -Raw -ErrorAction Stop
+    if ($null -eq $hostsContent) { $hostsContent = "" }
+} catch {
+    Write-Host "Cannot read hosts file. Run this script as Administrator." -ForegroundColor Red
+    exit 1
+}
 
 # Define hostnames to add (static infrastructure services)
 $hostnames = @(
@@ -162,13 +168,18 @@ $newEntries += $markerEnd
 $hostsContent = $hostsContent.TrimEnd() + "`r`n`r`n" + ($newEntries -join "`r`n") + "`r`n"
 
 # Write hosts file
-Set-Content -Path $hostsPath -Value $hostsContent -Force -NoNewline
+try {
+    [System.IO.File]::WriteAllText($hostsPath, $hostsContent)
+} catch {
+    Write-Host "Cannot write hosts file. Run this script as Administrator." -ForegroundColor Red
+    exit 1
+}
 
 Write-Host "`nHosts file updated successfully!" -ForegroundColor Green
 Write-Host "  Total hostnames: $($hostnames.Count) ($staticCount static, $dynamicCount dynamic)" -ForegroundColor Cyan
 Write-Host "`nAdded entries:" -ForegroundColor Cyan
-foreach ($host in $hostnames) {
-    Write-Host "  $minikubeIp  $host" -ForegroundColor White
+foreach ($entry in $hostnames) {
+    Write-Host "  $minikubeIp  $entry" -ForegroundColor White
 }
 
 # Flush DNS cache
