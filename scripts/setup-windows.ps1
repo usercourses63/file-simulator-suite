@@ -207,7 +207,7 @@ if ($DeployChart) {
     if ($helmInstalled) {
         $chartPath = Join-Path $PSScriptRoot "helm-chart\file-simulator"
         if (Test-Path $chartPath) {
-            helm upgrade --install file-sim $chartPath --namespace file-simulator --create-namespace
+            helm upgrade --install file-sim $chartPath --kube-context=file-simulator --namespace file-simulator --create-namespace
         } else {
             Write-Host "  Chart not found at: $chartPath" -ForegroundColor Red
         }
